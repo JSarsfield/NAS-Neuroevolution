@@ -7,13 +7,13 @@ __email__ = "joe.sarsfield@gmail.com"
 
 import numpy as np
 import tensorflow as tf
-import cppn_model
+import cppn
 
 
 if __name__ == "__main__":
     #pop_size = 2
     #cppn.create_random_graphs(2)
-    cppn = cppn_model.CPPN(None)
+    cppn = cppn.CPPN(None)
     print(cppn(np.array([1, 2, 3, 4])))
 
 

@@ -1,52 +1,45 @@
 """
-Compositional Pattern Producing Network
+TensorFlow Keras model implementation of CPPN
 
-A biologically inspired genetic encoding that produces neural network architectures when decoded.
+CPPN is a biologically inspired genetic encoding that produces neural network architectures when decoded.
 
 See paper: Compositional pattern producing networks: A novel abstraction of development by Kenneth O. Stanley
-
 
 __author__ = "Joe Sarsfield"
 __email__ = "joe.sarsfield@gmail.com"
 """
 
-import activations
-
-genes = []  # Store genes
-activation_functions = activations.ActivationFunctionSet()
+import tensorflow as tf
 
 
-def create_random_graphs(n, inputs=2):
-    """ initial generation of n minimal CPPN graphs with random weights
-    Minimally connected graph with no hidden nodes, each input and output nodes should have at least one connection.
-    Connections can only go forwards.
+class CPPN:
+    genes = None
+    weights = None
+
+    def __init__(self, _genes):
+        self.genes = _genes
+        self.create_graph()
+
+    def create_graph(self):
+        self.weights = tf.random.uniform((-1, 1))
+
+    @tf.function
+    def call_cppn(self, x1, y1, x2, y2):
+        return
+
+    @tf.function
+    def simple_nn_layer(x, y):
+        return tf.nn.sigmoid(tf.matmul(x, y))
+
     """
+    def __init__(self, genes):
+        self.model = tf.keras.Sequential((
+            tf.keras.layers.Dense(1, input_shape=(1, 4), activation=tf.nn.sigmoid))) #  kernel_initializer=tf.keras.initializers.RandomUniform(-1, 1), bias_initializer=tf.keras.initializers.RandomUniform(-1, 1))
+        self.model.build()
+        
+        self.model = tf.keras.Sequential()
 
-    for i in range(n):
-        act_func = activation_functions.get_random_activation_func()
-
-def create_gene():
-    """ Create a gene e.g. connection or node
-    Must have a historical marking (array index in this case) required for crossover of parents
+        # Add output layer which must be sigmoid to squash between 0 and 1
+        self.model.add(tf.keras.layers.Dense(1, activation=tf.nn.sigmoid, kernel_initializer=tf.keras.initializers.RandomUniform(-1, 1), bias_initializer=tf.keras.initializers.RandomUniform(-1, 1)))
+        self.model.build(input_shape=(1,4))
     """
-
-class Gene:
-
-    historical_marking = None  # index
-
-    def __init__(self):
-
-class GeneConnection(Gene):
-
-    weight = None
-
-    def __init__(self, hist_marking):
-        super(Gene, self).__init__(hist_marking)
-
-class GeneNode(Gene):
-
-    depth = None  # Ensures CPPN connections don't go backwards i.e. DAG
-
-    def __init__(self, _depth, hist_marking):
-        depth = _depth
-        super(Gene, self).__init__(hist_marking)
