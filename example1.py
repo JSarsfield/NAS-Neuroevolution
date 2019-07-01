@@ -17,6 +17,7 @@ if __name__ == "__main__":
     #cppn = cppn.CPPN(None)
     #print(cppn(np.array([1, 2, 3, 4])))
     gene_pool = genes.GenePool(3)
-    print("end")
+    # TODO create population of CPPN tensorflow graphs with mutation
+    # TODO create population of ANN tensorflow graphs given the CPPNs for evaluation
 
 

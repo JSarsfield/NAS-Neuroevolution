@@ -1,5 +1,5 @@
 """
-Create genes e.g. connections/nodes
+Create genes (connections & nodes) for generating CPPN graphs
 
 __author__ = "Joe Sarsfield"
 __email__ = "joe.sarsfield@gmail.com"
@@ -14,29 +14,33 @@ class GenePool:
     Handles the creation and mutation of all CPPN genes throughout the evolutionary process
     """
 
-    geneNodes = []  # Store all node genes
-    geneConns = []  # Store all connection genes
-    _hist_marking_num = -1  # Keeps track of historical marking number
-    activation_functions = activations.ActivationFunctionSet()
-    num_inputs = None
-
     def __init__(self,
                  num_inputs,
                  load_genepool=False):
+        self.geneNodes = []  # Store all node genes
+        self.geneConns = []  # Store all connection genes
+        self._hist_marker_num = -1  # Keeps track of historical marker number
+        self.activation_functions = activations.ActivationFunctionSet()
         self.num_inputs = num_inputs
         if load_genepool is False:
             self.create_in_out_genes()
+        print("initial genes created")
 
     def create_in_out_genes(self):
         """ create initial in out genes for minimal graph """
         # Create input nodes with no activation function
         for i in range(self.num_inputs):
-            self.create_gene_node({"depth": 0, "activation_func": None})
+            self.create_gene_node({"depth": 0,
+                                   "activation_func": None})
         # Create output sigmoid node that provides a weight from 0 to 1
-        self.create_gene_node({"depth": 1, "activation_func": activations.sigmoid_activation})
+        self.create_gene_node({"depth": 1,
+                               "activation_func": activations.sigmoid_activation})
         # Add a single initial connection for each input node
         for i in range(self.num_inputs):
-            self.create_gene_conn({"weight": random.uniform(-1, 1), "enabled": True, "in_node": self.geneNodes[-1], "out_node": self.geneNodes[i]})
+            self.create_gene_conn({"weight": random.uniform(-1, 1),
+                                   "enabled": True,
+                                   "in_node": self.geneNodes[-1],
+                                   "out_node": self.geneNodes[i]})
 
     def create_minimal_graphs(self, n):
         """ initial generation of n minimal CPPN graphs with random weights
@@ -49,16 +53,18 @@ class GenePool:
 
     def create_gene_node(self, gene_config):
         """ Create a gene e.g. connection or node
-        Must have a historical marking (array index in this case) required for crossover of parents
+        Must have a historical marker required for crossover of parents
         """
+        gene_config["historical_marker"] = self.get_new_hist_marker()
         self.geneNodes.append(GeneNode(**gene_config))
 
     def create_gene_conn(self, gene_config):
+        gene_config["historical_marker"] = self.get_new_hist_marker()
         self.geneConns.append(GeneConnection(**gene_config))
 
-    def get_new_hist_marking(self):
-        self._hist_marking_num += 1
-        return self._hist_marking_num
+    def get_new_hist_marker(self):
+        self._hist_marker_num += 1
+        return self._hist_marker_num
 
     def mutate_add_node(self):
         # Add hidden node
@@ -75,23 +81,14 @@ class GenePool:
 
 class Gene:
 
-    historical_marking = None
-    can_disable = None
-
-    def __init__(self, can_disable=True):
-        self.historical_marking = get_new_hist_marking()
-        self.can_disable = can_disable
+    def __init__(self, historical_marker):
+        self.historical_marker = historical_marker
 
 
 class GeneConnection(Gene):
 
-    weight = None
-    enabled = None
-    in_node = None
-    out_node = None
-
-    def __init__(self, weight, enabled, in_node, out_node):
-        super(Gene, self).__init__()
+    def __init__(self, weight, enabled, in_node, out_node, historical_marker):
+        super().__init__(historical_marker)
         self.weight = weight
         self.enabled = enabled
         self.in_node = in_node
@@ -102,17 +99,14 @@ class GeneConnection(Gene):
 
 class GeneNode(Gene):
 
-    depth = None  # Ensures CPPN connections don't go backwards i.e. DAG
-    ingoing_connections = []  # Connections going into the node
-    outgoing_connections = []  # Connections going out of the node
-    can_disable_conn = None
-    can_enable_conn = None  # True if node has at least one connection that can be enabled
-    activation_func = None  # The activation function this node contains. Incoming connections are multiplied by their weights and summed before being passed to this func
-
-    def __init__(self, depth, activation_func):
-        super(Gene, self).__init__()
-        self.depth = depth
-        self.activation_func = activation_func
+    def __init__(self, depth, activation_func, historical_marker):
+        super().__init__(historical_marker)
+        self.depth = depth  # Ensures CPPN connections don't go backwards i.e. DAG
+        self.activation_func = activation_func  # The activation function this node contains. Incoming connections are multiplied by their weights and summed before being passed to this func
+        self.ingoing_connections = []  # Connections going into the node
+        self.outgoing_connections = []  # Connections going out of the node
+        self.can_disable_conn = None
+        self.can_enable_conn = None
 
     def add_conn(self, conn, is_ingoing):
         if is_ingoing is True:
