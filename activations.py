@@ -1,4 +1,4 @@
-"""
+r"""
 Defines different activation functions for evolving the CPPN which in turn produces an ANN architecture when decoded
 
 Code taken from neat-python https://github.com/CodeReclaimers/neat-python/blob/master/neat/activations.py
