@@ -20,6 +20,9 @@
 .idea/**/uiDesigner.xml
 .idea/**/dbnavigator.xml
 
+.idea/NAS-Neuroevolution.iml
+.idea/misc.xml
+
 # Gradle
 .idea/**/gradle.xml
 .idea/**/libraries
