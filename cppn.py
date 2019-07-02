@@ -13,8 +13,6 @@ import tensorflow as tf
 
 
 class CPPN:
-    genes = None
-    weights = None
 
     def __init__(self, _genes):
         self.genes = _genes
