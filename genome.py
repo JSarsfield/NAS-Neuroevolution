@@ -1,7 +1,7 @@
 """
 TensorFlow Keras model implementation of CPPN
 
-CPPN is a biologically inspired genetic encoding that produces neural network architectures when decoded.
+CPPN is a biologically inspired genetic encoding/genome that produces neural network architectures when decoded.
 
 See paper: Compositional pattern producing networks: A novel abstraction of development by Kenneth O. Stanley
 
@@ -12,7 +12,7 @@ __email__ = "joe.sarsfield@gmail.com"
 import tensorflow as tf
 
 
-class CPPN:
+class CPPNGenome:
 
     def __init__(self, _genes):
         self.genes = _genes

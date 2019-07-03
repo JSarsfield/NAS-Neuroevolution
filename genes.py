@@ -1,5 +1,5 @@
 """
-Create genes (connections & nodes) for generating CPPN graphs
+Create genes (links & nodes) for generating CPPN graphs
 
 __author__ = "Joe Sarsfield"
 __email__ = "joe.sarsfield@gmail.com"
@@ -19,7 +19,7 @@ class GenePool:
                  load_genepool=False):
         self.geneNodesInOut = []  # Nodes that represent input or output and must exist for every CPPN, these cannot be modified or disabled
         self.geneNodes = []  # Store all hidden node genes
-        self.geneConns = []  # Store all connection genes
+        self.geneConns = []  # Store all link genes
         self._hist_marker_num = -1  # Keeps track of historical marker number
         self.activation_functions = activations.ActivationFunctionSet()
         self.num_inputs = num_inputs
@@ -36,7 +36,7 @@ class GenePool:
         # Create output sigmoid node that provides a weight from 0 to 1
         self.create_initial_gene_node({"depth": 1,
                                "activation_func": activations.sigmoid_activation})
-        # Add a single initial connection for each input node
+        # Add a single initial link for each input node
         for i in range(self.num_inputs):
             self.create_gene_conn({"weight": random.uniform(-1, 1),
                                    "enabled": True,
@@ -45,8 +45,8 @@ class GenePool:
 
     def create_minimal_graphs(self, n):
         """ initial generation of n minimal CPPN graphs with random weights
-        Minimally connected graph with no hidden nodes, each input and output nodes should have at least one connection.
-        Connections can only go forwards.
+        Minimally connected graph with no hidden nodes, each input and output nodes should have at least one link.
+        Links can only go forwards.
         """
 
         for i in range(n):
@@ -58,7 +58,7 @@ class GenePool:
         self.geneNodesInOut.append(GeneNode(**gene_config))
 
     def create_gene_node(self, gene_config):
-        """ Create a gene e.g. connection or node
+        """ Create a gene e.g. link or node
         Must have a historical marker required for crossover of parents
         """
         gene_config["historical_marker"] = self.get_new_hist_marker()
@@ -66,7 +66,7 @@ class GenePool:
 
     def create_gene_conn(self, gene_config):
         gene_config["historical_marker"] = self.get_new_hist_marker()
-        self.geneConns.append(GeneConnection(**gene_config))
+        self.geneConns.append(GeneLink(**gene_config))
 
     def get_new_hist_marker(self):
         self._hist_marker_num += 1
@@ -76,9 +76,9 @@ class GenePool:
         # Add hidden node
         pass
 
-    def mutate_add_connection(self):
+    def mutate_add_link(self):
         if random.uniform(0, 1) < 0.5:
-            # Split existing connection
+            # Split existing link
             pass
         else:
             # Try and find two neurons to connect
@@ -91,7 +91,7 @@ class Gene:
         self.historical_marker = historical_marker
 
 
-class GeneConnection(Gene):
+class GeneLink(Gene):
 
     def __init__(self, weight, enabled, in_node, out_node, historical_marker):
         super().__init__(historical_marker)
@@ -107,17 +107,17 @@ class GeneNode(Gene):
 
     def __init__(self, depth, activation_func, historical_marker):
         super().__init__(historical_marker)
-        self.depth = depth  # Ensures CPPN connections don't go backwards i.e. DAG
-        self.activation_func = activation_func  # The activation function this node contains. Incoming connections are multiplied by their weights and summed before being passed to this func
-        self.ingoing_connections = []  # Connections going into the node
-        self.outgoing_connections = []  # Connections going out of the node
+        self.depth = depth  # Ensures CPPN links don't go backwards i.e. DAG
+        self.activation_func = activation_func  # The activation function this node contains. Incoming links are multiplied by their weights and summed before being passed to this func
+        self.ingoing_links = []  # links going into the node
+        self.outgoing_links = []  # links going out of the node
         self.can_disable_conn = None
         self.can_enable_conn = None
 
     def add_conn(self, conn, is_ingoing):
         if is_ingoing is True:
-            self.ingoing_connections.append(conn)
+            self.ingoing_links.append(conn)
         else:
-            self.outgoing_connections.append(conn)
+            self.outgoing_links.append(conn)
 
 
