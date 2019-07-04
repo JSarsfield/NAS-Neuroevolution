@@ -13,23 +13,54 @@ import tensorflow as tf
 
 
 class CPPNGenome:
+    """ CPPN genome that can be expressed/decoded to produce an ANN """
 
-    def __init__(self, _genes):
-        self.genes = _genes
-        self.create_graph()
+    def __init__(self, geneNodesInOut, geneLinks, geneNodes, num_inputs=3, num_outputs=1):
+        """ Call on master thread then call a create graph function on the worker thread """
+        self.weights = None  # Weight of links in graph. Sampled from parent/s genome/s or uniform distribution when no parent
+        self.geneNodesInOut = geneNodesInOut
+        self.geneLinks = geneLinks
+        self.geneNodes = geneNodes
+        self.num_inputs = num_inputs
+        self.num_outputs = num_outputs
+        self.graph = None  # Store TensorFlow graph. Created on worker thread within a create graph function
 
-    def create_graph(self):
+    def create_initial_graph(self, geneLinks):
+        """ Create an initial graph for generation zero that has no parent/s. Call on worker thread """
+        self.graph = tf.Graph()  # TensorFlow computational graph for querying the CPPN. tf.Graph NOT THREAD SAFE, CREATE THE GRAPH ON THE WORKER THREAD
+        with self.graph.as_default():
+            x = tf.place
+
         self.weights = tf.random.uniform((-1, 1))
+        self.graph.finalize()
 
-    @tf.function
-    def call_cppn(self, x1, y1, x2, y2):
-        return
+    def _create_graph(self, parent_genome):
+        """ Create new graph given single parent genome. Call on worker thread """
+        pass  # self.genes
 
+    def _create_graph_from_parents(self, parent_genome1, parent_genome2):
+        """ Create new graph given two parent genomes.  Call on worker thread """
+        pass  # self.genes
+
+    def _perturb_weights(self):
+        """ Modify the weights of the links within the CPPN """
+        pass
+
+    class Graph:
+        """ Optimised TensorFlow computational graph representing the CPPN """
+        def __init__(self):  # Pass variables outside of the graph here
+            pass
+
+        @tf.function
+        def __call__(self, x1, y1, x2, y2): # TODO tf.Tensor as input
+            return
+
+    """
     @tf.function
     def simple_nn_layer(x, y):
         return tf.nn.sigmoid(tf.matmul(x, y))
 
-    """
+    
     def __init__(self, genes):
         self.model = tf.keras.Sequential((
             tf.keras.layers.Dense(1, input_shape=(1, 4), activation=tf.nn.sigmoid))) #  kernel_initializer=tf.keras.initializers.RandomUniform(-1, 1), bias_initializer=tf.keras.initializers.RandomUniform(-1, 1))

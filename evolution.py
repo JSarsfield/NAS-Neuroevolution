@@ -7,7 +7,7 @@ __email__ = "joe.sarsfield@gmail.com"
 import numpy as np
 import tensorflow as tf
 from genes import GenePool
-import genome
+from genome import CPPNGenome
 
 
 class Evolution:
@@ -19,12 +19,13 @@ class Evolution:
         self.gene_pool = GenePool(num_inputs=4)  # inputs x1 x2 y1 y2
         self.generation = -1
         self.pop_size = pop_size
-        self.genomes = self._get_initial_population()
+        self.genomes = []  # Genomes in the current population
+        self._get_initial_population()
 
     def _get_initial_population(self):
         for i in range(self.pop_size):
-
-
+            self.genomes.append(CPPNGenome(self.gene_pool.geneNodesInOut, self.gene_pool.geneLinks, None))
+            self.genomes[-1].create_initial_graph()
 
     def begin_evolution(self):
         while True: # For infinite generations
@@ -32,4 +33,5 @@ class Evolution:
             self._reproduce_new_generation()
 
     def _reproduce_new_generation(self):
-        for i in range(self.pop_size): # TODO Parallelise this just on the local machine e.g. python starmap
+        for i in range(self.pop_size):  # TODO Parallelise this just on the local machine e.g. python starmap
+            pass

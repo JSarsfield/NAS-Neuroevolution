@@ -19,7 +19,7 @@ class GenePool:
                  load_genepool=False):
         self.geneNodesInOut = []  # Nodes that represent input or output and must exist for every CPPN, these cannot be modified or disabled
         self.geneNodes = []  # Store all hidden node genes
-        self.geneConns = []  # Store all link genes
+        self.geneLinks = []  # Store all link genes
         self._hist_marker_num = -1  # Keeps track of historical marker number
         self.activation_functions = activations.ActivationFunctionSet()
         self.num_inputs = num_inputs
@@ -38,7 +38,7 @@ class GenePool:
                                "activation_func": activations.sigmoid_activation})
         # Add a single initial link for each input node
         for i in range(self.num_inputs):
-            self.create_gene_conn({"weight": random.uniform(-1, 1),
+            self.create_gene_link({"weight": random.uniform(-1, 1),
                                    "enabled": True,
                                    "in_node": self.geneNodesInOut[-1],
                                    "out_node": self.geneNodesInOut[i]})
@@ -64,9 +64,9 @@ class GenePool:
         gene_config["historical_marker"] = self.get_new_hist_marker()
         self.geneNodes.append(GeneNode(**gene_config))
 
-    def create_gene_conn(self, gene_config):
+    def create_gene_link(self, gene_config):
         gene_config["historical_marker"] = self.get_new_hist_marker()
-        self.geneConns.append(GeneLink(**gene_config))
+        self.geneLinks.append(GeneLink(**gene_config))
 
     def get_new_hist_marker(self):
         self._hist_marker_num += 1
@@ -99,8 +99,8 @@ class GeneLink(Gene):
         self.enabled = enabled
         self.in_node = in_node
         self.out_node = out_node
-        in_node.add_conn(self, True)
-        out_node.add_conn(self, False)
+        in_node.add_link(self, True)
+        out_node.add_link(self, False)
 
 
 class GeneNode(Gene):
@@ -111,13 +111,13 @@ class GeneNode(Gene):
         self.activation_func = activation_func  # The activation function this node contains. Incoming links are multiplied by their weights and summed before being passed to this func
         self.ingoing_links = []  # links going into the node
         self.outgoing_links = []  # links going out of the node
-        self.can_disable_conn = None
-        self.can_enable_conn = None
+        self.can_disable_link = None
+        self.can_enable_link = None
 
-    def add_conn(self, conn, is_ingoing):
+    def add_link(self, link, is_ingoing):
         if is_ingoing is True:
-            self.ingoing_links.append(conn)
+            self.ingoing_links.append(link)
         else:
-            self.outgoing_links.append(conn)
+            self.outgoing_links.append(link)
 
 
