@@ -2,16 +2,15 @@ r"""
 Defines different activation functions for evolving the CPPN which in turn produces an ANN architecture when decoded
 
 Code taken from neat-python https://github.com/CodeReclaimers/neat-python/blob/master/neat/activations.py
+Refactored to TensorFlow activation functions - for creating computational graphs with AutoGraph
 Modified by:
 __author__ = "Joe Sarsfield"
 __email__ = "joe.sarsfield@gmail.com"
 """
-
-import math
-import types
+import tensorflow as tf
 import random
 
-
+"""
 def sigmoid_activation(z):
     z = max(-60.0, min(60.0, 5.0 * z))
     return 1.0 / (1.0 + math.exp(-z))
@@ -117,6 +116,7 @@ def validate_activation(function):
 
     if function.__code__.co_argcount != 1:  # avoid deprecated use of `inspect`
         raise InvalidActivationFunction("A single-argument function is required.")
+"""
 
 
 class ActivationFunctionSet(object):
@@ -127,28 +127,28 @@ class ActivationFunctionSet(object):
 
     def __init__(self):
         self.functions = {}
-        self.add('sigmoid', sigmoid_activation)
-        self.add('tanh', tanh_activation)
-        self.add('sin', sin_activation)
-        self.add('cos', cos_activation)
-        self.add('gauss', gauss_activation)
-        self.add('relu', relu_activation)
-        self.add('elu', elu_activation)
-        self.add('lelu', lelu_activation)
-        self.add('selu', selu_activation)
-        self.add('softplus', softplus_activation)
-        self.add('identity', identity_activation)
-        self.add('clamped', clamped_activation)
-        self.add('inv', inv_activation)
-        self.add('log', log_activation)
-        self.add('exp', exp_activation)
-        self.add('abs', abs_activation)
-        self.add('hat', hat_activation)
-        self.add('square', square_activation)
-        self.add('cube', cube_activation)
+        self.add('sigmoid', tf.math.sigmoid)
+        self.add('tanh', tf.math.tanh)
+        self.add('sin', tf.math.sin)
+        self.add('cos', tf.math.cos)
+        self.add('gauss', tf.random.normal)
+        self.add('relu', tf.nn.relu)
+        self.add('elu', tf.nn.elu)
+        self.add('lelu', tf.nn.leaky_relu)
+        self.add('crelu', tf.nn.crelu)
+        self.add('softplus', tf.nn.softplus)
+        #self.add('identity', tf.math.identity)
+        #self.add('clamped', tf.math.clamped)
+        #self.add('inv', tf.math.inv)
+        self.add('log', tf.math.log)
+        self.add('exp', tf.math.exp)
+        self.add('abs', tf.math.abs)
+        #self.add('hat', tf.math.hat)
+        self.add('square', tf.math.square)
+        #self.add('cube', tf.math.cube)
+        self.add('square', tf.math.softmax)
 
     def add(self, name, function):
-        validate_activation(function)
         self.functions[name] = function
 
     def get(self, name):

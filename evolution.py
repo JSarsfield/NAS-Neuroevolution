@@ -24,7 +24,7 @@ class Evolution:
 
     def _get_initial_population(self):
         for i in range(self.pop_size):
-            self.genomes.append(CPPNGenome(self.gene_pool.geneNodesInOut, self.gene_pool.geneLinks, None))
+            self.genomes.append(CPPNGenome(self.gene_pool.geneNodesIn, self.gene_pool.geneNodesOut, self.gene_pool.geneLinks, None))
             self.genomes[-1].create_initial_graph()
 
     def begin_evolution(self):

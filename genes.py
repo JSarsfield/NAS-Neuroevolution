@@ -17,31 +17,32 @@ class GenePool:
     def __init__(self,
                  num_inputs,
                  load_genepool=False):
-        self.geneNodesInOut = []  # Nodes that represent input or output and must exist for every CPPN, these cannot be modified or disabled
+        self.geneNodesIn = []  # Nodes that represent input and must exist for every CPPN, these cannot be modified or disabled
+        self.geneNodesOut = []  # Nodes that represent output and must exist for every CPPN, these cannot be modified or disabled TODO allow modification of activation func
         self.geneNodes = []  # Store all hidden node genes
         self.geneLinks = []  # Store all link genes
         self._hist_marker_num = -1  # Keeps track of historical marker number
         self.activation_functions = activations.ActivationFunctionSet()
         self.num_inputs = num_inputs
         if load_genepool is False:
-            self.create_in_out_genes()
+            self.create_initial_genes()
         print("initial genes created")
 
-    def create_in_out_genes(self):
-        """ create initial in out genes for minimal graph """
+    def create_initial_genes(self):
+        """ create initial input & output genes for minimal graph """
         # Create input nodes with no activation function
         for i in range(self.num_inputs):
             self.create_initial_gene_node({"depth": 0,
                                    "activation_func": None})
         # Create output sigmoid node that provides a weight from 0 to 1
         self.create_initial_gene_node({"depth": 1,
-                               "activation_func": activations.sigmoid_activation})
+                               "activation_func": self.activation_functions.get("sigmoid")}, is_input=False)
         # Add a single initial link for each input node
         for i in range(self.num_inputs):
             self.create_gene_link({"weight": random.uniform(-1, 1),
                                    "enabled": True,
-                                   "in_node": self.geneNodesInOut[-1],
-                                   "out_node": self.geneNodesInOut[i]})
+                                   "in_node": self.geneNodesOut[0],
+                                   "out_node": self.geneNodesIn[i]})
 
     def create_minimal_graphs(self, n):
         """ initial generation of n minimal CPPN graphs with random weights
@@ -52,10 +53,13 @@ class GenePool:
         for i in range(n):
             act_func = self.activation_functions.get_random_activation_func()
 
-    def create_initial_gene_node(self, gene_config):
+    def create_initial_gene_node(self, gene_config, is_input=True):
         """ Create input or output gene nodes, these nodes cannot be modified or disabled and are thus treated differently from hidden node"""
         gene_config["historical_marker"] = self.get_new_hist_marker()
-        self.geneNodesInOut.append(GeneNode(**gene_config))
+        if is_input:
+            self.geneNodesIn.append(GeneNode(**gene_config))
+        else:
+            self.geneNodesOut.append(GeneNode(**gene_config))
 
     def create_gene_node(self, gene_config):
         """ Create a gene e.g. link or node

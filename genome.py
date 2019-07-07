@@ -15,10 +15,11 @@ import tensorflow as tf
 class CPPNGenome:
     """ CPPN genome that can be expressed/decoded to produce an ANN """
 
-    def __init__(self, geneNodesInOut, geneLinks, geneNodes, num_inputs=3, num_outputs=1):
+    def __init__(self, geneNodesIn, geneNodesOut, geneLinks, geneNodes, num_inputs=3, num_outputs=1):
         """ Call on master thread then call a create graph function on the worker thread """
         self.weights = None  # Weight of links in graph. Sampled from parent/s genome/s or uniform distribution when no parent
-        self.geneNodesInOut = geneNodesInOut
+        self.geneNodesIn = geneNodesIn
+        self.geneNodesOut = geneNodesOut
         self.geneLinks = geneLinks
         self.geneNodes = geneNodes
         self.num_inputs = num_inputs
@@ -27,12 +28,15 @@ class CPPNGenome:
 
     def create_initial_graph(self, geneLinks):
         """ Create an initial graph for generation zero that has no parent/s. Call on worker thread """
+        self.graph = CPPNGenome.Graph(tf.Tensor())
+        """
         self.graph = tf.Graph()  # TensorFlow computational graph for querying the CPPN. tf.Graph NOT THREAD SAFE, CREATE THE GRAPH ON THE WORKER THREAD
         with self.graph.as_default():
             x = tf.place
 
         self.weights = tf.random.uniform((-1, 1))
         self.graph.finalize()
+        """
 
     def _create_graph(self, parent_genome):
         """ Create new graph given single parent genome. Call on worker thread """
@@ -47,12 +51,12 @@ class CPPNGenome:
         pass
 
     class Graph:
-        """ Optimised TensorFlow computational graph representing the CPPN """
+        """ Optimised TensorFlow computational graph representing the CPPN. tf.Graph NOT THREAD SAFE, CREATE THE GRAPH ON THE WORKER THREAD """
         def __init__(self):  # Pass variables outside of the graph here
             pass
 
         @tf.function
-        def __call__(self, x1, y1, x2, y2): # TODO tf.Tensor as input
+        def __call__(self, x1, y1, x2, y2):  # TODO tf.Tensor as input
             return
 
     """
