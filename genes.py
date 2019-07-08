@@ -18,8 +18,7 @@ class GenePool:
                  num_inputs,
                  load_genepool=False):
         self.geneNodesIn = []  # Nodes that represent input and must exist for every CPPN, these cannot be modified or disabled
-        self.geneNodesOut = []  # Nodes that represent output and must exist for every CPPN, these cannot be modified or disabled TODO allow modification of activation func
-        self.geneNodes = []  # Store all hidden node genes
+        self.geneNodes = []  # Store all hidden and output node genes
         self.geneLinks = []  # Store all link genes
         self._hist_marker_num = -1  # Keeps track of historical marker number
         self.activation_functions = activations.ActivationFunctionSet()
@@ -41,7 +40,7 @@ class GenePool:
         for i in range(self.num_inputs):
             self.create_gene_link({"weight": random.uniform(-1, 1),
                                    "enabled": True,
-                                   "in_node": self.geneNodesOut[0],
+                                   "in_node": self.geneNodes[0],
                                    "out_node": self.geneNodesIn[i]})
 
     def create_minimal_graphs(self, n):
@@ -59,7 +58,7 @@ class GenePool:
         if is_input:
             self.geneNodesIn.append(GeneNode(**gene_config))
         else:
-            self.geneNodesOut.append(GeneNode(**gene_config))
+            self.geneNodes.append(GeneNode(**gene_config))
 
     def create_gene_node(self, gene_config):
         """ Create a gene e.g. link or node
@@ -115,6 +114,7 @@ class GeneNode(Gene):
         self.activation_func = activation_func  # The activation function this node contains. Incoming links are multiplied by their weights and summed before being passed to this func
         self.ingoing_links = []  # links going into the node
         self.outgoing_links = []  # links going out of the node
+        self.output = None  # Stores value after feedforward
         self.can_disable_link = None
         self.can_enable_link = None
 
