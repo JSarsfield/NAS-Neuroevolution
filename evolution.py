@@ -6,6 +6,7 @@ __email__ = "joe.sarsfield@gmail.com"
 """
 import numpy as np
 import tensorflow as tf
+import pickle
 from genes import GenePool
 from genome import CPPNGenome
 

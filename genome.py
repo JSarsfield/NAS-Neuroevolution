@@ -19,15 +19,16 @@ import random  # random uniform weight
 class CPPNGenome:
     """ CPPN genome that can be expressed/decoded to produce an ANN """
 
-    def __init__(self, geneNodesIn, geneNodes, geneLinks, num_inputs=3, num_outputs=1):
+    def __init__(self, geneNodesIn, geneNodes, geneLinks, num_inputs=4, num_outputs=1):
         """ Call on master thread then call a create graph function on the worker thread """
         self.weights = None  # Weight of links in graph. Sampled from parent/s genome/s or uniform distribution when no parent
-        self.geneNodesIn = copy.deepcopy(geneNodesIn)
         self.geneLinks = copy.deepcopy(geneLinks)
         self.geneNodes = copy.deepcopy(geneNodes)
+        self.geneNodesIn = copy.deepcopy(geneNodesIn)
         self.num_inputs = num_inputs
         self.num_outputs = num_outputs
         self.graph = None  # Store TensorFlow graph. Created on worker thread within a create graph function
+        # TODO fix issues with deepcopy and recursive references
 
     def create_initial_graph(self):
         """ Create an initial graph for generation zero that has no parent/s. Call on worker thread """
@@ -69,26 +70,39 @@ class CPPNGenome:
             self.graph_rows = 1  # number of layers
             last_row_depth = 0
             nodes_in_row = 1
+            x = 0
+            y = 0
             # TODO create link map which has the indices of links going into each node
+            for i, node in enumerate(genome.geneNodesIn):
+                node.location = np.array([0, i])
             # Setup tensorflow constants e.g. activation funcs & weights (CPPN weights only change during crossover)
             for node in genome.geneNodes:
                 if node.depth != last_row_depth:
                     self.graph_rows += 1
                     last_row_depth = node.depth
+                    nodes_in_row = 1
+                    y += 1
+                    x = 0
                 else:
                     nodes_in_row += 1
                     if nodes_in_row > self.graph_cols:
                         self.graph_cols = nodes_in_row
+                    x += 1
+                node.location = np.array([y, x])
                 self.weights.append(tf.constant(np.fromiter((link.weight for link in node.ingoing_links), np.float32, len(node.ingoing_links)), tf.float32))
                 self.nodes.append(node.activation_func)
-            print("")
+                for link in node.ingoing_links:
+                    print("") # link.out_node.
+
 
         #@tf.function
         def query(self, input):  # input is a Tensor with x1, x2, y1, y2
             """ Query the CPPN """
-            input = tf.Variable(input, dtype=tf.float32, name="input")
-            activs = tf.zeros((self.graph_cols, self.graph_rows), dtype=tf.float32, name="activs")
-            for ind_node, node in enumerate(self.genome.geneNodes):
+            #input = tf.Variable(input, dtype=tf.float32, name="input")
+            activs = tf.zeros((self.graph_rows, self.graph_cols), dtype=tf.float32, name="activs")
+            row0 = tf.constant(np.column_stack((np.full(len(input), 0), np.arange(len(input)))), dtype=tf.int32)
+            activs = tf.tensor_scatter_nd_update(activs, row0, input, name="activs")
+            for ind_node, node in enumerate(self.nodes):
                 for ind_link, link in enumerate(node.ingoing_links):
                     print("")
             return

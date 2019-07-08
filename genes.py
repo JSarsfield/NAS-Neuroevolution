@@ -117,11 +117,15 @@ class GeneNode(Gene):
         self.output = None  # Stores value after feedforward
         self.can_disable_link = None
         self.can_enable_link = None
+        self.location = None  # [x, y] 2d numpy array uniquely set for each CPPNGenome, location may be different for different genomes
 
     def add_link(self, link, is_ingoing):
         if is_ingoing is True:
             self.ingoing_links.append(link)
         else:
             self.outgoing_links.append(link)
+
+    def set_loc(self, loc):
+        self.location = loc
 
 
