@@ -27,7 +27,8 @@ class Evolution:
         for i in range(self.pop_size):
             self.genomes.append(CPPNGenome(self.gene_pool.geneNodesIn, self.gene_pool.geneNodes, self.gene_pool.geneLinks))
             self.genomes[-1].create_initial_graph()
-            self.genomes[-1].graph.query(tf.constant([-1, -1, 1, 1], tf.float32))
+            res = self.genomes[-1].graph.query(tf.Variable([-1, -1, 1, 1], dtype=tf.float32, shape=(1,self.genomes[-1].num_inputs), name="input"))
+            print("")
 
     def begin_evolution(self):
         while True: # For infinite generations

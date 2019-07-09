@@ -7,6 +7,8 @@ __email__ = "joe.sarsfield@gmail.com"
 
 import activations
 import random
+from copy import deepcopy
+
 
 
 class GenePool:
@@ -112,12 +114,16 @@ class GeneNode(Gene):
         super().__init__(historical_marker)
         self.depth = depth  # Ensures CPPN links don't go backwards i.e. DAG
         self.activation_func = activation_func  # The activation function this node contains. Incoming links are multiplied by their weights and summed before being passed to this func
+        """ Below fields can change for each genome """
         self.ingoing_links = []  # links going into the node
         self.outgoing_links = []  # links going out of the node
-        self.output = None  # Stores value after feedforward
-        self.can_disable_link = None
-        self.can_enable_link = None
+        #self.output = None  # Stores value after feedforward
         self.location = None  # [x, y] 2d numpy array uniquely set for each CPPNGenome, location may be different for different genomes
+
+    def __deepcopy__(self, memo):
+        """ deepcopy but exclude ingoing_links &  outgoing_links as these will be created later """
+        return GeneNode(deepcopy(self.depth, memo), deepcopy(self.activation_func, memo), deepcopy(self.historical_marker, memo))
+
 
     def add_link(self, link, is_ingoing):
         if is_ingoing is True:
