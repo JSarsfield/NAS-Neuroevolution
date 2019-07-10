@@ -9,7 +9,7 @@ import tensorflow as tf
 import pickle
 from genes import GenePool
 from genome import CPPNGenome
-from time import perf_counter  # Accurate timing
+#from time import perf_counter  # Accurate timing
 
 
 class Evolution:
@@ -29,13 +29,8 @@ class Evolution:
             self.genomes.append(CPPNGenome(self.gene_pool.geneNodesIn, self.gene_pool.geneNodes, self.gene_pool.geneLinks))
             self.genomes[-1].create_initial_graph()
 
-            # tf.Variable([-1, -1, 1, 1], dtype=tf.float32, shape=(1,self.genomes[-1].num_inputs), name="input")
-            while True:
-                input = np.expand_dims(np.random.uniform(1,-1, 4).astype(np.float32), axis=0) # tf.Variable(np.random.uniform(1,-1, 4), dtype=tf.float32, shape=(1,self.genomes[-1].num_inputs), name="input")
-                start = perf_counter()
-                res = self.genomes[-1].graph.query(input)
-                stop = perf_counter()
-                print(stop-start)
+            input = tf.Variable(np.random.uniform(1,-1, 4), dtype=tf.float32, shape=(1,self.genomes[-1].num_inputs), name="input")  # np.expand_dims(np.random.uniform(1,-1, 4).astype(np.float32), axis=0)
+            res = self.genomes[-1].graph.query(input)
 
     def begin_evolution(self):
         while True: # For infinite generations
