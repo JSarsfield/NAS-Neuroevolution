@@ -29,8 +29,10 @@ class Evolution:
             self.genomes.append(CPPNGenome(self.gene_pool.geneNodesIn, self.gene_pool.geneNodes, self.gene_pool.geneLinks))
             self.genomes[-1].create_initial_graph()
 
-            input = tf.Variable(np.random.uniform(1,-1, 4), dtype=tf.float32, shape=(1,self.genomes[-1].num_inputs), name="input")  # np.expand_dims(np.random.uniform(1,-1, 4).astype(np.float32), axis=0)
+            #input = tf.Variable(np.random.uniform(1,-1, 4), dtype=tf.float32, shape=(1,self.genomes[-1].num_inputs), name="input")  # np.expand_dims(np.random.uniform(1,-1, 4).astype(np.float32), axis=0)
+            input = np.array([0,0,1,1])
             res = self.genomes[-1].graph.query(input)
+            print(res)
 
     def begin_evolution(self):
         while True: # For infinite generations

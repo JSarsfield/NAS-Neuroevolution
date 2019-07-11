@@ -130,7 +130,7 @@ class CPPNGenome:
                     activs = tf.tensor_scatter_nd_update(activs, list(zip(np.full(len(activs_layer), layer_ind), np.arange(len(activs_layer)))), activs_layer, name="activs_C")
                     activs_layer = []
                     layer_ind += 1
-            return activs # tf.constant([1], dtype=tf.float32)  # tf.gather_nd(activs, [self.node_locs[-1]])
+            return activs[-1, 0:self.nodes_per_row[-1]].numpy()  # tf.constant([1], dtype=tf.float32)  # tf.gather_nd(activs, [self.node_locs[-1]])
 
         """
         OLD TENSORFLOW 1 CODE. Note tensorflow 1 graph execution is faster than tf 2 beta and eager execution is faster than all. Autograph keeps making a new graph for each call.
