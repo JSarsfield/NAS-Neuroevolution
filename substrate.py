@@ -22,7 +22,7 @@ class Substrate:
         pass
 
     def build_network_from_genome(self, genome):
-        """" express the genome to produce a phenotype (ANN). Return network class. """
+        """" Algorithm 3. express the genome to produce a phenotype (ANN). Return network class. """
         net = Network(genome)
         # Find input to hidden links
         for i in range(genome.num_inputs):
@@ -39,6 +39,7 @@ class QuadTree:
 
     def __init__(self, cppn, max_depth=10, var_thresh=0.001):
         self.quad_points = []  # Store all QuadPoints in tree TODO determine if we only need to store leaf nodes, if so append if no further split required
+        self.quad_leafs = []  # Quad points that are leaf nodes in the quad tree
         self.cppn = cppn  # CPPN genome to produce Quad Tree from
         self.max_depth = max_depth  # The max depth the quadtree will split if variance is still above variance threshold
         self.var_thresh = var_thresh  # When variance of child quads is below this threshold, stop division
@@ -66,8 +67,10 @@ class QuadTree:
             # TODO Divide until initial resolution or if variance is still high
             if q.level == 1 or (q.level < self.max_depth and q.child_var > self.var_thresh):
                 self.quad_points.extend(q.children)
-                q.is_leaf = False
                 quads.deque(q.children)
+            else:
+                q.is_leaf = True
+                self.quad_leafs.append(q)
             print("")
 
 
@@ -81,14 +84,14 @@ class QuadPoint:
     """ quad point in the quadtree x, y, width, level """
 
     def __init__(self, x, y, width, level):
-        self.is_leaf = True
+        self.is_leaf = False
         self.x = x  # x centre
         self.y = y  # y centre
         self.width = width
         self.level = level  # depth
         self.hw = self.width / 2  # half width
         self.children = []  # Four child quads if not leaf
-        self.child_var = None  # Variance of the four child quads given
+        self.child_var = None  # Variance of the four child quads
         self.weight = None
 
     def __iter__(self):
