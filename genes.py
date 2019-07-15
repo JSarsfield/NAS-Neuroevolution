@@ -34,10 +34,10 @@ class GenePool:
         # Create input nodes with no activation function
         for i in range(self.num_inputs):
             self.create_initial_gene_node({"depth": 0,
-                                   "activation_func": None})
+                                           "activation_func": None})
         # Create output sigmoid node that provides a weight from 0 to 1
         self.create_initial_gene_node({"depth": 1,
-                               "activation_func": self.activation_functions.get("sigmoid")}, is_input=False)
+                                       "activation_func": self.activation_functions.get("sigmoid")}, is_input=False)
         # Add a single initial link for each input node
         for i in range(self.num_inputs):
             self.create_gene_link({"weight": random.uniform(-1, 1),

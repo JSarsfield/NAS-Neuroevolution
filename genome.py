@@ -115,8 +115,9 @@ class CPPNGenome:
                     tf.constant(np.zeros(self.graph_cols - n, dtype=np.float32), dtype=tf.float32, name="padding"))
 
         #@tf.function
-        def query(self, input):  # input is a Tensor with x1, x2, y1, y2
+        def query(self, x1, y1, x2, y2):  # input is a Tensor with x1, x2, y1, y2
             """ Query the CPPN """
+            input = np.array([x1, y1, x2, y2])
             activs = tf.zeros((self.graph_rows, self.graph_cols), dtype=tf.float32, name="activs_A")
             row0 = tf.constant(np.column_stack((np.full(input.shape[-1], 0), np.arange(input.shape[-1]))), dtype=tf.int32)
             activs = tf.tensor_scatter_nd_update(activs, row0, input, name="activs_B")

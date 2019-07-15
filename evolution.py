@@ -30,7 +30,7 @@ class Evolution:
         for i in range(self.pop_size):
             self.genomes.append(CPPNGenome(self.gene_pool.geneNodesIn, self.gene_pool.geneNodes, self.gene_pool.geneLinks))
             self.genomes[-1].create_initial_graph()
-            self.neural_nets.append(Substrate().build_neural_network(self.genomes[-1]))  # Express the genome to produce a neural network
+            self.neural_nets.append(Substrate().build_network_from_genome(self.genomes[-1]))  # Express the genome to produce a neural network
 
             """
             #input = tf.Variable(np.random.uniform(1,-1, 4), dtype=tf.float32, shape=(1,self.genomes[-1].num_inputs), name="input")  # np.expand_dims(np.random.uniform(1,-1, 4).astype(np.float32), axis=0)
