@@ -42,10 +42,8 @@ class Substrate:
                         break
                 if express_node:
                     nodes.append(Node(link.x2, link.y2))
-        print("")
-
-
         # Find hidden to hidden links
+        
 
         # Find hidden to output links
         for i in range(genome.num_outputs):
