@@ -14,6 +14,8 @@ import numpy as np
 from collections import deque  # Faster than using list
 from network import Network, Link, Node
 from time import perf_counter
+import matplotlib.pyplot as plt
+import networkx as nx
 
 
 class Substrate:
@@ -24,14 +26,18 @@ class Substrate:
 
     def build_network_from_genome(self, genome):
         """" Algorithm 3. express the genome to produce a phenotype (ANN). Return network class. """
-        net = Network(genome)
         links = []
         nodes = []
+        input_nodes = []
+        #input_locs = []
+        #output_locs = []
         # TODO create input nodes?
         # TODO bias nodes
         # Find input to hidden links and nodes
         for i in np.linspace(-1, 1, genome.num_inputs, dtype=np.float32):
-            qtree = QuadTree(genome.graph)
+            #input_locs.append((i, float(-1)))
+            input_nodes.append(Node(i, float(-1)))
+            qtree = QuadTree(genome.graph, var_thresh=genome.var_thresh, band_thresh=genome.band_thresh)
             qtree.division_and_initialisation(i, float(-1))
             new_links = qtree.pruning_and_extraction(i, float(-1))
             links.extend(new_links)
@@ -52,7 +58,7 @@ class Substrate:
         start = perf_counter()
         while unexplored_nodes:
             node = unexplored_nodes.popleft()
-            qtree = QuadTree(genome.graph)
+            qtree = QuadTree(genome.graph, var_thresh=genome.var_thresh, band_thresh=genome.band_thresh)
             qtree.division_and_initialisation(node.x, node.y)
             new_links = qtree.pruning_and_extraction(node.x, node.y)
             links.extend(new_links)
@@ -69,17 +75,55 @@ class Substrate:
                     unexplored_nodes.append(new_node)
         # Find hidden to output links
         for i in np.linspace(-1, 1, genome.num_outputs, dtype=np.float32):
-            qtree = QuadTree(genome.graph)
+            #output_locs.append((i, float(1)))
+            nodes.append(Node(i, float(1)))
+            qtree = QuadTree(genome.graph, var_thresh=genome.var_thresh, band_thresh=genome.band_thresh)
             qtree.division_and_initialisation(i, float(1), outgoing=False)
             new_links = qtree.pruning_and_extraction(i, float(1), outgoing=False)
             links.extend(new_links)
         print("Finished exploring substrate "+str(perf_counter()-start))
-        # TODO Remove neurons and their connections that don't have a path from input to output
-        keep_nodes = []
-        keep_links = []
+        # Remove neurons and their connections that don't have a path from input to output
+        # Add link references to relevant nodes
+        nodes[0:0] = input_nodes  # extend left, inplace no copying
+        for link in links:
+            for i, node in enumerate(nodes):
+                if node.x == link.x2 and node.y == link.y2:
+                    node.ingoing_links.append(link)
+                    link.ingoing_node = i
+                elif node.x == link.x1 and node.y == link.y1:
+                    node.outgoing_links.append(link)
+                    link.outgoing_node = i
+        # TODO depth first search to find all links on all paths from input to output
+        self.depth_first_search(genome, nodes)
 
+
+        G = nx.DiGraph()
+        [G.add_edge((l.x1,l.y1), (l.x2,l.y2)) for l in links]
+        paths = list(path for input in input_locs for output in output_locs for path in nx.all_simple_paths(G, source=input, target=output))
+        link_locs = list(set([path[node_i] + path[node_i + 1] for path in paths for node_i in range(len(path) - 1)]))
+        keep_links = [link for link in links for link_loc in link_locs if link_loc[0] == link.x1 and link_loc[1] == link.y1 and link_loc[2] == link.x2 and link_loc[3] == link.y2]
+        print("keep_links "+str(len(keep_links))+ " link_locs "+str(len(link_locs))+" links "+str(len(links)))
+        #nx.drawing.nx_pylab.draw(G)
+        #plt.show()
         # TODO construct neural network and return it
-        return Network(genome, keep_nodes, keep_links)
+        # TODO if links is empty initialise empty Network and give lowest score
+        return Network(genome, keep_links)
+
+    def depth_first_search(self, genome, nodes):
+        """ find links and nodes on paths from input to output nodes """
+        keep_links = []
+        keep_nodes = []
+        # For each input node
+        for start in range(genome.num_inputs):
+            # for each link in input node
+            for out_link in nodes[start].outgoing_links:
+                path = deque()
+                path.append(out_link)
+                while path:
+                    if path[-1].y2 == 1:
+                        print("")
+                    else:
+
 
 
 class QuadTree:
