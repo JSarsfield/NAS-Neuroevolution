@@ -13,6 +13,7 @@ __email__ = "joe.sarsfield@gmail.com"
 import numpy as np
 from collections import deque  # Faster than using list
 from network import Network, Link, Node
+from time import perf_counter
 
 
 class Substrate:
@@ -27,13 +28,14 @@ class Substrate:
         links = []
         nodes = []
         # TODO create input nodes?
-        # Find input to hidden links
+        # TODO bias nodes
+        # Find input to hidden links and nodes
         for i in np.linspace(-1, 1, genome.num_inputs, dtype=np.float32):
             qtree = QuadTree(genome.graph)
             qtree.division_and_initialisation(i, float(-1))
             new_links = qtree.pruning_and_extraction(i, float(-1))
             links.extend(new_links)
-            # TODO express the nodes given the newly expressed links
+            # Add new nodes
             for link in new_links:
                 express_node = True
                 for node in nodes:
@@ -42,19 +44,50 @@ class Substrate:
                         break
                 if express_node:
                     nodes.append(Node(link.x2, link.y2))
-        # Find hidden to hidden links
-        
-
+        # Find hidden to hidden links and new nodes
+        unexplored_nodes = deque()
+        unexplored_nodes.extend(nodes)
+        # TODO VERY SLOW!!!! optimise this
+        print("explore substrate")
+        start = perf_counter()
+        while unexplored_nodes:
+            node = unexplored_nodes.popleft()
+            qtree = QuadTree(genome.graph)
+            qtree.division_and_initialisation(node.x, node.y)
+            new_links = qtree.pruning_and_extraction(node.x, node.y)
+            links.extend(new_links)
+            # Add only new nodes
+            for link in new_links:
+                express_node = True
+                for e_node in nodes:
+                    if e_node.x == link.x2 and e_node.y == link.y2:
+                        express_node = False
+                        break
+                if express_node:
+                    new_node = Node(link.x2, link.y2)
+                    nodes.append(new_node)
+                    unexplored_nodes.append(new_node)
         # Find hidden to output links
-        for i in range(genome.num_outputs):
-            pass
+        for i in np.linspace(-1, 1, genome.num_outputs, dtype=np.float32):
+            qtree = QuadTree(genome.graph)
+            qtree.division_and_initialisation(i, float(1), outgoing=False)
+            new_links = qtree.pruning_and_extraction(i, float(1), outgoing=False)
+            links.extend(new_links)
+        print("Finished exploring substrate "+str(perf_counter()-start))
+        # TODO Remove neurons and their connections that don't have a path from input to output
+        keep_nodes = []
+        keep_links = []
+
+        # TODO construct neural network and return it
+        return Network(genome, keep_nodes, keep_links)
 
 
 class QuadTree:
     """ Determines hidden node placement within an ANN """
 
+    # TODO evolve/mutate var_thresh and band_threshold - these values passed to children genomes
     def __init__(self, cppn, max_depth=10, var_thresh=0.001, band_thresh=0.001):
-        self.quad_points = []  # Store all QuadPoints in tree
+        #self.quad_points = []  # Store all QuadPoints in tree
         self.quad_leafs = []  # Quad points that are leaf nodes in the quad tree
         self.cppn = cppn  # Query CPPN graph to get weight of connection
         self.max_depth = max_depth  # The max depth the quadtree will split if variance is still above variance threshold
@@ -64,8 +97,8 @@ class QuadTree:
     def division_and_initialisation(self, a, b, outgoing=True):
         """ Algorithm 1 - a, b represent x1, y1 when outgoing and x2, y2 when ingoing """
         quads_que = deque()  # Contains quads to split x,y,width,level - Add root quad, centre is 0,0
-        self.quad_points.append(QuadPoint(0, 0, 1, 1))
-        quads_que.append(self.quad_points[-1])
+        #self.quad_points.append(QuadPoint(0, 0, 1, 1))
+        quads_que.append(QuadPoint(0, 0, 1, 1))
         # While quads is not empty continue dividing
         while quads_que:
             q = quads_que.popleft()
@@ -84,7 +117,7 @@ class QuadTree:
             q.child_var = child_weights.var()
             # Divide until initial resolution or if variance is still high
             if q.level == 1 or (q.level < self.max_depth and q.child_var > self.var_thresh):
-                self.quad_points.extend(q.children)
+                #self.quad_points.extend(q.children)
                 quads_que.extend(q.children)
             else:
                 q.is_leaf = True
@@ -108,9 +141,10 @@ class QuadTree:
                 dif_top = abs(q_leaf.weight - self.cppn.query(q_leaf.x, q_leaf.y + q_leaf.width, a, b)[0])
             # Express connection if neighbour variance if above band threshold
             if  max(min(dif_left, dif_right), min(dif_bottom, dif_top)) > self.band_thresh:
-                # Create new link specified by(x1, y1, x2, y2, weight) and scale weight based on weight range(e.g.[-3.0, 3.0])
+                # TODO Create new link specified by(x1, y1, x2, y2, weight) and scale weight based on weight range(e.g.[-3.0, 3.0])
                 if outgoing:
-                    links.append(Link(a, b, q_leaf.x, q_leaf.y, q_leaf.weight))
+                    if b < q_leaf.y:  # outgoing node b (y) must be less than forward node y
+                        links.append(Link(a, b, q_leaf.x, q_leaf.y, q_leaf.weight))
                 else:
                     links.append(Link(q_leaf.x, q_leaf.y, a, b, q_leaf.weight))
         return links  # Return expressed links
@@ -124,7 +158,7 @@ class QuadPoint:
         self.x = x  # x centre
         self.y = y  # y centre
         self.width = width  # width of quad. Width is term used in paper but is also length of side
-        self.level = level  # Number of divisions from root quad
+        self.level = level  # Number of divisions/iterations from root quad
         self.hw = self.width / 2  # half width
         self.children = []  # Four child quads if not leaf
         self.child_var = None  # Variance of the four child quads
