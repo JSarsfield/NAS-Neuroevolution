@@ -18,19 +18,21 @@ class Evolution:
     # TODO create population of CPPN tensorflow graphs with mutation
     # TODO create population of ANN tensorflow graphs given the CPPNs for evaluation
 
-    def __init__(self, num_inputs, pop_size=10, dataset=None, yaml_config=None):
+    def __init__(self, n_net_inputs, n_net_outputs, pop_size=10, dataset=None, yaml_config=None):
         self.gene_pool = GenePool(num_inputs=4)  # inputs x1 x2 y1 y2
         self.generation = -1
         self.pop_size = pop_size
         self.genomes = []  # Genomes in the current population
         self.neural_nets = []  # Neural networks (phenotype) in the current population
+        self.n_net_inputs = n_net_inputs
+        self.n_net_outputs = n_net_outputs
         self._get_initial_population()
 
     def _get_initial_population(self):
         for i in range(self.pop_size):
             self.genomes.append(CPPNGenome(self.gene_pool.geneNodesIn, self.gene_pool.geneNodes, self.gene_pool.geneLinks))
             self.genomes[-1].create_initial_graph()
-            self.neural_nets.append(Substrate().build_network_from_genome(self.genomes[-1]))  # Express the genome to produce a neural network
+            self.neural_nets.append(Substrate().build_network_from_genome(self.genomes[-1], self.n_net_inputs, self.n_net_outputs))  # Express the genome to produce a neural network
 
             """
             #input = tf.Variable(np.random.uniform(1,-1, 4), dtype=tf.float32, shape=(1,self.genomes[-1].num_inputs), name="input")  # np.expand_dims(np.random.uniform(1,-1, 4).astype(np.float32), axis=0)

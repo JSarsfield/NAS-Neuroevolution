@@ -25,7 +25,7 @@ class Substrate:
     def __init__(self):
         pass
 
-    def build_network_from_genome(self, genome):
+    def build_network_from_genome(self, genome, n_net_inputs, n_net_outputs):
         """" Algorithm 3. express the genome to produce a phenotype (ANN). Return network class. """
         links = []
         nodes = []
@@ -90,10 +90,10 @@ class Substrate:
             for i, node in enumerate(nodes):
                 if node.x == link.x2 and node.y == link.y2:
                     node.ingoing_links.append(link)
-                    link.ingoing_node = i
+                    link.ingoing_node = node
                 elif node.x == link.x1 and node.y == link.y1:
                     node.outgoing_links.append(link)
-                    link.outgoing_node = i
+                    link.outgoing_node = node
         # Depth first search to find all links on all paths from input to output
         keep_links, keep_nodes = self.depth_first_search(genome, input_nodes, nodes)
 
@@ -109,7 +109,7 @@ class Substrate:
         #plt.show()
         # TODO construct neural network and return it
         # TODO if links is empty initialise empty Network and give lowest score
-        return Network(genome, keep_links, keep_nodes)
+        return Network(genome, keep_links, keep_nodes, n_net_inputs, n_net_outputs)
 
     def depth_first_search(self, genome, input_nodes, nodes):
         """ find links and nodes on paths from input to output nodes """
@@ -127,8 +127,8 @@ class Substrate:
             while path:
                 new_link = {}
                 if is_forward:
-                    if len(nodes[path[-1]["link"].ingoing_node].outgoing_links) > 0: # if ingoing node of link also has link then add and keep going forward
-                        new_link["link"] = nodes[path[-1]["link"].ingoing_node].outgoing_links[0]
+                    if len(path[-1]["link"].ingoing_node.outgoing_links) > 0: # if ingoing node of link also has link then add and keep going forward
+                        new_link["link"] = path[-1]["link"].ingoing_node.outgoing_links[0]
                         new_link["ind"] = 0
                         if new_link["link"] in keep_links: # If we reach a link on the keep_links path then add links_2add and go back
                             keep_links.extend([d["link"] for d in links_2add])
@@ -140,7 +140,7 @@ class Substrate:
 
                     else:  # No new links to explore
                         # Check if node is output
-                        if nodes[path[-1]["link"].ingoing_node].y == 1:
+                        if path[-1]["link"].ingoing_node.y == 1:
                             keep_links.extend([d["link"] for d in links_2add])
                             links_2add.clear()
                         # Node is dangling or output node hit so go back through path
@@ -149,8 +149,8 @@ class Substrate:
                 else:
                     # Go back through path until new link then go forward
                     new_ind = path[-1]["ind"]+1
-                    if new_ind < len(nodes[path[-1]["link"].outgoing_node].outgoing_links): # If outgoing node of link has more links to explore
-                        new_link["link"] = nodes[path[-1]["link"].outgoing_node].outgoing_links[new_ind]
+                    if new_ind < len(path[-1]["link"].outgoing_node.outgoing_links): # If outgoing node of link has more links to explore
+                        new_link["link"] = path[-1]["link"].outgoing_node.outgoing_links[new_ind]
                         new_link["ind"] = new_ind
                         is_forward = True  # new link to explore
                         if len(links_2add) > 0 and path[-1]["link"] == links_2add[-1]["link"]:
@@ -163,7 +163,7 @@ class Substrate:
                         path.pop()
                         continue
         # Get unique nodes in keep_links
-        keep_nodes = list(set(chain.from_iterable((nodes[link.ingoing_node], nodes[link.outgoing_node]) for link in keep_links)))
+        keep_nodes = list(set(chain.from_iterable((link.ingoing_node, link.outgoing_node) for link in keep_links)))
         return keep_links, keep_nodes
 
 
