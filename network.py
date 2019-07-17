@@ -6,7 +6,7 @@ __author__ = "Joe Sarsfield"
 __email__ = "joe.sarsfield@gmail.com"
 """
 import numpy as np
-import tensorflow as tf
+import torch
 import random
 
 

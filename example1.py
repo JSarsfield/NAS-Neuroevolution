@@ -11,5 +11,3 @@ if __name__ == "__main__":
     evolution = Evolution(num_inputs=4)
     evolution.begin_evolution()
     print("end")
-
-
