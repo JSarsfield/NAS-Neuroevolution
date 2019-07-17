@@ -16,6 +16,7 @@ from network import Network, Link, Node
 from time import perf_counter
 import matplotlib.pyplot as plt
 import networkx as nx
+from itertools import chain
 
 
 class Substrate:
@@ -93,37 +94,77 @@ class Substrate:
                 elif node.x == link.x1 and node.y == link.y1:
                     node.outgoing_links.append(link)
                     link.outgoing_node = i
-        # TODO depth first search to find all links on all paths from input to output
-        self.depth_first_search(genome, nodes)
+        # Depth first search to find all links on all paths from input to output
+        keep_links, keep_nodes = self.depth_first_search(genome, input_nodes, nodes)
 
-
+        """
         G = nx.DiGraph()
         [G.add_edge((l.x1,l.y1), (l.x2,l.y2)) for l in links]
         paths = list(path for input in input_locs for output in output_locs for path in nx.all_simple_paths(G, source=input, target=output))
         link_locs = list(set([path[node_i] + path[node_i + 1] for path in paths for node_i in range(len(path) - 1)]))
         keep_links = [link for link in links for link_loc in link_locs if link_loc[0] == link.x1 and link_loc[1] == link.y1 and link_loc[2] == link.x2 and link_loc[3] == link.y2]
         print("keep_links "+str(len(keep_links))+ " link_locs "+str(len(link_locs))+" links "+str(len(links)))
+        """
         #nx.drawing.nx_pylab.draw(G)
         #plt.show()
         # TODO construct neural network and return it
         # TODO if links is empty initialise empty Network and give lowest score
-        return Network(genome, keep_links)
+        return Network(genome, keep_links, keep_nodes)
 
-    def depth_first_search(self, genome, nodes):
+    def depth_first_search(self, genome, input_nodes, nodes):
         """ find links and nodes on paths from input to output nodes """
-        keep_links = []
-        keep_nodes = []
-        # For each input node
-        for start in range(genome.num_inputs):
-            # for each link in input node
-            for out_link in nodes[start].outgoing_links:
-                path = deque()
-                path.append(out_link)
-                while path:
-                    if path[-1].y2 == 1:
-                        print("")
-                    else:
+        path = deque()  # lifo buffer storing currently explored path
+        links_2add = deque()  # life buffer storing new links to add if we reach output node
+        keep_links = []  # List of links to keep because they are on a path from input to output
+        check_if_added = False
+        for input_ind, input in enumerate(input_nodes):
+            # Each element is a dict with link reference and local index of outgoing node's
+            path.append({"link": input.outgoing_links[0], "ind": 0})
+            links_2add.append(path[-1])
+            is_forward = True  # False when link to dangling node
+            check_if_added = True if input_ind > 0 else False
+            # while unexplored links on from this input node exist
+            while path:
+                new_link = {}
+                if is_forward:
+                    if len(nodes[path[-1]["link"].ingoing_node].outgoing_links) > 0: # if ingoing node of link also has link then add and keep going forward
+                        new_link["link"] = nodes[path[-1]["link"].ingoing_node].outgoing_links[0]
+                        new_link["ind"] = 0
+                        if new_link["link"] in keep_links: # If we reach a link on the keep_links path then add links_2add and go back
+                            keep_links.extend([d["link"] for d in links_2add])
+                            links_2add.clear()
+                            is_forward = False
+                            continue
+                        path.append(new_link)
+                        links_2add.append(new_link)
 
+                    else:  # No new links to explore
+                        # Check if node is output
+                        if nodes[path[-1]["link"].ingoing_node].y == 1:
+                            keep_links.extend([d["link"] for d in links_2add])
+                            links_2add.clear()
+                        # Node is dangling or output node hit so go back through path
+                        is_forward = False
+                        continue
+                else:
+                    # Go back through path until new link then go forward
+                    new_ind = path[-1]["ind"]+1
+                    if new_ind < len(nodes[path[-1]["link"].outgoing_node].outgoing_links): # If outgoing node of link has more links to explore
+                        new_link["link"] = nodes[path[-1]["link"].outgoing_node].outgoing_links[new_ind]
+                        new_link["ind"] = new_ind
+                        is_forward = True  # new link to explore
+                        if len(links_2add) > 0 and path[-1]["link"] == links_2add[-1]["link"]:
+                            links_2add.pop()
+                        links_2add.append(new_link)
+                        path.pop()
+                        path.append(new_link)
+                        continue
+                    else:  # No unexplored links at this node so keep going back through path
+                        path.pop()
+                        continue
+        # Get unique nodes in keep_links
+        keep_nodes = list(set(chain.from_iterable((nodes[link.ingoing_node], nodes[link.outgoing_node]) for link in keep_links)))
+        return keep_links, keep_nodes
 
 
 class QuadTree:

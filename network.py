@@ -14,9 +14,10 @@ class Network:
     # TODO determine how the neural network connectome is going to be represented
     # TODO determine how activation func of nodes is going to be determined
 
-    def __init__(self, genome, links):
+    def __init__(self, genome, links, nodes):
         self.genome = genome  # Genome used to express ANN
         self.links = links
+        self.nodes = nodes
 
     def create_graph(self):
         pass
