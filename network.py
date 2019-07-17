@@ -18,9 +18,21 @@ class Network:
         self.genome = genome  # Genome used to express ANN
         self.links = links
         self.nodes = nodes
+        self.score = None  # Score the network after evaluating during lifetime
 
     def create_graph(self):
         pass
+
+    class Graph:
+        """ computational graph """
+
+        def __init__(self):
+            pass
+
+        def feed(self):
+            """ feedforward activation of graph and return output """
+            pass
+
 
 
 class Link:
@@ -38,7 +50,7 @@ class Link:
 
 class Node:
 
-    def __init__(self, x, y, act_func=None):
+    def __init__(self, x, y, act_func=tf.sigmoid):
         self.x = x
         self.y = y
         self.layer = None  # Layer number
