@@ -113,6 +113,7 @@ class GeneNode(Gene):
         super().__init__(historical_marker)
         self.depth = depth  # Ensures CPPN links don't go backwards i.e. DAG
         self.act_func = activation_func  # The activation function this node contains. Incoming links are multiplied by their weights and summed before being passed to this func
+        self.bias = None  # Each node has a bias to shift the activation function - this is inherited from the parents and mutated
         """ Below fields can change for each genome """
         self.ingoing_links = []  # links going into the node
         self.outgoing_links = []  # links going out of the node
