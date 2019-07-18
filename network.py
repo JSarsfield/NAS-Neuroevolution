@@ -5,12 +5,13 @@ Artificial Neural Network / Phenotype. Expressed given a genome.
 __author__ = "Joe Sarsfield"
 __email__ = "joe.sarsfield@gmail.com"
 """
-import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import matplotlib.pyplot as plt
+import networkx as nx
 import random
-
+import numpy as np
 
 class Network:
     # TODO determine how activation func of nodes is going to be determined
@@ -21,20 +22,51 @@ class Network:
         self.genome = genome  # Genome used to express ANN
         self.links = links
         self.nodes = nodes
-        self.nodes.sort(key=lambda node: node.y)  # Sort nodes by y (layer)
-        self.nodes[:n_net_inputs] = sorted(self.nodes[:n_net_inputs], key=lambda node: node.x) # Sort x of input layer, other layers don't need x sorting
+        self.nodes.sort(key=lambda node: (node.y, node.x))  # Sort nodes by y (layer) then x (pos in layer)
         for i, node in enumerate(self.nodes):
             node.node_ind = i
+        self.input_nodes = self.nodes[:n_net_inputs]
         del self.nodes[:n_net_inputs] # Remove input nodes
         self.n_net_inputs = n_net_inputs
         self.n_net_outputs = n_net_outputs
         self.score = None  # Score the network after evaluating during lifetime
         self.graph = Network.Graph(self)
+
+        self.visualise_neural_net()
         self.graph.forward([1,2,3,4])
 
 
     def create_graph(self):
         pass
+
+    def visualise_neural_net(self):
+        G = nx.DiGraph()
+        #for node in self.nodes:
+        #    G.add_node(node.node_ind)
+        unit = 1
+        for node in self.input_nodes:
+            node.layer = 1
+            node.unit = unit
+            G.add_node((1, unit), pos=(node.layer, node.unit))
+            unit += 1
+        layer = 2
+        unit = 1
+        last_y = None
+        for node in self.nodes:
+            if last_y and last_y != node.y:
+                layer += 1
+                unit = 1
+            node.layer = layer
+            node.unit = unit
+            G.add_node((node.layer, node.unit), pos=(node.layer, node.unit))
+            for link in node.ingoing_links:
+                G.add_edge((link.outgoing_node.layer, link.outgoing_node.unit), (node.layer, node.unit), weight=link.weight)
+            unit += 1
+            last_y = node.y
+        pos = nx.spring_layout(G, pos=dict(G.nodes(data='pos')), fixed=G.nodes)
+        weights = np.array([G[u][v]['weight'] for u,v in G.edges]) * 4
+        nx.draw(G, pos=pos, node_size=650, node_color='#ffaaaa', linewidth=100, with_labels=True, width=weights)
+        plt.show()
 
     class Graph(nn.Module):
         """ computational graph """
@@ -93,6 +125,7 @@ class Node:
         self.x = x
         self.y = y
         self.layer = None  # Layer number
+        self.unit = None  # Position in layer
         self.act_func = act_func
         self.ingoing_links = []  # links going into the node
         self.outgoing_links = []  # links going out of the node

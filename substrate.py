@@ -14,8 +14,6 @@ import numpy as np
 from collections import deque  # Faster than using list
 from network import Network, Link, Node
 from time import perf_counter
-import matplotlib.pyplot as plt
-import networkx as nx
 from itertools import chain
 
 
@@ -126,6 +124,7 @@ class Substrate:
         check_if_added = False
         for input_ind, input in enumerate(input_nodes):
             # Each element is a dict with link reference and local index of outgoing node's
+            # TODO!!!!! it breaks here because the input node has no outgoing links and thus the neural network is void
             path.append({"link": input.outgoing_links[0], "ind": 0})
             links_2add.append(path[-1])
             is_forward = True  # False when link to dangling node
