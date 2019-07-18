@@ -28,13 +28,9 @@ class Substrate:
         links = []
         nodes = []
         input_nodes = []
-        #input_locs = []
-        #output_locs = []
-        # TODO create input nodes?
         # TODO bias nodes
         # Find input to hidden links and nodes
         for i in np.linspace(-1, 1, genome.num_inputs, dtype=np.float32):
-            #input_locs.append((i, float(-1)))
             input_nodes.append(Node(i, float(-1)))
             qtree = QuadTree(genome.graph, var_thresh=genome.var_thresh, band_thresh=genome.band_thresh)
             qtree.division_and_initialisation(i, float(-1))
@@ -74,7 +70,6 @@ class Substrate:
                     unexplored_nodes.append(new_node)
         # Find hidden to output links
         for i in np.linspace(-1, 1, genome.num_outputs, dtype=np.float32):
-            #output_locs.append((i, float(1)))
             nodes.append(Node(i, float(1)))
             qtree = QuadTree(genome.graph, var_thresh=genome.var_thresh, band_thresh=genome.band_thresh)
             qtree.division_and_initialisation(i, float(1), outgoing=False)
@@ -101,20 +96,13 @@ class Substrate:
                     link.outgoing_node = node
         # Depth first search to find all links on all paths from input to output
         keep_links, keep_nodes = self.depth_first_search(genome, input_nodes)
-
-        """
-        G = nx.DiGraph()
-        [G.add_edge((l.x1,l.y1), (l.x2,l.y2)) for l in links]
-        paths = list(path for input in input_locs for output in output_locs for path in nx.all_simple_paths(G, source=input, target=output))
-        link_locs = list(set([path[node_i] + path[node_i + 1] for path in paths for node_i in range(len(path) - 1)]))
-        keep_links = [link for link in links for link_loc in link_locs if link_loc[0] == link.x1 and link_loc[1] == link.y1 and link_loc[2] == link.x2 and link_loc[3] == link.y2]
-        print("keep_links "+str(len(keep_links))+ " link_locs "+str(len(link_locs))+" links "+str(len(links)))
-        """
-        #nx.drawing.nx_pylab.draw(G)
-        #plt.show()
-        # TODO construct neural network and return it
-        # TODO if links is empty initialise empty Network and give lowest score
-        return Network(genome, keep_links, keep_nodes, n_net_inputs, n_net_outputs)
+        if len(keep_nodes) <= n_net_outputs or keep_nodes[-n_net_outputs].y != 1:
+            # An input/output node didn't have any outgoing/ingoing links thus neural net is void
+            is_void = True
+            print("neural network is void")
+        else:
+            is_void = False
+        return Network(genome, keep_links, keep_nodes, n_net_inputs, n_net_outputs, void=is_void)
 
     def depth_first_search(self, genome, input_nodes):
         """ find links and nodes on paths from input to output nodes """
@@ -124,7 +112,8 @@ class Substrate:
         check_if_added = False
         for input_ind, input in enumerate(input_nodes):
             # Each element is a dict with link reference and local index of outgoing node's
-            # TODO!!!!! it breaks here because the input node has no outgoing links and thus the neural network is void
+            if len(input.outgoing_links) == 0:
+                return [], []  # An input neuron has no links and thus this neural network is void
             path.append({"link": input.outgoing_links[0], "ind": 0})
             links_2add.append(path[-1])
             is_forward = True  # False when link to dangling node
@@ -170,6 +159,7 @@ class Substrate:
                         continue
         # Get unique nodes in keep_links
         keep_nodes = list(set(chain.from_iterable((link.ingoing_node, link.outgoing_node) for link in keep_links)))
+        keep_nodes.sort(key=lambda node: (node.y, node.x))  # Sort nodes by y (layer) then x (pos in layer)
         return keep_links, keep_nodes
 
 

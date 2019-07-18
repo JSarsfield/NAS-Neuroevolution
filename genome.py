@@ -20,7 +20,7 @@ from genes import GeneLink
 class CPPNGenome:
     """ CPPN genome that can be expressed/decoded to produce an ANN """
 
-    def __init__(self, geneNodesIn, geneNodes, geneLinks, num_inputs=4, num_outputs=1, var_thresh=0.001, band_thresh=0.001):
+    def __init__(self, geneNodesIn, geneNodes, geneLinks, num_inputs=4, num_outputs=1, var_thresh=0.001, band_thresh=0.01):
         """ Call on master thread then call a create graph function on the worker thread """
         self.weights = None  # Weight of links in graph. Sampled from parent/s genome/s or uniform distribution when no parent
         self.geneNodes = copy.deepcopy(geneNodes)

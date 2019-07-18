@@ -18,11 +18,14 @@ class Network:
     # TODO if number of outputs is greater than 1 is there always going to be a path to all output nodes??
     # TODO GRADIENT BASED LIFETIME LEARNING - requires bias input with constant value 1 for each hidden node, give it random trainable weight. Don't put bias nodes on output layer.
 
-    def __init__(self, genome, links, nodes, n_net_inputs, n_net_outputs):
+    def __init__(self, genome, links, nodes, n_net_inputs, n_net_outputs, void=False):
+        self.is_void = void
+        if void:
+            self.score = -1
+            return
         self.genome = genome  # Genome used to express ANN
         self.links = links
         self.nodes = nodes
-        self.nodes.sort(key=lambda node: (node.y, node.x))  # Sort nodes by y (layer) then x (pos in layer)
         for i, node in enumerate(self.nodes):
             node.node_ind = i
         self.input_nodes = self.nodes[:n_net_inputs]
@@ -47,7 +50,7 @@ class Network:
         for node in self.input_nodes:
             node.layer = 1
             node.unit = unit
-            G.add_node((1, unit), pos=(node.layer, node.unit))
+            G.add_node((1, unit), pos=(node.y, node.x))
             unit += 1
         layer = 2
         unit = 1
@@ -58,7 +61,7 @@ class Network:
                 unit = 1
             node.layer = layer
             node.unit = unit
-            G.add_node((node.layer, node.unit), pos=(node.layer, node.unit))
+            G.add_node((node.layer, node.unit), pos=(node.y, node.x))
             for link in node.ingoing_links:
                 G.add_edge((link.outgoing_node.layer, link.outgoing_node.unit), (node.layer, node.unit), weight=link.weight)
             unit += 1
