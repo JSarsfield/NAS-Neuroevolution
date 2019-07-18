@@ -81,7 +81,14 @@ class Substrate:
             qtree = QuadTree(genome.graph, var_thresh=genome.var_thresh, band_thresh=genome.band_thresh)
             qtree.division_and_initialisation(i, float(1), outgoing=False)
             new_links = qtree.pruning_and_extraction(i, float(1), outgoing=False)
-            links.extend(new_links)
+            # Only keep new links where the outgoing hidden node exists
+            new_links_keep = []
+            for n_link in new_links:
+                for node in nodes:
+                    if node.x == n_link.x1 and node.y == n_link.y1:
+                        new_links_keep.append(n_link)
+                        break
+            links.extend(new_links_keep)
         print("Finished exploring substrate "+str(perf_counter()-start))
         # Remove neurons and their connections that don't have a path from input to output
         # Add link references to relevant nodes
@@ -95,7 +102,7 @@ class Substrate:
                     node.outgoing_links.append(link)
                     link.outgoing_node = node
         # Depth first search to find all links on all paths from input to output
-        keep_links, keep_nodes = self.depth_first_search(genome, input_nodes, nodes)
+        keep_links, keep_nodes = self.depth_first_search(genome, input_nodes)
 
         """
         G = nx.DiGraph()
@@ -111,7 +118,7 @@ class Substrate:
         # TODO if links is empty initialise empty Network and give lowest score
         return Network(genome, keep_links, keep_nodes, n_net_inputs, n_net_outputs)
 
-    def depth_first_search(self, genome, input_nodes, nodes):
+    def depth_first_search(self, genome, input_nodes):
         """ find links and nodes on paths from input to output nodes """
         path = deque()  # lifo buffer storing currently explored path
         links_2add = deque()  # life buffer storing new links to add if we reach output node
