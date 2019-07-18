@@ -10,7 +10,6 @@ import random
 from copy import deepcopy
 
 
-
 class GenePool:
     """
     Handles the creation and mutation of all CPPN genes throughout the evolutionary process
@@ -40,7 +39,7 @@ class GenePool:
                                        "activation_func": self.activation_functions.get("sigmoid")}, is_input=False)
         # Add a single initial link for each input node
         for i in range(self.num_inputs):
-            self.create_gene_link({"weight": random.uniform(-1, 1),
+            self.create_gene_link({"weight": None,
                                    "enabled": True,
                                    "in_node": self.geneNodes[0],
                                    "out_node": self.geneNodesIn[i]})
@@ -113,16 +112,17 @@ class GeneNode(Gene):
     def __init__(self, depth, activation_func, historical_marker):
         super().__init__(historical_marker)
         self.depth = depth  # Ensures CPPN links don't go backwards i.e. DAG
-        self.activation_func = activation_func  # The activation function this node contains. Incoming links are multiplied by their weights and summed before being passed to this func
+        self.act_func = activation_func  # The activation function this node contains. Incoming links are multiplied by their weights and summed before being passed to this func
         """ Below fields can change for each genome """
         self.ingoing_links = []  # links going into the node
         self.outgoing_links = []  # links going out of the node
         #self.output = None  # Stores value after feedforward
         self.location = None  # [x, y] 2d numpy array uniquely set for each CPPNGenome, location may be different for different genomes
+        self.node_ind = None  # Set differently for each genome
 
     def __deepcopy__(self, memo):
         """ deepcopy but exclude ingoing_links &  outgoing_links as these will be created later """
-        return GeneNode(deepcopy(self.depth, memo), deepcopy(self.activation_func, memo), deepcopy(self.historical_marker, memo))
+        return GeneNode(deepcopy(self.depth, memo), deepcopy(self.act_func, memo), deepcopy(self.historical_marker, memo))
 
 
     def add_link(self, link, is_ingoing):

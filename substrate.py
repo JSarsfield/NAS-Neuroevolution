@@ -191,9 +191,9 @@ class QuadTree:
             child_weights = np.array([])
             for child in q.children:
                 if outgoing:
-                    child.weight = self.cppn.query(a, b, child.x, child.y)[0]
+                    child.weight = self.cppn.forward([a, b, child.x, child.y])[0].item()
                 else:
-                    child.weight = self.cppn.query(child.x, child.y, a, b)[0]
+                    child.weight = self.cppn.forward([child.x, child.y, a, b])[0].item()
                 child_weights = np.append(child_weights, child.weight)
             q.child_var = child_weights.var()
             # Divide until initial resolution or if variance is still high
@@ -211,15 +211,15 @@ class QuadTree:
         for q_leaf in self.quad_leafs:
             # Determine if point is in a band by checking neighbour CPPN values
             if outgoing:
-                dif_left = abs(q_leaf.weight - self.cppn.query(a, b, q_leaf.x - q_leaf.width, q_leaf.y)[0])
-                dif_right = abs(q_leaf.weight - self.cppn.query(a, b, q_leaf.x + q_leaf.width, q_leaf.y)[0])
-                dif_bottom = abs(q_leaf.weight - self.cppn.query(a, b, q_leaf.x, q_leaf.y - q_leaf.width)[0])
-                dif_top = abs(q_leaf.weight - self.cppn.query(a, b, q_leaf.x, q_leaf.y + q_leaf.width)[0])
+                dif_left = abs(q_leaf.weight - self.cppn.forward([a, b, q_leaf.x - q_leaf.width, q_leaf.y])[0].item())
+                dif_right = abs(q_leaf.weight - self.cppn.forward([a, b, q_leaf.x + q_leaf.width, q_leaf.y])[0].item())
+                dif_bottom = abs(q_leaf.weight - self.cppn.forward([a, b, q_leaf.x, q_leaf.y - q_leaf.width])[0].item())
+                dif_top = abs(q_leaf.weight - self.cppn.forward([a, b, q_leaf.x, q_leaf.y + q_leaf.width])[0].item())
             else:
-                dif_left = abs(q_leaf.weight - self.cppn.query(q_leaf.x - q_leaf.width, q_leaf.y, a, b)[0])
-                dif_right = abs(q_leaf.weight - self.cppn.query(q_leaf.x + q_leaf.width, q_leaf.y, a, b)[0])
-                dif_bottom = abs(q_leaf.weight - self.cppn.query(q_leaf.x, q_leaf.y - q_leaf.width, a, b)[0])
-                dif_top = abs(q_leaf.weight - self.cppn.query(q_leaf.x, q_leaf.y + q_leaf.width, a, b)[0])
+                dif_left = abs(q_leaf.weight - self.cppn.forward([q_leaf.x - q_leaf.width, q_leaf.y, a, b])[0].item())
+                dif_right = abs(q_leaf.weight - self.cppn.forward([q_leaf.x + q_leaf.width, q_leaf.y, a, b])[0].item())
+                dif_bottom = abs(q_leaf.weight - self.cppn.forward([q_leaf.x, q_leaf.y - q_leaf.width, a, b])[0].item())
+                dif_top = abs(q_leaf.weight - self.cppn.forward([q_leaf.x, q_leaf.y + q_leaf.width, a, b])[0].item())
             # Express connection if neighbour variance if above band threshold
             if  max(min(dif_left, dif_right), min(dif_bottom, dif_top)) > self.band_thresh:
                 # TODO Create new link specified by(x1, y1, x2, y2, weight) and scale weight based on weight range(e.g.[-3.0, 3.0])

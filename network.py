@@ -81,7 +81,6 @@ class Network:
             self.activs = []  # torch activation funcs for each node
             self.outputs = torch.tensor((), dtype=torch.float32).new_empty((len(net.nodes) + net.n_net_inputs))
             self.output_inds = []  # Store node indices to get output of nodes going into this node
-            node_ind = net.n_net_inputs  # node index counter, the first indices are reserved for input values
             # Setup torch tensors
             for node in net.nodes:
                 # TODO!!!! we need to determine the activation function for each node from the genome
@@ -90,7 +89,6 @@ class Network:
                 for link in node.ingoing_links:
                     node_weights.append(link.weight)
                     ingoing_node_inds.append(link.outgoing_node.node_ind)
-                    node_ind += 1
                 self.output_inds.append(torch.tensor(ingoing_node_inds))
                 self.weights.append(torch.tensor(node_weights, dtype=torch.float32))  # TODO requires_grad=True when adding gradient based lifetime learning
                 self.activs.append(torch.sigmoid)

@@ -7,7 +7,7 @@ Modified by:
 __author__ = "Joe Sarsfield"
 __email__ = "joe.sarsfield@gmail.com"
 """
-import tensorflow as tf
+import torch
 import random
 
 """
@@ -127,36 +127,32 @@ class ActivationFunctionSet(object):
 
     def __init__(self):
         self.functions = {}
-        self.add('sigmoid', tf.math.sigmoid)
-        self.add('tanh', tf.math.tanh)
-        self.add('sin', tf.math.sin)
-        self.add('cos', tf.math.cos)
-        self.add('gauss', tf.random.normal)
-        self.add('relu', tf.nn.relu)
-        self.add('elu', tf.nn.elu)
-        self.add('lelu', tf.nn.leaky_relu)
-        self.add('crelu', tf.nn.crelu)
-        self.add('softplus', tf.nn.softplus)
+        self.add('sigmoid', torch.sigmoid)
+        self.add('tanh', torch.tanh)
+        self.add('sin', torch.sin)
+        self.add('cos', torch.cos)
+        self.add('gauss', torch.distributions.normal.Normal)
+        #self.add('relu', torch.nn.relu)
+        #self.add('elu', tf.nn.elu)
+        self.add('lelu', torch.nn.LeakyReLU)
+        #self.add('crelu', tf.nn.crelu)
+        #self.add('softplus', tf.nn.softplus)
         #self.add('identity', tf.math.identity)
         #self.add('clamped', tf.math.clamped)
         #self.add('inv', tf.math.inv)
-        self.add('log', tf.math.log)
-        self.add('exp', tf.math.exp)
-        self.add('abs', tf.math.abs)
+        self.add('log', torch.log)
+        self.add('exp', torch.exp)
+        self.add('abs', torch.abs)
         #self.add('hat', tf.math.hat)
-        self.add('square', tf.math.square)
+        self.add('square', torch.softmax)
         #self.add('cube', tf.math.cube)
-        self.add('square', tf.math.softmax)
+        #self.add('square', tf.math.softmax)
 
     def add(self, name, function):
         self.functions[name] = function
 
     def get(self, name):
-        f = self.functions.get(name)
-        if f is None:
-            raise InvalidActivationFunction("No such activation function: {0!r}".format(name))
-
-        return f
+        return self.functions.get(name)
 
     def get_random_activation_func(self):
         return self.functions[random.choice(list(self.functions.keys()))]
