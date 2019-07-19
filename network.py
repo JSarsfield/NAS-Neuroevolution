@@ -21,7 +21,7 @@ class Network:
     def __init__(self, genome, links, nodes, n_net_inputs, n_net_outputs, void=False):
         self.is_void = void
         if void:
-            self.score = -1
+            self.fitness = -1
             return
         self.genome = genome  # Genome used to express ANN
         self.links = links
@@ -32,7 +32,7 @@ class Network:
         del self.nodes[:n_net_inputs] # Remove input nodes
         self.n_net_inputs = n_net_inputs
         self.n_net_outputs = n_net_outputs
-        self.score = None  # Score the network after evaluating during lifetime
+        self.fitness = None  # Score the network after evaluating during lifetime
         self.graph = Network.Graph(self)
 
         self.visualise_neural_net()

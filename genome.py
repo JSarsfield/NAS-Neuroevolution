@@ -1,9 +1,10 @@
 """
-TensorFlow Keras model implementation of CPPN
+CPPN implementation using PyTorch
 
 CPPN is a biologically inspired genetic encoding/genome that produces neural network architectures when decoded.
 
-See paper: Compositional pattern producing networks: A novel abstraction of development by Kenneth O. Stanley
+See papers: 1. Compositional pattern producing networks: A novel abstraction of development by Kenneth O. Stanley
+2. A hypercube-based encoding for evolving large-scale neural networks. Stanley, K., D’Ambrosio, D., & Gauci, J. (2009)
 
 __author__ = "Joe Sarsfield"
 __email__ = "joe.sarsfield@gmail.com"

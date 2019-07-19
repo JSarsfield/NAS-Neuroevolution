@@ -37,6 +37,12 @@ class GenePool:
         # Create output sigmoid node that provides a weight from 0 to 1
         self.create_initial_gene_node({"depth": 1,
                                        "activation_func": self.activation_functions.get("sigmoid")}, is_input=False)
+        # Create initial LEO gaussian hidden nodes with bias towards locality
+
+        # Create LEO output node
+        self.create_initial_gene_node({"depth": 1,
+                                       "activation_func": self.activation_functions.get("step")}, is_input=False)
+
         # Add a single initial link for each input node
         for i in range(self.num_inputs):
             self.create_gene_link({"weight": None,
@@ -92,6 +98,7 @@ class GenePool:
 class Gene:
 
     def __init__(self, historical_marker):
+        # Constants
         self.historical_marker = historical_marker
 
 
@@ -99,10 +106,12 @@ class GeneLink(Gene):
 
     def __init__(self, weight, enabled, in_node, out_node, historical_marker):
         super().__init__(historical_marker)
-        self.weight = weight
-        self.enabled = enabled
+        # Constants
         self.in_node = in_node
         self.out_node = out_node
+        # Variables - these gene fields can change for different genomes
+        self.weight = weight
+        self.enabled = enabled
         in_node.add_link(self, True)
         out_node.add_link(self, False)
 
@@ -111,20 +120,19 @@ class GeneNode(Gene):
 
     def __init__(self, depth, activation_func, historical_marker):
         super().__init__(historical_marker)
+        # Constants
         self.depth = depth  # Ensures CPPN links don't go backwards i.e. DAG
-        self.act_func = activation_func  # The activation function this node contains. Incoming links are multiplied by their weights and summed before being passed to this func
+        # Variables - these gene fields can change for different genomes
         self.bias = None  # Each node has a bias to shift the activation function - this is inherited from the parents and mutated
-        """ Below fields can change for each genome """
+        self.act_func = activation_func  # The activation function this node contains. Incoming links are multiplied by their weights and summed before being passed to this func
         self.ingoing_links = []  # links going into the node
         self.outgoing_links = []  # links going out of the node
-        #self.output = None  # Stores value after feedforward
         self.location = None  # [x, y] 2d numpy array uniquely set for each CPPNGenome, location may be different for different genomes
         self.node_ind = None  # Set differently for each genome
 
     def __deepcopy__(self, memo):
         """ deepcopy but exclude ingoing_links &  outgoing_links as these will be created later """
         return GeneNode(deepcopy(self.depth, memo), deepcopy(self.act_func, memo), deepcopy(self.historical_marker, memo))
-
 
     def add_link(self, link, is_ingoing):
         if is_ingoing is True:

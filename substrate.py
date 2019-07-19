@@ -95,7 +95,7 @@ class Substrate:
                     node.outgoing_links.append(link)
                     link.outgoing_node = node
         # Depth first search to find all links on all paths from input to output
-        keep_links, keep_nodes = self.depth_first_search(genome, input_nodes)
+        keep_links, keep_nodes = self.depth_first_search(input_nodes)
         if len(keep_nodes) <= n_net_outputs or keep_nodes[-n_net_outputs].y != 1:
             # An input/output node didn't have any outgoing/ingoing links thus neural net is void
             is_void = True
@@ -104,12 +104,11 @@ class Substrate:
             is_void = False
         return Network(genome, keep_links, keep_nodes, n_net_inputs, n_net_outputs, void=is_void)
 
-    def depth_first_search(self, genome, input_nodes):
+    def depth_first_search(self, input_nodes):
         """ find links and nodes on paths from input to output nodes """
         path = deque()  # lifo buffer storing currently explored path
         links_2add = deque()  # life buffer storing new links to add if we reach output node
         keep_links = []  # List of links to keep because they are on a path from input to output
-        check_if_added = False
         for input_ind, input in enumerate(input_nodes):
             # Each element is a dict with link reference and local index of outgoing node's
             if len(input.outgoing_links) == 0:
@@ -117,22 +116,20 @@ class Substrate:
             path.append({"link": input.outgoing_links[0], "ind": 0})
             links_2add.append(path[-1])
             is_forward = True  # False when link to dangling node
-            check_if_added = True if input_ind > 0 else False
             # while unexplored links on from this input node exist
             while path:
                 new_link = {}
                 if is_forward:
-                    if len(path[-1]["link"].ingoing_node.outgoing_links) > 0: # if ingoing node of link also has link then add and keep going forward
+                    if len(path[-1]["link"].ingoing_node.outgoing_links) > 0:  # if ingoing node of link also has link then add and keep going forward
                         new_link["link"] = path[-1]["link"].ingoing_node.outgoing_links[0]
                         new_link["ind"] = 0
-                        if new_link["link"] in keep_links: # If we reach a link on the keep_links path then add links_2add and go back
+                        if new_link["link"] in keep_links:  # If we reach a link on the keep_links path then add links_2add and go back
                             keep_links.extend([d["link"] for d in links_2add])
                             links_2add.clear()
                             is_forward = False
                             continue
                         path.append(new_link)
                         links_2add.append(new_link)
-
                     else:  # No new links to explore
                         # Check if node is output
                         if path[-1]["link"].ingoing_node.y == 1:
@@ -144,7 +141,7 @@ class Substrate:
                 else:
                     # Go back through path until new link then go forward
                     new_ind = path[-1]["ind"]+1
-                    if new_ind < len(path[-1]["link"].outgoing_node.outgoing_links): # If outgoing node of link has more links to explore
+                    if new_ind < len(path[-1]["link"].outgoing_node.outgoing_links):  # If outgoing node of link has more links to explore
                         new_link["link"] = path[-1]["link"].outgoing_node.outgoing_links[new_ind]
                         new_link["ind"] = new_ind
                         is_forward = True  # new link to explore
@@ -168,7 +165,6 @@ class QuadTree:
 
     # TODO evolve/mutate var_thresh and band_threshold - these values passed to children genomes
     def __init__(self, cppn, max_depth=10, var_thresh=0.001, band_thresh=0.001):
-        #self.quad_points = []  # Store all QuadPoints in tree
         self.quad_leafs = []  # Quad points that are leaf nodes in the quad tree
         self.cppn = cppn  # Query CPPN graph to get weight of connection
         self.max_depth = max_depth  # The max depth the quadtree will split if variance is still above variance threshold
@@ -178,7 +174,6 @@ class QuadTree:
     def division_and_initialisation(self, a, b, outgoing=True):
         """ Algorithm 1 - a, b represent x1, y1 when outgoing and x2, y2 when ingoing """
         quads_que = deque()  # Contains quads to split x,y,width,level - Add root quad, centre is 0,0
-        #self.quad_points.append(QuadPoint(0, 0, 1, 1))
         quads_que.append(QuadPoint(0, 0, 1, 1))
         # While quads is not empty continue dividing
         while quads_que:
@@ -198,7 +193,6 @@ class QuadTree:
             q.child_var = child_weights.var()
             # Divide until initial resolution or if variance is still high
             if q.level == 1 or (q.level < self.max_depth and q.child_var > self.var_thresh):
-                #self.quad_points.extend(q.children)
                 quads_que.extend(q.children)
             else:
                 q.is_leaf = True
@@ -221,8 +215,7 @@ class QuadTree:
                 dif_bottom = abs(q_leaf.weight - self.cppn.forward([q_leaf.x, q_leaf.y - q_leaf.width, a, b])[0].item())
                 dif_top = abs(q_leaf.weight - self.cppn.forward([q_leaf.x, q_leaf.y + q_leaf.width, a, b])[0].item())
             # Express connection if neighbour variance if above band threshold
-            if  max(min(dif_left, dif_right), min(dif_bottom, dif_top)) > self.band_thresh:
-                # TODO Create new link specified by(x1, y1, x2, y2, weight) and scale weight based on weight range(e.g.[-3.0, 3.0])
+            if max(min(dif_left, dif_right), min(dif_bottom, dif_top)) > self.band_thresh:
                 if outgoing:
                     if b < q_leaf.y:  # outgoing node b (y) must be less than forward node y
                         links.append(Link(a, b, q_leaf.x, q_leaf.y, q_leaf.weight))

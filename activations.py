@@ -119,6 +119,10 @@ def validate_activation(function):
 """
 
 
+def step(x):
+    return torch.tensor(1, dtype=torch.float32) if x > 0 else torch.tensor(0, dtype=torch.float32)
+
+
 class ActivationFunctionSet(object):
     """
     Contains the list of current valid activation functions,
@@ -127,6 +131,7 @@ class ActivationFunctionSet(object):
 
     def __init__(self):
         self.functions = {}
+        self.add('step', step)
         self.add('sigmoid', torch.sigmoid)
         self.add('tanh', torch.tanh)
         self.add('sin', torch.sin)
