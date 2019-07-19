@@ -16,14 +16,16 @@ class GenePool:
     """
 
     def __init__(self,
-                 num_inputs,
-                 load_genepool=False):
-        self.geneNodesIn = []  # Nodes that represent input and must exist for every CPPN, these cannot be modified or disabled
-        self.geneNodes = []  # Store all hidden and output node genes
-        self.geneLinks = []  # Store all link genes
+                 cppn_inputs,
+                 load_genepool=False,
+                 n_dims=2):
+        self.gene_nodes_in = []  # Nodes that represent input and must exist for every CPPN, these cannot be modified or disabled
+        self.gene_nodes = []  # Store all hidden and output node genes
+        self.gene_links = []  # Store all link genes
         self._hist_marker_num = -1  # Keeps track of historical marker number
         self.activation_functions = activations.ActivationFunctionSet()
-        self.num_inputs = num_inputs
+        self.num_inputs = cppn_inputs
+        self.n_dims = n_dims  # e.g. value of 2 = (2d) x1, y1, x2, y2
         if load_genepool is False:
             self.create_initial_genes()
         print("initial genes created")
@@ -37,18 +39,33 @@ class GenePool:
         # Create output sigmoid node that provides a weight from 0 to 1
         self.create_initial_gene_node({"depth": 1,
                                        "activation_func": self.activation_functions.get("sigmoid")}, is_input=False)
-        # Create initial LEO gaussian hidden nodes with bias towards locality
-
-        # Create LEO output node
-        self.create_initial_gene_node({"depth": 1,
-                                       "activation_func": self.activation_functions.get("step")}, is_input=False)
-
         # Add a single initial link for each input node
         for i in range(self.num_inputs):
             self.create_gene_link({"weight": None,
                                    "enabled": True,
-                                   "in_node": self.geneNodes[0],
-                                   "out_node": self.geneNodesIn[i]})
+                                   "in_node": self.gene_nodes[0],
+                                   "out_node": self.gene_nodes_in[i]})
+        # Create initial LEO gaussian hidden nodes with bias towards locality
+        for i in range(self.n_dims):
+            self.create_initial_gene_node({"depth": 0.001,
+                                           "activation_func": self.activation_functions.get("gauss")}, is_input=False)
+        # Create LEO output node
+        self.create_initial_gene_node({"depth": 1,
+                                       "activation_func": self.activation_functions.get("step")}, is_input=False)
+        # Create LEO input to gaussian links
+        offset=1
+        for i in range(self.num_inputs):
+            in_ind = offset + (i % self.n_dims)
+            self.create_gene_link({"weight": 1,
+                                   "enabled": True,
+                                   "in_node": self.gene_nodes[in_ind],
+                                   "out_node": self.gene_nodes_in[i]})
+        # Create LEO gaussian to step output links
+        for i in range(self.n_dims):
+            self.create_gene_link({"weight": 1,
+                                   "enabled": True,
+                                   "in_node": self.gene_nodes[-1],
+                                   "out_node": self.gene_nodes[offset + i]})
 
     def create_minimal_graphs(self, n):
         """ initial generation of n minimal CPPN graphs with random weights
@@ -63,20 +80,20 @@ class GenePool:
         """ Create input or output gene nodes, these nodes cannot be modified or disabled and are thus treated differently from hidden node"""
         gene_config["historical_marker"] = self.get_new_hist_marker()
         if is_input:
-            self.geneNodesIn.append(GeneNode(**gene_config))
+            self.gene_nodes_in.append(GeneNode(**gene_config))
         else:
-            self.geneNodes.append(GeneNode(**gene_config))
+            self.gene_nodes.append(GeneNode(**gene_config))
 
     def create_gene_node(self, gene_config):
         """ Create a gene e.g. link or node
         Must have a historical marker required for crossover of parents
         """
         gene_config["historical_marker"] = self.get_new_hist_marker()
-        self.geneNodes.append(GeneNode(**gene_config))
+        self.gene_nodes.append(GeneNode(**gene_config))
 
     def create_gene_link(self, gene_config):
         gene_config["historical_marker"] = self.get_new_hist_marker()
-        self.geneLinks.append(GeneLink(**gene_config))
+        self.gene_links.append(GeneLink(**gene_config))
 
     def get_new_hist_marker(self):
         self._hist_marker_num += 1

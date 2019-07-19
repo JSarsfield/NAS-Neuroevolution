@@ -35,6 +35,7 @@ class Network:
         self.fitness = None  # Score the network after evaluating during lifetime
         self.graph = Network.Graph(self)
 
+        # TODO debug code below
         self.visualise_neural_net()
         self.graph.forward([1,2,3,4])
 
@@ -89,6 +90,10 @@ class Network:
                 for link in node.ingoing_links:
                     node_weights.append(link.weight)
                     ingoing_node_inds.append(link.outgoing_node.node_ind)
+                    if link.outgoing_node.node_ind is None:
+                        print("")
+                if len(ingoing_node_inds) == 0 or ingoing_node_inds is None:
+                    print("")
                 self.output_inds.append(torch.tensor(ingoing_node_inds))
                 self.weights.append(torch.tensor(node_weights, dtype=torch.float32))  # TODO requires_grad=True when adding gradient based lifetime learning
                 self.activs.append(torch.sigmoid)

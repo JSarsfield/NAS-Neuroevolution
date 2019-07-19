@@ -19,7 +19,7 @@ class Evolution:
     # TODO create population of ANN tensorflow graphs given the CPPNs for evaluation
 
     def __init__(self, n_net_inputs, n_net_outputs, pop_size=10, dataset=None, yaml_config=None):
-        self.gene_pool = GenePool(num_inputs=4)  # inputs x1 x2 y1 y2
+        self.gene_pool = GenePool(cppn_inputs=4)  # CPPN inputs x1 x2 y1 y2
         self.generation = -1
         self.pop_size = pop_size
         self.genomes = []  # Genomes in the current population
@@ -30,16 +30,9 @@ class Evolution:
 
     def _get_initial_population(self):
         for i in range(self.pop_size):
-            self.genomes.append(CPPNGenome(self.gene_pool.geneNodesIn, self.gene_pool.geneNodes, self.gene_pool.geneLinks))
+            self.genomes.append(CPPNGenome(self.gene_pool.gene_nodes_in, self.gene_pool.gene_nodes, self.gene_pool.gene_links, num_inputs=4, num_outputs=2))
             self.genomes[-1].create_initial_graph()
             self.neural_nets.append(Substrate().build_network_from_genome(self.genomes[-1], self.n_net_inputs, self.n_net_outputs))  # Express the genome to produce a neural network
-
-            """
-            #input = tf.Variable(np.random.uniform(1,-1, 4), dtype=tf.float32, shape=(1,self.genomes[-1].num_inputs), name="input")  # np.expand_dims(np.random.uniform(1,-1, 4).astype(np.float32), axis=0)
-            input = np.array([0,0,1,1])
-            res = self.genomes[-1].graph.query(input)
-            print(res)
-            """
 
     def begin_evolution(self):
         while True: # For infinite generations

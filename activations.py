@@ -9,6 +9,7 @@ __email__ = "joe.sarsfield@gmail.com"
 """
 import torch
 import random
+import math
 
 """
 def sigmoid_activation(z):
@@ -123,6 +124,11 @@ def step(x):
     return torch.tensor(1, dtype=torch.float32) if x > 0 else torch.tensor(0, dtype=torch.float32)
 
 
+def gaussian(z):
+    z = max(-3.4, min(3.4, z))
+    return torch.tensor(math.exp(-5.0 * z ** 2), dtype=torch.float32)
+
+
 class ActivationFunctionSet(object):
     """
     Contains the list of current valid activation functions,
@@ -132,11 +138,11 @@ class ActivationFunctionSet(object):
     def __init__(self):
         self.functions = {}
         self.add('step', step)
+        self.add('gauss', gaussian)
         self.add('sigmoid', torch.sigmoid)
         self.add('tanh', torch.tanh)
         self.add('sin', torch.sin)
         self.add('cos', torch.cos)
-        self.add('gauss', torch.distributions.normal.Normal)
         #self.add('relu', torch.nn.relu)
         #self.add('elu', tf.nn.elu)
         self.add('lelu', torch.nn.LeakyReLU)

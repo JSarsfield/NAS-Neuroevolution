@@ -30,7 +30,7 @@ class Substrate:
         input_nodes = []
         # TODO bias nodes
         # Find input to hidden links and nodes
-        for i in np.linspace(-1, 1, genome.num_inputs, dtype=np.float32):
+        for i in np.linspace(-1, 1, n_net_inputs, dtype=np.float32):
             input_nodes.append(Node(i, float(-1)))
             qtree = QuadTree(genome.graph, var_thresh=genome.var_thresh, band_thresh=genome.band_thresh)
             qtree.division_and_initialisation(i, float(-1))
@@ -69,7 +69,7 @@ class Substrate:
                     nodes.append(new_node)
                     unexplored_nodes.append(new_node)
         # Find hidden to output links
-        for i in np.linspace(-1, 1, genome.num_outputs, dtype=np.float32):
+        for i in np.linspace(-1, 1, n_net_outputs, dtype=np.float32):
             nodes.append(Node(i, float(1)))
             qtree = QuadTree(genome.graph, var_thresh=genome.var_thresh, band_thresh=genome.band_thresh)
             qtree.division_and_initialisation(i, float(1), outgoing=False)
@@ -96,12 +96,29 @@ class Substrate:
                     link.outgoing_node = node
         # Depth first search to find all links on all paths from input to output
         keep_links, keep_nodes = self.depth_first_search(input_nodes)
-        if len(keep_nodes) <= n_net_outputs or keep_nodes[-n_net_outputs].y != 1:
+        # Determine that each input and output node is in keep_nodes and thus on path
+        if len(keep_nodes) < (n_net_inputs + n_net_outputs) or keep_nodes[n_net_inputs-1].y != -1 or keep_nodes[-n_net_outputs].y != 1:
             # An input/output node didn't have any outgoing/ingoing links thus neural net is void
             is_void = True
             print("neural network is void")
         else:
             is_void = False
+
+        # TODO !!!!!!deep copy links and nodes as links not on path are being indirectly copied
+        # TODO debug code below
+        for link in keep_links:
+            if link.weight < 0.2:
+                link.weight = 0.2
+        # TODO debug code below
+        if len(set(keep_links)) != len(keep_links):
+            print("")
+        if is_void is False:
+            for node in keep_nodes:
+                if len(node.outgoing_links) > 0 and node.y > 0.5 and node.outgoing_links[0].ingoing_node.y != 1:
+                    break
+            # TODO debug below
+            if len(keep_links) < 4:
+                print("")
         return Network(genome, keep_links, keep_nodes, n_net_inputs, n_net_outputs, void=is_void)
 
     def depth_first_search(self, input_nodes):
@@ -135,6 +152,8 @@ class Substrate:
                         if path[-1]["link"].ingoing_node.y == 1:
                             keep_links.extend([d["link"] for d in links_2add])
                             links_2add.clear()
+                        #else:
+                        #    links_2add.pop()  # Dangling node so remove latest link
                         # Node is dangling or output node hit so go back through path
                         is_forward = False
                         continue
@@ -144,14 +163,21 @@ class Substrate:
                     if new_ind < len(path[-1]["link"].outgoing_node.outgoing_links):  # If outgoing node of link has more links to explore
                         new_link["link"] = path[-1]["link"].outgoing_node.outgoing_links[new_ind]
                         new_link["ind"] = new_ind
-                        is_forward = True  # new link to explore
-                        if len(links_2add) > 0 and path[-1]["link"] == links_2add[-1]["link"]:
+                        if new_link["link"] in keep_links:
+                            if len(links_2add) > 0 and links_2add[-1]["link"] == path[-1]["link"]:
+                                links_2add.pop()
+                            path.pop()
+                            continue
+                        if len(links_2add) > 0 and links_2add[-1]["link"] == path[-1]["link"]:
                             links_2add.pop()
                         links_2add.append(new_link)
                         path.pop()
                         path.append(new_link)
+                        is_forward = True  # new link to explore
                         continue
                     else:  # No unexplored links at this node so keep going back through path
+                        if len(links_2add) > 0 and links_2add[-1]["link"] == path[-1]["link"]:
+                            links_2add.pop()
                         path.pop()
                         continue
         # Get unique nodes in keep_links
@@ -186,17 +212,22 @@ class QuadTree:
             child_weights = np.array([])
             for child in q.children:
                 if outgoing:
-                    child.weight = self.cppn.forward([a, b, child.x, child.y])[0].item()
+                    out = self.cppn.forward([a, b, child.x, child.y])
+                    child.weight = out[0].item()
+                    child.leo = out[1].item()
                 else:
-                    child.weight = self.cppn.forward([child.x, child.y, a, b])[0].item()
+                    out = self.cppn.forward([child.x, child.y, a, b])
+                    child.weight = out[0].item()
+                    child.leo = out[1].item()
                 child_weights = np.append(child_weights, child.weight)
             q.child_var = child_weights.var()
             # Divide until initial resolution or if variance is still high
             if q.level == 1 or (q.level < self.max_depth and q.child_var > self.var_thresh):
                 quads_que.extend(q.children)
             else:
-                q.is_leaf = True
-                self.quad_leafs.append(q)
+                if q.leo > 0:  # LEO must be greater than zero for potential expression
+                    q.is_leaf = True
+                    self.quad_leafs.append(q)
 
     def pruning_and_extraction(self, a, b, outgoing=True):
         """ Algorithm 2 - a, b represent x1, y1 when outgoing and x2, y2 when ingoing """
@@ -237,3 +268,4 @@ class QuadPoint:
         self.children = []  # Four child quads if not leaf
         self.child_var = None  # Variance of the four child quads
         self.weight = None
+        self.leo = None  # Express if greater than zero

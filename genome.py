@@ -23,7 +23,7 @@ from genes import GeneLink
 class CPPNGenome:
     """ CPPN genome - can express/decode to produce an ANN """
 
-    def __init__(self, gene_nodes_in, gene_nodes, gene_links, num_inputs=4, num_outputs=1, var_thresh=0.01, band_thresh=0.01):
+    def __init__(self, gene_nodes_in, gene_nodes, gene_links, num_inputs=4, num_outputs=2, var_thresh=0.01, band_thresh=0.01):
         """ Call on master thread then call a create graph function on the worker thread """
         self.weights = None  # Weight of links in graph. Sampled from parent/s genome/s or uniform distribution when no parent
         self.gene_nodes = copy.deepcopy(gene_nodes)
@@ -46,8 +46,8 @@ class CPPNGenome:
         for node in self.gene_nodes:
             node.node_ind = node_ind
             node_ind += 1
-        self.num_inputs = num_inputs
-        self.num_outputs = num_outputs
+        self.cppn_inputs = num_inputs
+        self.cppn_outputs = num_outputs
         self.graph = None  # Store TensorFlow graph. Created on worker thread within a create graph function
 
     def get_node_from_hist_marker(self, hist_marker):
@@ -62,8 +62,8 @@ class CPPNGenome:
     def create_initial_graph(self):
         """ Create an initial graph for generation zero that has no parent/s. Call on worker thread """
         # TODO mutate first, structural mutation?
-        self.var_thresh = 0.01
-        self.band_thresh = 0.01
+        self.var_thresh = 0.001
+        self.band_thresh = 0.001
         # Initialise weights
         for link in self.gene_links:
             link.weight = random.uniform(-1, 1)
@@ -95,7 +95,7 @@ class CPPNGenome:
             self.genome = genome
             self.weights = []  # torch tensor weights for each node
             self.activs = []  # torch activation funcs for each node
-            self.outputs = torch.tensor((), dtype=torch.float32).new_empty((len(genome.gene_nodes) + genome.num_inputs))
+            self.outputs = torch.tensor((), dtype=torch.float32).new_empty((len(genome.gene_nodes) + genome.cppn_inputs))
             self.output_inds = []  # Store node indices to get output of nodes going into this node
             self.node_biases = []
             # Setup torch tensors
@@ -121,4 +121,4 @@ class CPPNGenome:
                 y_unactiv = torch.dot(self.outputs[self.output_inds[i]], self.weights[i]) + self.node_biases[i]
                 y = self.activs[i](y_unactiv)
                 self.outputs[i + n_inputs] = y
-            return self.outputs[-self.genome.num_outputs:]
+            return self.outputs[-self.genome.cppn_outputs:]
