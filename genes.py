@@ -24,6 +24,7 @@ class GenePool:
         self.gene_links = []  # Store all link genes
         self._hist_marker_num = -1  # Keeps track of historical marker number
         self.activation_functions = activations.ActivationFunctionSet()
+        self.node_functions = activations.NodeFunctionSet()
         self.num_inputs = cppn_inputs
         self.n_dims = n_dims  # e.g. value of 2 = (2d) x1, y1, x2, y2
         if load_genepool is False:
@@ -35,37 +36,42 @@ class GenePool:
         # Create input nodes with no activation function
         for i in range(self.num_inputs):
             self.create_initial_gene_node({"depth": 0,
-                                           "activation_func": None})
-        # Create output sigmoid node that provides a weight from 0 to 1
+                                           "activation_func": None,
+                                           "node_func": None})
+        # Create random output node
         self.create_initial_gene_node({"depth": 1,
-                                       "activation_func": self.activation_functions.get("sigmoid")}, is_input=False)
+                                       "activation_func": self.activation_functions.get_random_activation_func(),
+                                       "node_func": self.node_functions.get("dot")}, is_input=False)
         # Add a single initial link for each input node
         for i in range(self.num_inputs):
             self.create_gene_link({"weight": None,
-                                   "enabled": True,
                                    "in_node": self.gene_nodes[0],
                                    "out_node": self.gene_nodes_in[i]})
         # Create initial LEO gaussian hidden nodes with bias towards locality
         for i in range(self.n_dims):
-            self.create_initial_gene_node({"depth": 0.001,
-                                           "activation_func": self.activation_functions.get("gauss")}, is_input=False)
+            self.create_initial_gene_node({"depth": 0.5,
+                                           "activation_func": self.activation_functions.get("gauss"),
+                                           "node_func": self.node_functions.get("diff"),
+                                           "can_modify": False}, is_input=False)
         # Create LEO output node
         self.create_initial_gene_node({"depth": 1,
-                                       "activation_func": self.activation_functions.get("step")}, is_input=False)
+                                       "activation_func": self.activation_functions.get("step"),
+                                       "node_func": self.node_functions.get("dot"),
+                                       "can_modify": False}, is_input=False)
         # Create LEO input to gaussian links
         offset=1
         for i in range(self.num_inputs):
             in_ind = offset + (i % self.n_dims)
             self.create_gene_link({"weight": 1,
-                                   "enabled": True,
                                    "in_node": self.gene_nodes[in_ind],
                                    "out_node": self.gene_nodes_in[i]})
         # Create LEO gaussian to step output links
         for i in range(self.n_dims):
             self.create_gene_link({"weight": 1,
-                                   "enabled": True,
                                    "in_node": self.gene_nodes[-1],
                                    "out_node": self.gene_nodes[offset + i]})
+        self.gene_links.sort(key=lambda x: x.historical_marker)
+
 
     def create_minimal_graphs(self, n):
         """ initial generation of n minimal CPPN graphs with random weights
@@ -121,7 +127,7 @@ class Gene:
 
 class GeneLink(Gene):
 
-    def __init__(self, weight, enabled, in_node, out_node, historical_marker):
+    def __init__(self, weight, in_node, out_node, historical_marker, enabled=True):
         super().__init__(historical_marker)
         # Constants
         self.in_node = in_node
@@ -135,21 +141,24 @@ class GeneLink(Gene):
 
 class GeneNode(Gene):
 
-    def __init__(self, depth, activation_func, historical_marker):
+    def __init__(self, depth, activation_func, node_func, historical_marker, can_modify=True, enabled=True):
         super().__init__(historical_marker)
         # Constants
         self.depth = depth  # Ensures CPPN links don't go backwards i.e. DAG
         # Variables - these gene fields can change for different genomes
         self.bias = None  # Each node has a bias to shift the activation function - this is inherited from the parents and mutated
         self.act_func = activation_func  # The activation function this node contains. Incoming links are multiplied by their weights and summed before being passed to this func
+        self.node_func = node_func  # function applied to data coming into node before going through activation func
         self.ingoing_links = []  # links going into the node
         self.outgoing_links = []  # links going out of the node
         self.location = None  # [x, y] 2d numpy array uniquely set for each CPPNGenome, location may be different for different genomes
         self.node_ind = None  # Set differently for each genome
+        self.can_modify = can_modify
+        self.enabled = enabled
 
     def __deepcopy__(self, memo):
         """ deepcopy but exclude ingoing_links &  outgoing_links as these will be created later """
-        return GeneNode(deepcopy(self.depth, memo), deepcopy(self.act_func, memo), deepcopy(self.historical_marker, memo))
+        return GeneNode(deepcopy(self.depth, memo), deepcopy(self.act_func, memo), deepcopy(self.node_func, memo), deepcopy(self.historical_marker, memo))
 
     def add_link(self, link, is_ingoing):
         if is_ingoing is True:

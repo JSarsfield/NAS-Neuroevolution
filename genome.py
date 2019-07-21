@@ -18,7 +18,10 @@ import copy  # deep copy genes
 import operator # sort node genes by depth
 import random  # random uniform weight
 from genes import GeneLink
+from activations import ActivationFunctionSet
 
+
+# TODO visualise genome
 
 class CPPNGenome:
     """ CPPN genome - can express/decode to produce an ANN """
@@ -34,11 +37,12 @@ class CPPNGenome:
         # Deepcopy links
         for link in gene_links:
             self.gene_links.append(GeneLink(link.weight,
-                                            link.enabled,
                                             self.get_node_from_hist_marker(link.in_node.historical_marker),
                                             self.get_node_from_hist_marker(link.out_node.historical_marker),
-                                            link.historical_marker))
+                                            link.historical_marker,
+                                            enabled=link.enabled))
         self.gene_nodes.sort(key=operator.attrgetter('depth'))
+        self.gene_links.sort(key=lambda x: x.historical_marker)  # Sorted genome required for speciation
         node_ind = 0
         for node in self.gene_nodes_in:
             node.node_ind = node_ind
@@ -49,6 +53,7 @@ class CPPNGenome:
         self.cppn_inputs = num_inputs
         self.cppn_outputs = num_outputs
         self.graph = None  # Store TensorFlow graph. Created on worker thread within a create graph function
+
 
     def get_node_from_hist_marker(self, hist_marker):
         for node in self.gene_nodes:
@@ -62,14 +67,17 @@ class CPPNGenome:
     def create_initial_graph(self):
         """ Create an initial graph for generation zero that has no parent/s. Call on worker thread """
         # TODO mutate first, structural mutation?
-        self.var_thresh = 0.001
-        self.band_thresh = 0.01
+        self.var_thresh = 0.3
+        self.band_thresh = 0
         # Initialise weights
         for link in self.gene_links:
             link.weight = random.uniform(-1, 1)
+        act_set = ActivationFunctionSet()
         # Initialise biases
         for node in self.gene_nodes:
             node.bias = random.uniform(-0.1, 0.1)
+            if node.can_modify:
+                node.act_func = act_set.get_random_activation_func()
         self.graph = CPPNGenome.Graph(self)
 
     def _create_graph(self, parent_genome):
@@ -94,6 +102,7 @@ class CPPNGenome:
             super().__init__()
             self.genome = genome
             self.weights = []  # torch tensor weights for each node
+            self.node_funcs = []  # torch node funcs
             self.activs = []  # torch activation funcs for each node
             self.outputs = torch.tensor((), dtype=torch.float32).new_empty((len(genome.gene_nodes) + genome.cppn_inputs))
             self.output_inds = []  # Store node indices to get output of nodes going into this node
@@ -107,6 +116,7 @@ class CPPNGenome:
                     in_node_inds.append(link.out_node.node_ind)
                 self.output_inds.append(torch.tensor(in_node_inds))
                 self.weights.append(torch.tensor(node_weights, dtype=torch.float32))
+                self.node_funcs.append(node.node_func)
                 self.activs.append(node.act_func)
                 self.node_biases.append(node.bias)
             self.node_biases = torch.tensor(self.node_biases, dtype=torch.float32)
@@ -118,7 +128,10 @@ class CPPNGenome:
             self.outputs[torch.arange(n_inputs)] = torch.tensor(x, dtype=torch.float32)
             # loop each node and calculate output
             for i in range(len(self.activs)):
-                y_unactiv = torch.dot(self.outputs[self.output_inds[i]], self.weights[i]) + self.node_biases[i]
-                y = self.activs[i](y_unactiv)
+                y_unactiv = self.node_funcs[i](self.outputs[self.output_inds[i]], self.weights[i], self.node_biases[i])
+                try:
+                    y = self.activs[i](y_unactiv)
+                except:
+                    print("")
                 self.outputs[i + n_inputs] = y
             return self.outputs[-self.genome.cppn_outputs:]

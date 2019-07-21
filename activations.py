@@ -143,19 +143,19 @@ class ActivationFunctionSet(object):
         self.add('tanh', torch.tanh)
         self.add('sin', torch.sin)
         self.add('cos', torch.cos)
+        self.add('log', torch.log)
+        #self.add('abs', torch.abs) # unbalanced function
+        # self.add('exp', torch.exp)  # unbalanced function creates loads of nodes - investigate
+        #self.add('square', torch.softmax)
         #self.add('relu', torch.nn.relu)
         #self.add('elu', tf.nn.elu)
-        self.add('lelu', torch.nn.LeakyReLU)
+        #self.add('lelu', torch.nn.LeakyReLU)
         #self.add('crelu', tf.nn.crelu)
         #self.add('softplus', tf.nn.softplus)
         #self.add('identity', tf.math.identity)
         #self.add('clamped', tf.math.clamped)
         #self.add('inv', tf.math.inv)
-        self.add('log', torch.log)
-        self.add('exp', torch.exp)
-        self.add('abs', torch.abs)
         #self.add('hat', tf.math.hat)
-        self.add('square', torch.softmax)
         #self.add('cube', tf.math.cube)
         #self.add('square', tf.math.softmax)
 
@@ -170,3 +170,29 @@ class ActivationFunctionSet(object):
 
     def is_valid(self, name):
         return name in self.functions
+
+
+def dot(inputs, weights, bias):
+    return torch.dot(inputs, weights) + bias
+
+
+def diff(inputs, weights, bias):
+    return (inputs[0]-inputs[1]) + bias
+
+
+class NodeFunctionSet(object):
+    """ function to apply to data going into node before going through activation function """
+
+    def __init__(self):
+        self.functions = {}
+        self.add('dot', dot)
+        self.add('diff', diff)
+
+    def add(self, name, function):
+        self.functions[name] = function
+
+    def get(self, name):
+        return self.functions.get(name)
+
+    def get_random_activation_func(self):
+        return self.functions[random.choice(list(self.functions.keys()))]

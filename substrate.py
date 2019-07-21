@@ -90,10 +90,10 @@ class Substrate:
             for i, node in enumerate(nodes):
                 if node.x == link.x2 and node.y == link.y2:
                     node.add_in_link(link)
-                    link.ingoing_node = node
+                    link.in_node = node
                 elif node.x == link.x1 and node.y == link.y1:
                     node.add_out_link(link)
-                    link.outgoing_node = node
+                    link.out_node = node
         # Depth first search to find all links on all paths from input to output
         keep_links, keep_nodes = self.depth_first_search(input_nodes)
         # Determine that each input and output node is in keep_nodes and thus on path
@@ -114,7 +114,7 @@ class Substrate:
             print("")
         if is_void is False:
             for node in keep_nodes:
-                if len(node.outgoing_links) > 0 and node.y > 0.5 and node.outgoing_links[0].ingoing_node.y != 1:
+                if len(node.outgoing_links) > 0 and node.y > 0.5 and node.outgoing_links[0].in_node.y != 1:
                     break
             # TODO debug below
             if len(keep_links) < 4:
@@ -137,8 +137,8 @@ class Substrate:
             while path:
                 new_link = {}
                 if is_forward:
-                    if len(path[-1]["link"].ingoing_node.outgoing_links) > 0:  # if ingoing node of link also has link then add and keep going forward
-                        new_link["link"] = path[-1]["link"].ingoing_node.outgoing_links[0]
+                    if len(path[-1]["link"].in_node.outgoing_links) > 0:  # if ingoing node of link also has link then add and keep going forward
+                        new_link["link"] = path[-1]["link"].in_node.outgoing_links[0]
                         new_link["ind"] = 0
                         if new_link["link"] in keep_links:  # If we reach a link on the keep_links path then add links_2add and go back
                             keep_links.extend([d["link"] for d in links_2add])
@@ -149,7 +149,7 @@ class Substrate:
                         links_2add.append(new_link)
                     else:  # No new links to explore
                         # Check if node is output
-                        if path[-1]["link"].ingoing_node.y == 1:
+                        if path[-1]["link"].in_node.y == 1:
                             keep_links.extend([d["link"] for d in links_2add])
                             links_2add.clear()
                         #else:
@@ -160,8 +160,8 @@ class Substrate:
                 else:
                     # Go back through path until new link then go forward
                     new_ind = path[-1]["ind"]+1
-                    if new_ind < len(path[-1]["link"].outgoing_node.outgoing_links):  # If outgoing node of link has more links to explore
-                        new_link["link"] = path[-1]["link"].outgoing_node.outgoing_links[new_ind]
+                    if new_ind < len(path[-1]["link"].out_node.outgoing_links):  # If outgoing node of link has more links to explore
+                        new_link["link"] = path[-1]["link"].out_node.outgoing_links[new_ind]
                         new_link["ind"] = new_ind
                         if new_link["link"] in keep_links:
                             if len(links_2add) > 0 and links_2add[-1]["link"] == path[-1]["link"]:
@@ -183,17 +183,17 @@ class Substrate:
         # Get unique nodes in keep_links
         keep_nodes = []
         for link in keep_links:
-            in_node = next((x for x in keep_nodes if x == link.ingoing_node), None)
+            in_node = next((x for x in keep_nodes if x == link.in_node), None)
             if in_node is None:
-                keep_nodes.append(link.ingoing_node.copy(link, is_ingoing_node=True))
+                keep_nodes.append(link.in_node.copy(link, is_in_node=True))
             else:
                 in_node.update_in_node(link)
-            out_node = next((x for x in keep_nodes if x == link.outgoing_node), None)
+            out_node = next((x for x in keep_nodes if x == link.out_node), None)
             if out_node is None:
-                keep_nodes.append(link.outgoing_node.copy(link, is_ingoing_node=False))
+                keep_nodes.append(link.out_node.copy(link, is_in_node=False))
             else:
                 out_node.update_out_node(link)
-        #keep_nodes = list(set(chain.from_iterable((link.ingoing_node.copy(link, is_ingoing_node=True), link.outgoing_node.copy(link, is_ingoing_node=False)) for link in keep_links)))
+        #keep_nodes = list(set(chain.from_iterable((link.in_node.copy(link, is_in_node=True), link.out_node.copy(link, is_in_node=False)) for link in keep_links)))
         keep_nodes.sort(key=lambda node: (node.y, node.x))  # Sort nodes by y (layer) then x (pos in layer)
         return keep_links, keep_nodes
 
@@ -202,7 +202,7 @@ class QuadTree:
     """ Determines hidden node placement within an ANN """
 
     # TODO evolve/mutate var_thresh and band_threshold - these values passed to children genomes
-    def __init__(self, cppn, max_depth=100, var_thresh=0.001, band_thresh=0.001):
+    def __init__(self, cppn, max_depth=5, var_thresh=0.001, band_thresh=0.001):
         self.quad_leafs = []  # Quad points that are leaf nodes in the quad tree
         self.cppn = cppn  # Query CPPN graph to get weight of connection
         self.max_depth = max_depth  # The max depth the quadtree will split if variance is still above variance threshold
@@ -213,6 +213,9 @@ class QuadTree:
         """ Algorithm 1 - a, b represent x1, y1 when outgoing and x2, y2 when ingoing """
         quads_que = deque()  # Contains quads to split x,y,width,level - Add root quad, centre is 0,0
         quads_que.append(QuadPoint(0, 0, 1, 1))
+        out = self.cppn.forward([0, 1, 0, 1])
+        quads_que[-1].weight = out[0].item()
+        quads_que[-1].leo = out[0].item()
         # While quads is not empty continue dividing
         while quads_que:
             q = quads_que.popleft()
@@ -236,6 +239,8 @@ class QuadTree:
             # Divide until initial resolution or if variance is still high
             if q.level == 1 or (q.level < self.max_depth and q.child_var > self.var_thresh):
                 quads_que.extend(q.children)
+                if q.level != 1 and q.leo > 0:
+                    self.quad_leafs.append(q)
             else:
                 if q.leo > 0:  # LEO must be greater than zero for potential expression
                     q.is_leaf = True
@@ -257,7 +262,7 @@ class QuadTree:
                 dif_right = abs(q_leaf.weight - self.cppn.forward([q_leaf.x + q_leaf.width, q_leaf.y, a, b])[0].item())
                 dif_bottom = abs(q_leaf.weight - self.cppn.forward([q_leaf.x, q_leaf.y - q_leaf.width, a, b])[0].item())
                 dif_top = abs(q_leaf.weight - self.cppn.forward([q_leaf.x, q_leaf.y + q_leaf.width, a, b])[0].item())
-            # Express connection if neighbour variance if above band threshold
+            # Express connection if neighbour variance is above band threshold
             if max(min(dif_left, dif_right), min(dif_bottom, dif_top)) > self.band_thresh:
                 if outgoing:
                     if b < q_leaf.y:  # outgoing node b (y) must be less than forward node y
