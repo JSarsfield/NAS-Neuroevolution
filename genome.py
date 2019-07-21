@@ -63,7 +63,7 @@ class CPPNGenome:
         """ Create an initial graph for generation zero that has no parent/s. Call on worker thread """
         # TODO mutate first, structural mutation?
         self.var_thresh = 0.001
-        self.band_thresh = 0.001
+        self.band_thresh = 0.01
         # Initialise weights
         for link in self.gene_links:
             link.weight = random.uniform(-1, 1)

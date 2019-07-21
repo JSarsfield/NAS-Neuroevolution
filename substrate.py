@@ -48,7 +48,7 @@ class Substrate:
         # Find hidden to hidden links and new nodes
         unexplored_nodes = deque()
         unexplored_nodes.extend(nodes)
-        # TODO VERY SLOW!!!! optimise this
+        # TODO VERY SLOW!!!! optimise this e.g. use sets for faster time complexity/change approach
         print("explore substrate")
         start = perf_counter()
         while unexplored_nodes:
@@ -89,10 +89,10 @@ class Substrate:
         for link in links:
             for i, node in enumerate(nodes):
                 if node.x == link.x2 and node.y == link.y2:
-                    node.ingoing_links.append(link)
+                    node.add_in_link(link)
                     link.ingoing_node = node
                 elif node.x == link.x1 and node.y == link.y1:
-                    node.outgoing_links.append(link)
+                    node.add_out_link(link)
                     link.outgoing_node = node
         # Depth first search to find all links on all paths from input to output
         keep_links, keep_nodes = self.depth_first_search(input_nodes)
@@ -125,7 +125,7 @@ class Substrate:
         """ find links and nodes on paths from input to output nodes """
         path = deque()  # lifo buffer storing currently explored path
         links_2add = deque()  # life buffer storing new links to add if we reach output node
-        keep_links = []  # List of links to keep because they are on a path from input to output
+        keep_links = []  # Set of links to keep because they are on a path from input to output
         for input_ind, input in enumerate(input_nodes):
             # Each element is a dict with link reference and local index of outgoing node's
             if len(input.outgoing_links) == 0:
@@ -181,7 +181,19 @@ class Substrate:
                         path.pop()
                         continue
         # Get unique nodes in keep_links
-        keep_nodes = list(set(chain.from_iterable((link.ingoing_node, link.outgoing_node) for link in keep_links)))
+        keep_nodes = []
+        for link in keep_links:
+            in_node = next((x for x in keep_nodes if x == link.ingoing_node), None)
+            if in_node is None:
+                keep_nodes.append(link.ingoing_node.copy(link, is_ingoing_node=True))
+            else:
+                in_node.update_in_node(link)
+            out_node = next((x for x in keep_nodes if x == link.outgoing_node), None)
+            if out_node is None:
+                keep_nodes.append(link.outgoing_node.copy(link, is_ingoing_node=False))
+            else:
+                out_node.update_out_node(link)
+        #keep_nodes = list(set(chain.from_iterable((link.ingoing_node.copy(link, is_ingoing_node=True), link.outgoing_node.copy(link, is_ingoing_node=False)) for link in keep_links)))
         keep_nodes.sort(key=lambda node: (node.y, node.x))  # Sort nodes by y (layer) then x (pos in layer)
         return keep_links, keep_nodes
 
@@ -190,7 +202,7 @@ class QuadTree:
     """ Determines hidden node placement within an ANN """
 
     # TODO evolve/mutate var_thresh and band_threshold - these values passed to children genomes
-    def __init__(self, cppn, max_depth=10, var_thresh=0.001, band_thresh=0.001):
+    def __init__(self, cppn, max_depth=100, var_thresh=0.001, band_thresh=0.001):
         self.quad_leafs = []  # Quad points that are leaf nodes in the quad tree
         self.cppn = cppn  # Query CPPN graph to get weight of connection
         self.max_depth = max_depth  # The max depth the quadtree will split if variance is still above variance threshold

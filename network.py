@@ -111,7 +111,6 @@ class Network:
             return self.outputs[-self.net.n_net_outputs:]
 
 
-
 class Link:
     """ Connection between two nodes """
 
@@ -124,15 +123,61 @@ class Link:
         self.outgoing_node = None  # outgoing node
         self.ingoing_node = None  # ingoing node
 
+    def __eq__(self, other):
+        return True if self.x1 == other.x1 and self.x2 == other.x2 and self.y1 == other.y1 and self.y2 == other.y2 else False
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def __hash__(self):
+        """ optimised hashing for finding unique Links """
+        return hash((self.x1, self.y1, self.x2, self.y2))
+
 
 class Node:
 
-    def __init__(self, x, y, act_func=F.sigmoid):
+    def __init__(self, x, y, act_func=F.sigmoid, node_ind=None):
         self.x = x
         self.y = y
-        self.layer = None  # Layer number
-        self.unit = None  # Position in layer
         self.act_func = act_func
         self.ingoing_links = []  # links going into the node
         self.outgoing_links = []  # links going out of the node
-        self.node_ind = None  # node index, including input nodes
+        self.node_ind = node_ind  # node index, including input nodes
+        self.layer = None  # Layer number. Only used in visualisation
+        self.unit = None  # Position in layer. Only used in visualisation
+
+    def __eq__(self, other):
+        return True if self.x == other.x and self.y == other.y else False
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def __hash__(self):
+        """ optimised hashing for finding unique Nodes """
+        return hash((self.x, self.y))
+
+    def add_in_link(self, link):
+        self.ingoing_links.append(link)
+
+    def add_out_link(self, link):
+        self.outgoing_links.append(link)
+
+    def copy(self, link, is_ingoing_node=True):
+        """ Create a copy of the node without any links """
+        node_copy = Node(self.x, self.y, act_func=self.act_func)
+        if is_ingoing_node:
+            node_copy.add_in_link(link)
+            link.ingoing_node = node_copy
+        else:
+            node_copy.add_out_link(link)
+            link.outgoing_node = node_copy
+        return node_copy
+
+    def update_in_node(self, link):
+        self.add_in_link(link)
+        link.ingoing_node = self
+
+    def update_out_node(self, link):
+        self.add_out_link(link)
+        link.outgoing_node = self
+
