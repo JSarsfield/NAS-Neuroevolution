@@ -20,14 +20,19 @@ bias_replace_rate = 0.05
 link_toggle_prob = 0.05  # Chance of link being toggled between enabled/disabled
 link_add_prob = 0.1
 node_add_prob = 0.05
+link_enable_prob = 0.25  # Chance of disabled link being re-enabled
 
 elitism_thresh = 1  # Number of fittest organisms in each species that is preserved as-is to next generation
-species_survival_thresh = 0.2  # Fraction of each species that is allowed to reproduce for each generation
+pop_survival_thresh = 0.2  # Fraction of population that is allowed to reproduce for next generation
 min_species_size = 2  # min number of organisms/nets in a species
 
-compatibility_thresh = 2  # Max distance two genomes can be considered as the same species
+compatibility_thresh = 3  # Max distance two genomes can be considered as the same species TODO needs to be adaptive
 compatibility_excess_coeff = 1  # Balance the distance calculation against weights and disjoint genes
 compatibility_disjoint_coeff = 1  # Balance the distance calculation against weights and excess genes
 compatibility_weight_coeff = 1  # Balance the distance calculation against excess and disjoint genes
 
+target_num_species = 10  # Number of species to target TODO if species grows above this increase compatibility_thresh to reduce species
+
 diversity_coeff = 1  # increase/decrease the level of mutation based on species sizes and species ages
+
+interspecies_mating_prob = 0.01  # Chance of genome mating outside of species

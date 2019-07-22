@@ -34,6 +34,7 @@ class CPPNGenome:
         self.gene_links = []
         self.var_thresh = var_thresh
         self.band_thresh = band_thresh
+        self.species = None  # Species this genome belongs to
         # Deepcopy links
         for link in gene_links:
             self.gene_links.append(GeneLink(link.weight,
@@ -52,8 +53,8 @@ class CPPNGenome:
             node_ind += 1
         self.cppn_inputs = num_inputs
         self.cppn_outputs = num_outputs
+        self.net = None  # neural network expressed by this genome
         self.graph = None  # Store TensorFlow graph. Created on worker thread within a create graph function
-
 
     def get_node_from_hist_marker(self, hist_marker):
         for node in self.gene_nodes:
@@ -91,6 +92,10 @@ class CPPNGenome:
     def _perturb_weights(self):
         """ Modify the weights of the links within the CPPN """
         pass
+
+    def set_species(self, species):
+        """ set the species this genome belongs to """
+        self.species = species
 
     def visualise_genome(self):
         pass

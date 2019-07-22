@@ -11,8 +11,11 @@ class Species:
 
     def __init__(self, representative_genome):
         self.age = 0  # Number of generations this species has existed
+        self.best_fitness = None  # Best fitness of the species - used to determine when performance of the species plateaus
         self.representative_genome = representative_genome  # The genome that this species represents when calculating distance to new genomes
-        self.genomes = [representative_genome]
+        self.genomes = []
+        self.add_to_species(representative_genome)
+        self.inds = None  # inds of genomes in species that is allowed to reproduce TODO !!!!!! reset this to None after new generation is reproduced
 
     def get_distance(self, new_genome):
         """ get distance between new_genome and representative_genome to determine if belongs to this species"""
@@ -41,3 +44,4 @@ class Species:
 
     def add_to_species(self, new_genome):
         self.genomes.append(new_genome)
+        new_genome.set_species(self)

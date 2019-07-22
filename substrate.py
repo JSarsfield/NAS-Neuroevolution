@@ -103,22 +103,6 @@ class Substrate:
             print("neural network is void")
         else:
             is_void = False
-
-        # TODO !!!!!!deep copy links and nodes as links not on path are being indirectly copied
-        # TODO debug code below
-        for link in keep_links:
-            if link.weight < 0.2:
-                link.weight = 0.2
-        # TODO debug code below
-        if len(set(keep_links)) != len(keep_links):
-            print("")
-        if is_void is False:
-            for node in keep_nodes:
-                if len(node.outgoing_links) > 0 and node.y > 0.5 and node.outgoing_links[0].in_node.y != 1:
-                    break
-            # TODO debug below
-            if len(keep_links) < 4:
-                print("")
         return Network(genome, keep_links, keep_nodes, n_net_inputs, n_net_outputs, void=is_void)
 
     def depth_first_search(self, input_nodes):

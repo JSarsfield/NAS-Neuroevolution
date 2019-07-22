@@ -2,6 +2,8 @@
 
 Artificial Neural Network / Phenotype. Expressed given a genome.
 
+ NOTE self.fitness calc is slightly different from original NEAT - see adjusted fitness section 3.3 pg 12 "Evolving Neural Networks through Augmenting Topologies" 2002
+
 __author__ = "Joe Sarsfield"
 __email__ = "joe.sarsfield@gmail.com"
 """
@@ -32,12 +34,14 @@ class Network:
         del self.nodes[:n_net_inputs] # Remove input nodes
         self.n_net_inputs = n_net_inputs
         self.n_net_outputs = n_net_outputs
-        self.fitness = None  # Score the network after evaluating during lifetime
+        self.fitness_unnorm = None  # Un-normalised fitness of net
+        self.fitness = None  # Fitness of net normalised for size of species
+        self.genome.net = self
         self.graph = Network.Graph(self)
 
         # TODO debug code below
-        self.visualise_neural_net()
-        self.graph.forward([1,2,3,4])
+        #self.visualise_neural_net()
+        #self.graph.forward([1,2,3,4])
 
     def visualise_neural_net(self):
         G = nx.DiGraph()
@@ -68,6 +72,10 @@ class Network:
         weights = np.array([G[u][v]['weight'] for u,v in G.edges]) * 4
         nx.draw(G, pos=pos, node_size=650, node_color='#ffaaaa', linewidth=100, with_labels=True, width=weights)
         plt.show()
+
+    def set_fitness(self, fitness_unnorm):
+        self.fitness_unnorm = fitness_unnorm
+        self.fitness = fitness_unnorm/len(self.genome.species.genomes)
 
     class Graph(nn.Module):
         """ computational graph """

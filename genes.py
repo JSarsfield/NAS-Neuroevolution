@@ -72,7 +72,6 @@ class GenePool:
                                    "out_node": self.gene_nodes[offset + i]})
         self.gene_links.sort(key=lambda x: x.historical_marker)
 
-
     def create_minimal_graphs(self, n):
         """ initial generation of n minimal CPPN graphs with random weights
         Minimally connected graph with no hidden nodes, each input and output nodes should have at least one link.
@@ -158,7 +157,12 @@ class GeneNode(Gene):
 
     def __deepcopy__(self, memo):
         """ deepcopy but exclude ingoing_links &  outgoing_links as these will be created later """
-        return GeneNode(deepcopy(self.depth, memo), deepcopy(self.act_func, memo), deepcopy(self.node_func, memo), deepcopy(self.historical_marker, memo))
+        return GeneNode(deepcopy(self.depth, memo),
+                        deepcopy(self.act_func, memo),
+                        deepcopy(self.node_func, memo),
+                        deepcopy(self.historical_marker, memo),
+                        deepcopy(self.can_modify, memo),
+                        deepcopy(self.enabled, memo))
 
     def add_link(self, link, is_ingoing):
         if is_ingoing is True:

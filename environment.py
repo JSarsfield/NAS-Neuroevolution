@@ -42,14 +42,14 @@ class EnvironmentReinforcement(Environment):
                     break
                 action = self.net.graph.forward(observation).max(0)[1].item()
             fitness = np.append(fitness, trial_reward)
-        self.net.fitness = fitness.mean()
+        self.net.set_fitness(fitness.mean())
         print("fitness", self.net.fitness)
 
 
 class EnvironmentClassification(Environment):
     """ Classification environments (supervised learning with labelled dataset) """
 
-    def __init__(self):
+    def __init__(self, dataset):
         super().__init__()
-        pass
+        self.dataset = dataset
 
