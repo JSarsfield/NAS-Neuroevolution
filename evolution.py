@@ -17,6 +17,7 @@ from config import *
 
 
 # TODO pickle top performing genomes after each/x generations
+# TODO add connection cost to ensure
 
 class Evolution:
 
