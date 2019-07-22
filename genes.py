@@ -137,15 +137,24 @@ class GeneLink(Gene):
         in_node.add_link(self, True)
         out_node.add_link(self, False)
 
+    def __eq__(self, other):
+        return True if self.historical_marker == other.historical_marker else False
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def __hash__(self):
+        return hash(self.historical_marker)
+
 
 class GeneNode(Gene):
 
-    def __init__(self, depth, activation_func, node_func, historical_marker, can_modify=True, enabled=True):
+    def __init__(self, depth, activation_func, node_func, historical_marker, can_modify=True, enabled=True, bias=None):
         super().__init__(historical_marker)
         # Constants
         self.depth = depth  # Ensures CPPN links don't go backwards i.e. DAG
         # Variables - these gene fields can change for different genomes
-        self.bias = None  # Each node has a bias to shift the activation function - this is inherited from the parents and mutated
+        self.bias = bias  # Each node has a bias to shift the activation function - this is inherited from the parents and mutated
         self.act_func = activation_func  # The activation function this node contains. Incoming links are multiplied by their weights and summed before being passed to this func
         self.node_func = node_func  # function applied to data coming into node before going through activation func
         self.ingoing_links = []  # links going into the node
@@ -162,7 +171,17 @@ class GeneNode(Gene):
                         deepcopy(self.node_func, memo),
                         deepcopy(self.historical_marker, memo),
                         deepcopy(self.can_modify, memo),
-                        deepcopy(self.enabled, memo))
+                        deepcopy(self.enabled, memo),
+                        deepcopy(self.bias, memo))
+
+    def __eq__(self, other):
+        return True if self.historical_marker == other.historical_marker else False
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def __hash__(self):
+        return hash(self.historical_marker)
 
     def add_link(self, link, is_ingoing):
         if is_ingoing is True:

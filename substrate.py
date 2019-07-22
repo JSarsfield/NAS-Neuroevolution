@@ -49,8 +49,6 @@ class Substrate:
         unexplored_nodes = deque()
         unexplored_nodes.extend(nodes)
         # TODO VERY SLOW!!!! optimise this e.g. use sets for faster time complexity/change approach
-        print("explore substrate")
-        start = perf_counter()
         while unexplored_nodes:
             node = unexplored_nodes.popleft()
             qtree = QuadTree(genome.graph, var_thresh=genome.var_thresh, band_thresh=genome.band_thresh)
@@ -82,7 +80,6 @@ class Substrate:
                         new_links_keep.append(n_link)
                         break
             links.extend(new_links_keep)
-        print("Finished exploring substrate "+str(perf_counter()-start))
         # Remove neurons and their connections that don't have a path from input to output
         # Add link references to relevant nodes
         nodes[0:0] = input_nodes  # extend left, inplace no copying
@@ -100,7 +97,6 @@ class Substrate:
         if len(keep_nodes) < (n_net_inputs + n_net_outputs) or keep_nodes[n_net_inputs-1].y != -1 or keep_nodes[-n_net_outputs].y != 1:
             # An input/output node didn't have any outgoing/ingoing links thus neural net is void
             is_void = True
-            print("neural network is void")
         else:
             is_void = False
         return Network(genome, keep_links, keep_nodes, n_net_inputs, n_net_outputs, void=is_void)
@@ -136,8 +132,6 @@ class Substrate:
                         if path[-1]["link"].in_node.y == 1:
                             keep_links.extend([d["link"] for d in links_2add])
                             links_2add.clear()
-                        #else:
-                        #    links_2add.pop()  # Dangling node so remove latest link
                         # Node is dangling or output node hit so go back through path
                         is_forward = False
                         continue

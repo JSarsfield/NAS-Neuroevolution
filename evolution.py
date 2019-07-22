@@ -17,6 +17,7 @@ from substrate import Substrate
 from environment import EnvironmentReinforcement
 from species import Species
 from config import *
+from genes import GeneLink, GeneNode
 
 
 # TODO pickle top performing genomes after each/x generations
@@ -93,17 +94,20 @@ class Evolution:
         stop = math.ceil(len(self.neural_nets)*pop_survival_thresh)
         while True:  # Until pop size reached # TODO Parallelise this just on the local machine e.g. python starmap
             # Crossover or self mutation
-            if random.random() > interspecies_mating_prob:  # Mate within species
+            if not event(interspecies_mating_prob):  # Mate within species
                 if len(self.neural_nets[i].genome.species.genomes) != 1:  # For species with more than 1 genome
                     if self.neural_nets[i].genome.species.inds is None:
                         self.neural_nets[i].genome.species.inds = np.arange(0, math.ceil(len(self.neural_nets[i].genome.species.genomes)*pop_survival_thresh))
+                    if len(self.neural_nets[i].genome.species.inds) == 1:
+                        self.neural_nets[i].genome.species.inds = np.append(self.neural_nets[i].genome.species.inds, 1)
                     partner_ind = np.random.choice(self.neural_nets[i].genome.species.inds[self.neural_nets[i].genome.species.inds != i])  # ensure crossover with different genome in species
                     new_genome = self._crossover(self.neural_nets[i].genome, self.neural_nets[i].genome.species.genomes[partner_ind])
                 else:  # Species only has 1 genome so copy and mutate
                     new_genome = self._copy_with_mutation(self.neural_nets[i].genome)
             else:  # Mate outside of species NOTE there is no guarantee the selected neural net is outside of species
                 partner_ind = random.randint(0, stop)
-                new_genome = self._crossover(self.neural_nets[i].genome, self.neural_nets[partner_ind])
+                new_genome = self._crossover(self.neural_nets[i].genome, self.neural_nets[partner_ind].genome)
+            new_genome.create_graph()
             # Express the genome to produce a neural network
             new_net = Substrate().build_network_from_genome(new_genome, self.n_net_inputs, self.n_net_outputs)
             # Add new genome and net if not void
@@ -111,6 +115,7 @@ class Evolution:
                 new_genomes.append(new_genome)
                 new_nets.append(new_net)
                 i = 0 if i+1 == stop else i+1
+                print("Added genome ",len(new_genomes), " of ", self.pop_size)
                 if len(new_genomes) == self.pop_size:
                     break
         # Overwrite current generation genomes/nets/species TODO pickle best performing
@@ -124,20 +129,59 @@ class Evolution:
         gene_links = []
         i = 0
         j = 0
-        max_genes = max(len(g1.gene_links), len(self.g2.gene_links))
-        fittest = g1 if g1.net.fitness > g2.net.fitness else g2
-        while i < len(g1.gene_links) and j < len(self.g2.gene_links):
+        nodes_to_add = []
+        links_to_add = []
+        while i < len(g1.gene_links) or j < len(g2.gene_links):
             if g1.gene_links[i].historical_marker == g2.gene_links[j].historical_marker:
-
+                if g1.net.fitness > g2.net.fitness:
+                    links_to_add.append(g1.gene_links[i])
+                    nodes_to_add.append(g1.gene_links[i].in_node)
+                    nodes_to_add.append(g1.gene_links[i].out_node)
+                else:
+                    links_to_add.append(g2.gene_links[j])
+                    nodes_to_add.append(g1.gene_links[j].in_node)
+                    nodes_to_add.append(g1.gene_links[j].out_node)
                 i += 1
                 j += 1
             elif g1.gene_links[i].historical_marker < g2.gene_links[j].historical_marker:
+                nodes_to_add.append(g1.gene_links[i].in_node)
+                nodes_to_add.append(g1.gene_links[i].out_node)
+                links_to_add.append(g1.gene_links[i])
                 i += 1
             else:
+                nodes_to_add.append(g2.gene_links[j].in_node)
+                nodes_to_add.append(g2.gene_links[j].out_node)
+                links_to_add.append(g2.gene_links[j])
                 j += 1
-        # Mutate genome
-        gene_nodes, gene_links = self._perform_mutations(gene_nodes, gene_links)
-        return CPPNGenome(self.gene_pool.gene_nodes_in, gene_nodes, gene_links)
+
+        # Add in/out nodes and links
+        for node in nodes_to_add:
+            gene_nodes.add(GeneNode(node.depth,
+                                    node.act_func,
+                                    node.node_func,
+                                    node.historical_marker,
+                                    can_modify=node.can_modify,
+                                    enabled=node.enabled,
+                                    bias=node.bias))
+        for link in links_to_add:
+            gene_links.append((link.weight,
+                               link.in_node.historical_marker,
+                               link.out_node.historical_marker,
+                               link.historical_marker,
+                               link.enabled))
+
+        gene_nodes = list(gene_nodes)
+        gene_nodes.sort(key=lambda x: x.depth)
+        gene_nodes_in = gene_nodes[:g1.cppn_inputs]
+        gene_nodes = gene_nodes[g1.cppn_inputs:]
+        new_genome = CPPNGenome(gene_nodes_in, gene_nodes, gene_links)
+        new_genome.mutate_nonstructural()
+        return new_genome
+
+    def _mutate_structural(self):
+        """ mutate genome to add nodes and links """
+        # Mutate add node with random activation function
+        # Mutate attempt add link
 
     def _copy_with_mutation(self, g1):
         """ copy a genome with mutation """

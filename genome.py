@@ -19,6 +19,7 @@ import operator # sort node genes by depth
 import random  # random uniform weight
 from genes import GeneLink
 from activations import ActivationFunctionSet
+from config import *
 
 
 # TODO visualise genome
@@ -36,12 +37,20 @@ class CPPNGenome:
         self.band_thresh = band_thresh
         self.species = None  # Species this genome belongs to
         # Deepcopy links
-        for link in gene_links:
-            self.gene_links.append(GeneLink(link.weight,
-                                            self.get_node_from_hist_marker(link.in_node.historical_marker),
-                                            self.get_node_from_hist_marker(link.out_node.historical_marker),
-                                            link.historical_marker,
-                                            enabled=link.enabled))
+        if type(gene_links[0]) is tuple:
+            for link in gene_links:
+                self.gene_links.append(GeneLink(link[0],
+                                                self.get_node_from_hist_marker(link[1]),
+                                                self.get_node_from_hist_marker(link[2]),
+                                                link[3],
+                                                enabled=link[4]))
+        else:
+            for link in gene_links:
+                self.gene_links.append(GeneLink(link.weight,
+                                                self.get_node_from_hist_marker(link.in_node.historical_marker),
+                                                self.get_node_from_hist_marker(link.out_node.historical_marker),
+                                                link.historical_marker,
+                                                enabled=link.enabled))
         self.gene_nodes.sort(key=operator.attrgetter('depth'))
         self.gene_links.sort(key=lambda x: x.historical_marker)  # Sorted genome required for speciation
         node_ind = 0
@@ -54,7 +63,7 @@ class CPPNGenome:
         self.cppn_inputs = num_inputs
         self.cppn_outputs = num_outputs
         self.net = None  # neural network expressed by this genome
-        self.graph = None  # Store TensorFlow graph. Created on worker thread within a create graph function
+        self.graph = None  # PyTorch graph.
 
     def get_node_from_hist_marker(self, hist_marker):
         for node in self.gene_nodes:
@@ -81,13 +90,26 @@ class CPPNGenome:
                 node.act_func = act_set.get_random_activation_func()
         self.graph = CPPNGenome.Graph(self)
 
-    def _create_graph(self, parent_genome):
-        """ Create new graph given single parent genome. Call on worker thread """
-        pass  # self.genes
+    def create_graph(self):
+        """ Create graph """
+        self.graph = CPPNGenome.Graph(self)
 
-    def _create_graph_from_parents(self, parent_genome1, parent_genome2):
-        """ Create new graph given two parent genomes.  Call on worker thread """
-        pass  # self.genes
+    def mutate_nonstructural(self):
+        """ perform nonstructural mutations to existing gene nodes & links """
+        for link in self.gene_links:
+            # Disable/Enable links
+            if event(link_toggle_prob):  # Chance of toggling link
+                link.enabled = True if link.enabled is False else False
+            if link.enabled is False and event(link_enable_prob):  # Chance of enabling a disabled link
+                link.enabled = True
+            # Mutate weights
+            if event(weight_mutate_rate):
+                link.weight += np.random.normal(scale=gauss_weight_scale)
+        for node in self.gene_nodes:
+            # Mutate bias
+            # Mutate activation func
+            pass
+
 
     def _perturb_weights(self):
         """ Modify the weights of the links within the CPPN """
