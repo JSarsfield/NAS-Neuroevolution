@@ -71,15 +71,14 @@ class GenePool:
                                    "in_node": self.gene_nodes[-1],
                                    "out_node": self.gene_nodes[offset + i]})
         self.gene_links.sort(key=lambda x: x.historical_marker)
-
+    """
     def create_minimal_graphs(self, n):
-        """ initial generation of n minimal CPPN graphs with random weights
+        initial generation of n minimal CPPN graphs with random weights
         Minimally connected graph with no hidden nodes, each input and output nodes should have at least one link.
         Links can only go forwards.
-        """
-
         for i in range(n):
             act_func = self.activation_functions.get_random_activation_func()
+    """
 
     def create_initial_gene_node(self, gene_config, is_input=True):
         """ Create input or output gene nodes, these nodes cannot be modified or disabled and are thus treated differently from hidden node"""

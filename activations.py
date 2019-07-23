@@ -140,10 +140,10 @@ class ActivationFunctionSet(object):
         self.add('step', step)
         self.add('gauss', gaussian)
         self.add('sigmoid', torch.sigmoid)
-        self.add('tanh', torch.tanh)
-        self.add('sin', torch.sin)
-        self.add('cos', torch.cos)
-        self.add('log', torch.log)
+        #self.add('tanh', torch.tanh)
+        #self.add('sin', torch.sin)
+        #self.add('cos', torch.cos)
+        #self.add('log', torch.log)
         #self.add('abs', torch.abs) # unbalanced function
         # self.add('exp', torch.exp)  # unbalanced function creates loads of nodes - investigate
         #self.add('square', torch.softmax)

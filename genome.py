@@ -36,6 +36,7 @@ class CPPNGenome:
         self.var_thresh = var_thresh
         self.band_thresh = band_thresh
         self.species = None  # Species this genome belongs to
+        self.act_set = ActivationFunctionSet()
         # Deepcopy links
         if type(gene_links[0]) is tuple:
             for link in gene_links:
@@ -82,12 +83,11 @@ class CPPNGenome:
         # Initialise weights
         for link in self.gene_links:
             link.weight = random.uniform(-1, 1)
-        act_set = ActivationFunctionSet()
         # Initialise biases
         for node in self.gene_nodes:
             node.bias = random.uniform(-0.1, 0.1)
             if node.can_modify:
-                node.act_func = act_set.get_random_activation_func()
+                node.act_func = self.act_set.get_random_activation_func()
         self.graph = CPPNGenome.Graph(self)
 
     def create_graph(self):
@@ -107,13 +107,11 @@ class CPPNGenome:
                 link.weight += np.random.normal(scale=gauss_weight_scale)
         for node in self.gene_nodes:
             # Mutate bias
+            if event(bias_mutate_rate):
+                node.bias += np.random.normal(scale=gauss_weight_scale)
             # Mutate activation func
-            pass
-
-
-    def _perturb_weights(self):
-        """ Modify the weights of the links within the CPPN """
-        pass
+            if event(change_act_prob):
+                node.act_func = self.act_set.get_random_activation_func()
 
     def set_species(self, species):
         """ set the species this genome belongs to """

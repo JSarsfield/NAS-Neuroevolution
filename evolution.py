@@ -153,7 +153,6 @@ class Evolution:
                 nodes_to_add.append(g2.gene_links[j].out_node)
                 links_to_add.append(g2.gene_links[j])
                 j += 1
-
         # Add in/out nodes and links
         for node in nodes_to_add:
             gene_nodes.add(GeneNode(node.depth,
@@ -169,19 +168,41 @@ class Evolution:
                                link.out_node.historical_marker,
                                link.historical_marker,
                                link.enabled))
-
         gene_nodes = list(gene_nodes)
         gene_nodes.sort(key=lambda x: x.depth)
+        self._mutate_structural(gene_nodes, gene_links)  # This is performed on master thread to ensure only new genes are added to gene pool
         gene_nodes_in = gene_nodes[:g1.cppn_inputs]
         gene_nodes = gene_nodes[g1.cppn_inputs:]
         new_genome = CPPNGenome(gene_nodes_in, gene_nodes, gene_links)
-        new_genome.mutate_nonstructural()
+        new_genome.mutate_nonstructural()  # TODO this should be called on a worker thread
         return new_genome
 
-    def _mutate_structural(self):
-        """ mutate genome to add nodes and links """
-        # Mutate add node with random activation function
+    def _mutate_structural(self, gene_nodes, gene_links):
+        """ mutate genome to add nodes and links. Note passed by reference """
+        # TODO allow nodes to become disabled and thus all ingoing out going links disabled
+        # TODO add config probs for toggling node enable/disable
         # Mutate attempt add link
+        if event(link_add_prob):
+            # shuffle node indices
+            inds = np.random.choice(len(gene_nodes), len(gene_nodes), replace=False)
+            for i in inds:
+                if gene_nodes[i].depth == 0:
+                    pass
+                elif gene_nodes[i].depth == 1:
+                    pass
+                else:
+                    ingoing_link = event(0.5)  # look for new ingoing or outgoing link
+        # Mutate add node with random activation function
+        if event(node_add_prob):
+            # shuffle node indices, loop indices to find
+            inds = np.random.choice(len(gene_nodes), len(gene_nodes), replace=False)
+            # TODO add new node and two new links to gene pool
+            # TODO disable existing link
+            # TODO new outgoing link to new node is given weight of 1
+            # TODO new ingoing link from new node is given weight of existing disabled link
+
+
+        gene_nodes.sort(key=lambda x: x.depth)
 
     def _copy_with_mutation(self, g1):
         """ copy a genome with mutation """
