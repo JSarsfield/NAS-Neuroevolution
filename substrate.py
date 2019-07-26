@@ -15,7 +15,7 @@ from collections import deque  # Faster than using list
 from network import Network, Link, Node
 from time import perf_counter
 from itertools import chain
-
+from config import *
 
 class Substrate:
     """ neural network architecture space for finding nodes when expressing a genome to a neural network """
@@ -29,6 +29,7 @@ class Substrate:
         nodes = []
         input_nodes = []
         # TODO bias nodes
+        start_time = perf_counter()
         # Find input to hidden links and nodes
         for i in np.linspace(-1, 1, n_net_inputs, dtype=np.float32):
             input_nodes.append(Node(i, float(-1)))
@@ -45,10 +46,12 @@ class Substrate:
                         break
                 if express_node:
                     nodes.append(Node(link.x2, link.y2))
+        print("input to hid: ", perf_counter()-start_time)
         # Find hidden to hidden links and new nodes
         unexplored_nodes = deque()
         unexplored_nodes.extend(nodes)
         # TODO VERY SLOW!!!! optimise this e.g. use sets for faster time complexity/change approach
+        start_time = perf_counter()
         while unexplored_nodes:
             node = unexplored_nodes.popleft()
             qtree = QuadTree(genome.graph, var_thresh=genome.var_thresh, band_thresh=genome.band_thresh)
@@ -66,6 +69,12 @@ class Substrate:
                     new_node = Node(link.x2, link.y2)
                     nodes.append(new_node)
                     unexplored_nodes.append(new_node)
+            # If taking too long give up and return void net
+            if perf_counter()-start_time > substrate_search_max_time:
+                print("Too long, giving up, net set to void")
+                return Network(None, None, None, None, None, void=True)
+        print("hid to hid: ", perf_counter()-start_time)
+        start_time = perf_counter()
         # Find hidden to output links
         for i in np.linspace(-1, 1, n_net_outputs, dtype=np.float32):
             nodes.append(Node(i, float(1)))
@@ -80,6 +89,8 @@ class Substrate:
                         new_links_keep.append(n_link)
                         break
             links.extend(new_links_keep)
+        print("hid to output: ", perf_counter()-start_time)
+        start_time = perf_counter()
         # Remove neurons and their connections that don't have a path from input to output
         # Add link references to relevant nodes
         nodes[0:0] = input_nodes  # extend left, inplace no copying
@@ -91,8 +102,11 @@ class Substrate:
                 elif node.x == link.x1 and node.y == link.y1:
                     node.add_out_link(link)
                     link.out_node = node
+        print("add link refs to nods: ", perf_counter()-start_time)
+        start_time = perf_counter()
         # Depth first search to find all links on all paths from input to output
         keep_links, keep_nodes = self.depth_first_search(input_nodes)
+        print("DFS: ", perf_counter()-start_time)
         # Determine that each input and output node is in keep_nodes and thus on path
         if len(keep_nodes) < (n_net_inputs + n_net_outputs) or keep_nodes[n_net_inputs-1].y != -1 or keep_nodes[-n_net_outputs].y != 1:
             # An input/output node didn't have any outgoing/ingoing links thus neural net is void
@@ -103,6 +117,7 @@ class Substrate:
 
     def depth_first_search(self, input_nodes):
         """ find links and nodes on paths from input to output nodes """
+        # TODO rework this to only ensure all output nodes are on a path i.e. dangling input nodes are fine (filtered by evolution)
         path = deque()  # lifo buffer storing currently explored path
         links_2add = deque()  # life buffer storing new links to add if we reach output node
         keep_links = []  # Set of links to keep because they are on a path from input to output
@@ -171,7 +186,6 @@ class Substrate:
                 keep_nodes.append(link.out_node.copy(link, is_in_node=False))
             else:
                 out_node.update_out_node(link)
-        #keep_nodes = list(set(chain.from_iterable((link.in_node.copy(link, is_in_node=True), link.out_node.copy(link, is_in_node=False)) for link in keep_links)))
         keep_nodes.sort(key=lambda node: (node.y, node.x))  # Sort nodes by y (layer) then x (pos in layer)
         return keep_links, keep_nodes
 
@@ -180,10 +194,9 @@ class QuadTree:
     """ Determines hidden node placement within an ANN """
 
     # TODO evolve/mutate var_thresh and band_threshold - these values passed to children genomes
-    def __init__(self, cppn, max_depth=5, var_thresh=0.001, band_thresh=0.001):
+    def __init__(self, cppn, var_thresh=0.001, band_thresh=0.001):
         self.quad_leafs = []  # Quad points that are leaf nodes in the quad tree
         self.cppn = cppn  # Query CPPN graph to get weight of connection
-        self.max_depth = max_depth  # The max depth the quadtree will split if variance is still above variance threshold
         self.var_thresh = var_thresh  # When variance of child quads is below this threshold, stop division
         self.band_thresh = band_thresh  # Band threshold for expressing a link if var of neighbours is above this thresh
 
@@ -215,7 +228,7 @@ class QuadTree:
                 child_weights = np.append(child_weights, child.weight)
             q.child_var = child_weights.var()
             # Divide until initial resolution or if variance is still high
-            if q.level == 1 or (q.level < self.max_depth and q.child_var > self.var_thresh):
+            if q.level == 1 or (q.level < quad_tree_max_depth and q.child_var > self.var_thresh):
                 quads_que.extend(q.children)
                 if q.level != 1 and q.leo > 0:
                     self.quad_leafs.append(q)

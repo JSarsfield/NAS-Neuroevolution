@@ -32,6 +32,7 @@ node_add_prob = 0.05
 link_enable_prob = 0.2  # Chance of disabled link being re-enabled
 new_link_attempts = 10  # How many attempts should we try and find a new node before giving up
 
+substrate_search_max_time = 100  # max num of seconds to search for hid nodes on substrate before giving up and marking net as void
 
 change_act_prob = 0.05  # Chance of changing activation function to random act func
 
@@ -44,7 +45,7 @@ compatibility_excess_coeff = 1  # Balance the distance calculation against weigh
 compatibility_disjoint_coeff = 1  # Balance the distance calculation against weights and excess genes
 compatibility_weight_coeff = 2  # Balance the distance calculation against excess and disjoint genes
 
-
+quad_tree_max_depth = 4  # The max depth the quadtree will split if variance is still above variance threshold
 
 target_num_species = 10  # Number of species to target TODO if species grows above this increase compatibility_thresh to reduce species
 
