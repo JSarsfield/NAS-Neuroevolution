@@ -136,28 +136,39 @@ class Evolution:
         nodes_to_add = []
         links_to_add = []
         while i < len(g1.gene_links) or j < len(g2.gene_links):
-            # TODO fix this
-            if i < len(g1.gene_links) and j < len(g2.gene_links) and g1.gene_links[i].historical_marker == g2.gene_links[j].historical_marker:
-                if g1.net.fitness > g2.net.fitness:
-                    links_to_add.append(g1.gene_links[i])
+            if i < len(g1.gene_links) and j < len(g2.gene_links):
+                if g1.gene_links[i].historical_marker == g2.gene_links[j].historical_marker:
+                    if g1.net.fitness > g2.net.fitness:
+                        links_to_add.append(g1.gene_links[i])
+                        nodes_to_add.append(g1.gene_links[i].in_node)
+                        nodes_to_add.append(g1.gene_links[i].out_node)
+                    else:
+                        links_to_add.append(g2.gene_links[j])
+                        nodes_to_add.append(g1.gene_links[j].in_node)
+                        nodes_to_add.append(g1.gene_links[j].out_node)
+                    i += 1
+                    j += 1
+                elif g1.gene_links[i].historical_marker < g2.gene_links[j].historical_marker:
                     nodes_to_add.append(g1.gene_links[i].in_node)
                     nodes_to_add.append(g1.gene_links[i].out_node)
+                    links_to_add.append(g1.gene_links[i])
+                    i += 1
                 else:
+                    nodes_to_add.append(g2.gene_links[j].in_node)
+                    nodes_to_add.append(g2.gene_links[j].out_node)
                     links_to_add.append(g2.gene_links[j])
-                    nodes_to_add.append(g1.gene_links[j].in_node)
-                    nodes_to_add.append(g1.gene_links[j].out_node)
-                i += 1
-                j += 1
-            elif i < len(g1.gene_links) and j == len(g2.gene_links) or g1.gene_links[i].historical_marker < g2.gene_links[j].historical_marker:
-                nodes_to_add.append(g1.gene_links[i].in_node)
-                nodes_to_add.append(g1.gene_links[i].out_node)
-                links_to_add.append(g1.gene_links[i])
-                i += 1
+                    j += 1
             else:
-                nodes_to_add.append(g2.gene_links[j].in_node)
-                nodes_to_add.append(g2.gene_links[j].out_node)
-                links_to_add.append(g2.gene_links[j])
-                j += 1
+                if j == len(g2.gene_links):
+                    nodes_to_add.append(g1.gene_links[i].in_node)
+                    nodes_to_add.append(g1.gene_links[i].out_node)
+                    links_to_add.append(g1.gene_links[i])
+                    i += 1
+                else:
+                    nodes_to_add.append(g2.gene_links[j].in_node)
+                    nodes_to_add.append(g2.gene_links[j].out_node)
+                    links_to_add.append(g2.gene_links[j])
+                    j += 1
         # Add in/out nodes and links
         for node in nodes_to_add:
             gene_nodes.add(GeneNode(node.depth,

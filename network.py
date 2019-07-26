@@ -45,8 +45,8 @@ class Network:
         self.graph = Network.Graph(self)
 
         # TODO debug code below
-        self.visualise_neural_net()
-        self.graph.forward([1,2,3,4])
+        #self.visualise_neural_net()
+        #self.graph.forward([1,2,3,4])
 
     def visualise_neural_net(self):
         G = nx.DiGraph()
