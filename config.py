@@ -26,7 +26,7 @@ bias_init_min = -0.1  # min value of bias initialisation range
 bias_init_max = 0.1  # max value of bias initialisation range
 # structural params
 link_toggle_prob = 0.05  # Chance of link being toggled between enabled/disabled
-link_add_prob = 1  # TODO reset this to 0.1
+link_add_prob = 0.1  # Chance of adding a new link
 link_add_attempts = 10  # Number of attempts to find new link until give up
 node_add_prob = 0.05
 link_enable_prob = 0.2  # Chance of disabled link being re-enabled

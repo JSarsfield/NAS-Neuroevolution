@@ -18,10 +18,12 @@ from environment import EnvironmentReinforcement
 from species import Species
 from config import *
 from genes import GeneLink, GeneNode
+from activations import ActivationFunctionSet, NodeFunctionSet
 
 
 # TODO pickle top performing genomes after each/x generations
 # TODO add connection cost to ensure
+# TODO clamp weights to ensure minimum value
 
 class Evolution:
 
@@ -34,6 +36,8 @@ class Evolution:
         self.species = []  # Group similar genomes into the same species
         self.n_net_inputs = n_net_inputs
         self.n_net_outputs = n_net_outputs
+        self.act_set = ActivationFunctionSet()
+        self.node_set = NodeFunctionSet()
         self._get_initial_population()
 
     def _get_initial_population(self):
@@ -132,7 +136,8 @@ class Evolution:
         nodes_to_add = []
         links_to_add = []
         while i < len(g1.gene_links) or j < len(g2.gene_links):
-            if g1.gene_links[i].historical_marker == g2.gene_links[j].historical_marker:
+            # TODO fix this
+            if i < len(g1.gene_links) and j < len(g2.gene_links) and g1.gene_links[i].historical_marker == g2.gene_links[j].historical_marker:
                 if g1.net.fitness > g2.net.fitness:
                     links_to_add.append(g1.gene_links[i])
                     nodes_to_add.append(g1.gene_links[i].in_node)
@@ -143,7 +148,7 @@ class Evolution:
                     nodes_to_add.append(g1.gene_links[j].out_node)
                 i += 1
                 j += 1
-            elif g1.gene_links[i].historical_marker < g2.gene_links[j].historical_marker:
+            elif i < len(g1.gene_links) and j == len(g2.gene_links) or g1.gene_links[i].historical_marker < g2.gene_links[j].historical_marker:
                 nodes_to_add.append(g1.gene_links[i].in_node)
                 nodes_to_add.append(g1.gene_links[i].out_node)
                 links_to_add.append(g1.gene_links[i])
@@ -187,64 +192,68 @@ class Evolution:
             inds = np.random.choice(len(gene_nodes), len(gene_nodes), replace=False)
             attempt = 0
             gene_links.sort(key=lambda x: x[1])
-            for node_ind in inds:
-                if gene_nodes[node_ind].depth == 0:
+            for in_node_ind in inds:
+                if gene_nodes[in_node_ind].depth == 0:
                     continue
                 else:
                     ind_node_before = None
-                    for i in range(node_ind, 0, -1):
-                        if gene_nodes[i].depth != gene_nodes[node_ind].depth:
+                    for i in range(in_node_ind, 0, -1):
+                        if gene_nodes[i].depth != gene_nodes[in_node_ind].depth:
                             ind_node_before = i
                             break
                     # check if node has a potential new link
                     existing_links = []
                     for i, link in enumerate(gene_links):
-                        if link[1] == gene_nodes[node_ind].historical_marker:
+                        if link[1] == gene_nodes[in_node_ind].historical_marker:
                             existing_links.append(link[2])
                     # If number of existing ingoing links is less than the number of nodes before this node then add a new link
                     if len(existing_links) != ind_node_before+1:
                         existing_links = [i for i, node in enumerate(gene_nodes) if node.historical_marker in existing_links]
-                        in_node = gene_nodes[np.random.choice(np.setdiff1d(np.arange(ind_node_before+1), existing_links), 1)[0]]
+                        out_node = gene_nodes[np.random.choice(np.setdiff1d(np.arange(ind_node_before+1), existing_links), 1)[0]]
                         # Add new link
-
+                        new_link = self.gene_pool.get_or_create_gene_link(gene_nodes[in_node_ind].historical_marker, out_node.historical_marker)
+                        gene_links.append((random.uniform(weight_init_min, weight_init_max),
+                                           new_link.in_node.historical_marker,
+                                           new_link.out_node.historical_marker,
+                                           new_link.historical_marker,
+                                           new_link.enabled))
+                        break
                     attempt += 1
                 if attempt == new_link_attempts:
                     break
         # Mutate add node with random activation function
         if event(node_add_prob):
             # Get a random link to split and add node
-            old_link = gene_links[random.randint(0, len(gene_links))]
-            old_link.enabled = False
+            gene_link_ind = random.randint(0, len(gene_links)-1)
+            old_link = gene_links[gene_link_ind]
+            in_node = self.gene_pool.get_node_from_hist_marker(old_link[1])
+            out_node = self.gene_pool.get_node_from_hist_marker(old_link[2])
+            old_link_update = (old_link[0], old_link[1], old_link[2], old_link[3], False)
+            del gene_links[gene_link_ind]
+            gene_links.append(old_link_update)
             # Create new node
-            gene_nodes.append(self.gene_pool.create_gene_node({"depth": old_link.out_node.depth+(old_link.in_node.depth/old_link.out_node.depth),
-                                             "activation_func": self.activation_functions.get_random_activation_func(),
-                                             "node_func": self.node_functions.get("dot"),
+            gene_nodes.append(self.gene_pool.create_gene_node({"depth": out_node.depth+((in_node.depth-out_node.depth)/2),
+                                             "activation_func": self.act_set.get_random_activation_func(),
+                                             "node_func": self.node_set.get("dot"),
                                              "bias": random.uniform(bias_init_min, bias_init_max)}))
             # Create new link going into new node
             new_link = self.gene_pool.create_gene_link({"weight": 1,
-                                   "in_node": gene_nodes[-1],
-                                   "out_node": old_link.in_node})
+                                   "in_node": in_node,
+                                   "out_node": gene_nodes[-1]})
             gene_links.append((new_link.weight,
                                new_link.in_node.historical_marker,
                                new_link.out_node.historical_marker,
                                new_link.historical_marker,
                                new_link.enabled))
             # Create new link going out of new node
-            new_link = self.gene_pool.create_gene_link({"weight": old_link.weight,
-                                                        "in_node": old_link.out_node,
-                                                        "out_node":  gene_nodes[-1]})
+            new_link = self.gene_pool.create_gene_link({"weight": old_link[0],
+                                                        "in_node": gene_nodes[-1],
+                                                        "out_node":  out_node})
             gene_links.append((new_link.weight,
                                new_link.in_node.historical_marker,
                                new_link.out_node.historical_marker,
                                new_link.historical_marker,
                                new_link.enabled))
-            print("")
-            # TODO add new node and two new links to gene pool
-            # TODO disable existing link
-            # TODO new outgoing link to new node is given weight of 1
-            # TODO new ingoing link from new node is given weight of existing disabled link
-
-
         gene_nodes.sort(key=lambda x: x.depth)
 
     def _copy_with_mutation(self, g1):

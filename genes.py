@@ -104,25 +104,27 @@ class GenePool:
     def get_or_create_gene_link(self, in_node_hist_marker, out_node_hist_marker):
         """ Get gene link or create if not exists """
         for link in self.gene_links:
-            if link.in_node.historical_marker == in_node_hist_marker and  link.out_node.historical_marker == out_node_hist_marker:
-                return link.historical_marker
+            if link.in_node.historical_marker == in_node_hist_marker and link.out_node.historical_marker == out_node_hist_marker:
+                return link
         # No existing link so create one
+        return GeneLink(None,
+                        self.get_node_from_hist_marker(in_node_hist_marker),
+                        self.get_node_from_hist_marker(out_node_hist_marker),
+                        self.get_new_hist_marker(),
+                        enabled=True)
 
     def get_new_hist_marker(self):
         self._hist_marker_num += 1
         return self._hist_marker_num
 
-    def mutate_add_node(self):
-        # Add hidden node
-        pass
-
-    def mutate_add_link(self):
-        if random.uniform(0, 1) < 0.5:
-            # Split existing link
-            pass
-        else:
-            # Try and find two neurons to connect
-            pass
+    def get_node_from_hist_marker(self, hist_marker):
+        for node in self.gene_nodes:
+            if node.historical_marker == hist_marker:
+                return node
+        for node in self.gene_nodes_in:
+            if node.historical_marker == hist_marker:
+                return node
+        raise Exception("No node with historical marker found in func get_node_from_hist_marker genes.py")
 
 
 class Gene:
