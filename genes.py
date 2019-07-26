@@ -59,7 +59,7 @@ class GenePool:
                                        "node_func": self.node_functions.get("dot"),
                                        "can_modify": False}, is_input=False)
         # Create LEO input to gaussian links
-        offset=1
+        offset = 1
         for i in range(self.num_inputs):
             in_ind = offset + (i % self.n_dims)
             self.create_gene_link({"weight": 1,
@@ -94,10 +94,19 @@ class GenePool:
         """
         gene_config["historical_marker"] = self.get_new_hist_marker()
         self.gene_nodes.append(GeneNode(**gene_config))
+        return self.gene_nodes[-1]
 
     def create_gene_link(self, gene_config):
         gene_config["historical_marker"] = self.get_new_hist_marker()
         self.gene_links.append(GeneLink(**gene_config))
+        return self.gene_links[-1]
+
+    def get_or_create_gene_link(self, in_node_hist_marker, out_node_hist_marker):
+        """ Get gene link or create if not exists """
+        for link in self.gene_links:
+            if link.in_node.historical_marker == in_node_hist_marker and  link.out_node.historical_marker == out_node_hist_marker:
+                return link.historical_marker
+        # No existing link so create one
 
     def get_new_hist_marker(self):
         self._hist_marker_num += 1

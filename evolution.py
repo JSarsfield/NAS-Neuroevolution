@@ -180,22 +180,65 @@ class Evolution:
     def _mutate_structural(self, gene_nodes, gene_links):
         """ mutate genome to add nodes and links. Note passed by reference """
         # TODO allow nodes to become disabled and thus all ingoing out going links disabled
-        # TODO add config probs for toggling node enable/disable
+        # TODO add config probs for toggling NODE! enable/disable
         # Mutate attempt add link
         if event(link_add_prob):
             # shuffle node indices
             inds = np.random.choice(len(gene_nodes), len(gene_nodes), replace=False)
-            for i in inds:
-                if gene_nodes[i].depth == 0:
-                    pass
-                elif gene_nodes[i].depth == 1:
-                    pass
+            attempt = 0
+            gene_links.sort(key=lambda x: x[1])
+            for node_ind in inds:
+                if gene_nodes[node_ind].depth == 0:
+                    continue
                 else:
-                    ingoing_link = event(0.5)  # look for new ingoing or outgoing link
+                    ind_node_before = None
+                    for i in range(node_ind, 0, -1):
+                        if gene_nodes[i].depth != gene_nodes[node_ind].depth:
+                            ind_node_before = i
+                            break
+                    # check if node has a potential new link
+                    existing_links = []
+                    for i, link in enumerate(gene_links):
+                        if link[1] == gene_nodes[node_ind].historical_marker:
+                            existing_links.append(link[2])
+                    # If number of existing ingoing links is less than the number of nodes before this node then add a new link
+                    if len(existing_links) != ind_node_before+1:
+                        existing_links = [i for i, node in enumerate(gene_nodes) if node.historical_marker in existing_links]
+                        in_node = gene_nodes[np.random.choice(np.setdiff1d(np.arange(ind_node_before+1), existing_links), 1)[0]]
+                        # Add new link
+
+                    attempt += 1
+                if attempt == new_link_attempts:
+                    break
         # Mutate add node with random activation function
         if event(node_add_prob):
-            # shuffle node indices, loop indices to find
-            inds = np.random.choice(len(gene_nodes), len(gene_nodes), replace=False)
+            # Get a random link to split and add node
+            old_link = gene_links[random.randint(0, len(gene_links))]
+            old_link.enabled = False
+            # Create new node
+            gene_nodes.append(self.gene_pool.create_gene_node({"depth": old_link.out_node.depth+(old_link.in_node.depth/old_link.out_node.depth),
+                                             "activation_func": self.activation_functions.get_random_activation_func(),
+                                             "node_func": self.node_functions.get("dot"),
+                                             "bias": random.uniform(bias_init_min, bias_init_max)}))
+            # Create new link going into new node
+            new_link = self.gene_pool.create_gene_link({"weight": 1,
+                                   "in_node": gene_nodes[-1],
+                                   "out_node": old_link.in_node})
+            gene_links.append((new_link.weight,
+                               new_link.in_node.historical_marker,
+                               new_link.out_node.historical_marker,
+                               new_link.historical_marker,
+                               new_link.enabled))
+            # Create new link going out of new node
+            new_link = self.gene_pool.create_gene_link({"weight": old_link.weight,
+                                                        "in_node": old_link.out_node,
+                                                        "out_node":  gene_nodes[-1]})
+            gene_links.append((new_link.weight,
+                               new_link.in_node.historical_marker,
+                               new_link.out_node.historical_marker,
+                               new_link.historical_marker,
+                               new_link.enabled))
+            print("")
             # TODO add new node and two new links to gene pool
             # TODO disable existing link
             # TODO new outgoing link to new node is given weight of 1

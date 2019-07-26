@@ -14,18 +14,23 @@ weight_max_value = 2
 weight_min_value = -2
 weight_mutate_rate = 0.8  # Chance of link weight being adjusted by value drawn from zero-centered normal distribution
 weight_replace_rate = 0.05  # Chance of link weight being replaced with random value
+weight_init_min = -1  # min value of weight initialisation range
+weight_init_max = 1  # max value of weight initialisation range
 gauss_weight_scale = 0.1  # Scale of gaussian function for adjusting gene link weights
 # bias params
-bias_max_value = 2
-bias_min_value = -2
+bias_max_value = 1
+bias_min_value = -1
 bias_mutate_rate = 0.8
 bias_replace_rate = 0.05
+bias_init_min = -0.1  # min value of bias initialisation range
+bias_init_max = 0.1  # max value of bias initialisation range
 # structural params
 link_toggle_prob = 0.05  # Chance of link being toggled between enabled/disabled
-link_add_prob = 0.1
+link_add_prob = 1  # TODO reset this to 0.1
 link_add_attempts = 10  # Number of attempts to find new link until give up
 node_add_prob = 0.05
 link_enable_prob = 0.2  # Chance of disabled link being re-enabled
+new_link_attempts = 10  # How many attempts should we try and find a new node before giving up
 
 
 change_act_prob = 0.05  # Chance of changing activation function to random act func

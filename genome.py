@@ -82,10 +82,10 @@ class CPPNGenome:
         self.band_thresh = 0
         # Initialise weights
         for link in self.gene_links:
-            link.weight = random.uniform(-1, 1)
+            link.weight = random.uniform(weight_init_min, weight_init_max)
         # Initialise biases
         for node in self.gene_nodes:
-            node.bias = random.uniform(-0.1, 0.1)
+            node.bias = random.uniform(bias_init_min, bias_init_max)
             if node.can_modify:
                 node.act_func = self.act_set.get_random_activation_func()
         self.graph = CPPNGenome.Graph(self)
@@ -96,6 +96,7 @@ class CPPNGenome:
 
     def mutate_nonstructural(self):
         """ perform nonstructural mutations to existing gene nodes & links """
+        # TODO clamp weights and biases to config params?
         for link in self.gene_links:
             # Disable/Enable links
             if event(link_toggle_prob):  # Chance of toggling link
