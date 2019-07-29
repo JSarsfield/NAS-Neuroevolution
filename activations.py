@@ -139,8 +139,8 @@ class ActivationFunctionSet(object):
         self.functions = {}
         self.add('step', step)
         self.add('gauss', gaussian)
-        self.add('sigmoid', torch.sigmoid)
-        #self.add('tanh', torch.tanh)
+        self.add('tanh', torch.tanh)
+        #self.add('sigmoid', torch.sigmoid)
         #self.add('sin', torch.sin)
         #self.add('cos', torch.cos)
         #self.add('log', torch.log)

@@ -47,7 +47,7 @@ class EnvironmentReinforcement(Environment):
 
 
 class EnvironmentClassification(Environment):
-    """ Classification environments (supervised learning with labelled dataset) """
+    """ Classification environments (supervised learning with labelled dataset (lifetime learning)) """
 
     def __init__(self, dataset):
         super().__init__()

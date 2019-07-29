@@ -89,6 +89,7 @@ class CPPNGenome:
             if node.can_modify:
                 node.act_func = self.act_set.get_random_activation_func()
         self.graph = CPPNGenome.Graph(self)
+        #self.visualise_cppn()
 
     def create_graph(self):
         """ Create graph """
@@ -155,18 +156,28 @@ class CPPNGenome:
 
         pos = nx.spring_layout(G, pos=dict(G.nodes(data='pos')), fixed=G.nodes)
         weights = np.array([G[u][v]['weight'] for u, v in G.edges]) * 4
-        min_width = 0.1
-        if is_subplot:
-            plt.subplot(2, 1, 1)
+        plt.subplot(2, 1, 1)
         plt.title('Genome Graph Visualisation')
+        min_width = 0.2
         nx.draw_networkx(G, pos=pos, node_size=650, node_color='#ffaaaa', linewidth=100, with_labels=True,
                          width=min_width + weights, labels=labels)
         if not is_subplot:
             plt.show()
 
-    def visualise_cppn(self):
-        """ visualise the activations of a genome - see hyperneat paper"""
-        pass
+    def visualise_cppn(self, resolution=(64, 64)):
+        """ visualise the graph activations/link weights of a genome - see hyperneat paper"""
+        import matplotlib.pyplot as plt
+        from matplotlib.pyplot import imshow
+        data = np.empty([resolution[0], resolution[1]])
+        x_linspace = np.linspace(-1, 1, resolution[0])
+        y_linspace = np.linspace(-1, 1, resolution[1])
+        for row, x in enumerate(x_linspace):
+            for col, y in enumerate(y_linspace):
+                data[row, col] = self.graph.forward([x, y, 0, 0])[0].item()
+        #plt.axis([-1, 1, -1, 1])
+        print(data.min(), " ", data.max())
+        imshow(data, cmap='Greys', vmin=-1, vmax=1)
+        plt.show()
 
     class Graph(nn.Module):
         """ computational graph """
