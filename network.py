@@ -10,8 +10,6 @@ __email__ = "joe.sarsfield@gmail.com"
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import matplotlib.pyplot as plt
-import networkx as nx
 import random
 import numpy as np
 
@@ -45,13 +43,12 @@ class Network:
         self.graph = Network.Graph(self)
 
         # TODO debug code below
-        #self.visualise_neural_net()
-        #self.graph.forward([1,2,3,4])
+        self.visualise_neural_net()
 
     def visualise_neural_net(self):
+        import matplotlib.pyplot as plt
+        import networkx as nx
         G = nx.DiGraph()
-        #for node in self.nodes:
-        #    G.add_node(node.node_ind)
         unit = 1
         for node in self.input_nodes:
             node.layer = 1
@@ -75,7 +72,11 @@ class Network:
             last_y = node.y
         pos = nx.spring_layout(G, pos=dict(G.nodes(data='pos')), fixed=G.nodes)
         weights = np.array([G[u][v]['weight'] for u,v in G.edges]) * 4
-        nx.draw(G, pos=pos, node_size=650, node_color='#ffaaaa', linewidth=100, with_labels=True, width=weights)
+        min_width = 0.1
+        self.genome.visualise_genome(is_subplot=True)
+        plt.subplot(2, 1, 2)
+        plt.title('Neural Network Visualisation')
+        nx.draw_networkx(G, pos=pos, node_size=650, node_color='#ffaaaa', linewidth=100, with_labels=True, width=min_width+weights)
         plt.show()
 
     def set_fitness(self, fitness_unnorm):

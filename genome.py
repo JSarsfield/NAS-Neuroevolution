@@ -118,7 +118,54 @@ class CPPNGenome:
         """ set the species this genome belongs to """
         self.species = species
 
-    def visualise_genome(self):
+    def visualise_genome(self, is_subplot=False):
+        """ Visualise genome graph """
+        import matplotlib.pyplot as plt
+        import networkx as nx
+        G = nx.DiGraph()
+        unit = 1
+        x_linspace = np.linspace(-1, 1, len(self.gene_nodes_in))
+        labels = {}
+        input_labs = ["x1", "y1", "x2", "y2"]
+        for i, node in enumerate(self.gene_nodes_in):
+            node.layer = 1
+            node.unit = unit
+            G.add_node((1, unit), pos=(node.depth, x_linspace[i]))
+            labels[(1, unit)] = input_labs[i]
+            unit += 1
+        layer = 2
+        unit = 1
+        last_y = None
+        x_spaces = []  # linspaces of X axis
+        for node in self.gene_nodes:
+            if last_y and last_y != node.depth:
+                x_spaces.append(np.linspace(-1, 1, unit-1))
+                layer += 1
+                unit = 1
+            node.layer = layer
+            node.unit = unit
+            unit += 1
+            last_y = node.depth
+        x_spaces.append(np.linspace(-1, 1, unit-1))
+        for node in self.gene_nodes:
+            G.add_node((node.layer, node.unit), pos=(node.depth, x_spaces[node.layer-2][node.unit-1]))
+            labels[(node.layer, node.unit)] = node.act_func.__name__
+            for link in node.ingoing_links:
+                G.add_edge((link.out_node.layer, link.out_node.unit), (node.layer, node.unit), weight=link.weight)
+
+        pos = nx.spring_layout(G, pos=dict(G.nodes(data='pos')), fixed=G.nodes)
+        weights = np.array([G[u][v]['weight'] for u, v in G.edges]) * 4
+        min_width = 0.1
+        if is_subplot:
+            plt.subplot(2, 1, 1)
+        plt.title('Genome Graph Visualisation')
+        nx.draw_networkx(G, pos=pos, node_size=650, node_color='#ffaaaa', linewidth=100, with_labels=True,
+                         width=min_width + weights, labels=labels)
+        if not is_subplot:
+            plt.show()
+
+    def visualise_cppn(self):
+        """ visualise the activations of a genome - see hyperneat paper"""
         pass
 
     class Graph(nn.Module):
