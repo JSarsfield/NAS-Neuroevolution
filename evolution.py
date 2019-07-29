@@ -29,13 +29,14 @@ from activations import ActivationFunctionSet, NodeFunctionSet
 
 class Evolution:
 
-    def __init__(self, n_net_inputs, n_net_outputs, pop_size=10, environment=None, gym_env_string="Acrobot-v1", dataset=None, yaml_config=None):
+    def __init__(self, n_net_inputs, n_net_outputs, pop_size=10, environment=None, gym_env_string="Acrobot-v1", dataset=None, yaml_config=None, parallel=True):
         self.gene_pool = GenePool(cppn_inputs=4)  # CPPN inputs x1 x2 y1 y2
         self.generation = 0
         self.pop_size = pop_size
         self.genomes = []  # Genomes in the current population
         self.neural_nets = []  # Neural networks (phenotype) in the current population
         self.species = []  # Group similar genomes into the same species
+        self.parallel = parallel
         if environment is None:
             self.n_net_inputs = n_net_inputs
             self.n_net_outputs = n_net_outputs
@@ -43,6 +44,9 @@ class Evolution:
             self.env = environment
             self.gym_env_string = gym_env_string
             self.n_net_inputs, self.n_net_outputs = get_env_spaces(gym_env_string)
+        if parallel:
+            import multiprocessing
+            self.pool = multiprocessing.Pool(processes=4)
         self.act_set = ActivationFunctionSet()
         self.node_set = NodeFunctionSet()
         self._get_initial_population()
@@ -86,9 +90,12 @@ class Evolution:
 
     def _evaluate_population(self):
         """ evaluate all neural networks in population and store fitnesses """
-        for net in self.neural_nets:
-            env = self.env(self.gym_env_string)
-            env.evaluate(net)
+        if self.parallel:
+            pool.map(f,
+        else:
+            for net in self.neural_nets:
+                env = self.env(self.gym_env_string)
+                env.evaluate(net)
 
     def _reproduce_new_generation(self):
         """ reproduce next generation given fitnesses of current generation """

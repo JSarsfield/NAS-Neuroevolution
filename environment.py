@@ -22,20 +22,21 @@ class Environment:
 class EnvironmentReinforcement(Environment):
     """ Reinforcement environments """
 
-    def __init__(self, gym_env_string, trials=10, steps=1000):
+    def __init__(self, gym_env_string, net, parallel=True, trials=10, steps=1000):
         super().__init__()
-        self.net = None  # Neural network to evaluate
+        self.net = net  # Neural network to evaluate
         self.trials = trials  # Fitness = average of all trials
         self.steps = steps  # How many steps should
         self.gym_env_string = gym_env_string
         self.env = None
+        if parallel:
+            self.evaluate()
 
-    def evaluate(self, net, render=False):
+    def evaluate(self, render=False):
+        """ evaluate the neural net and return the final fitness """
         import gym
-        self.net = net
         self.env = gym.make(self.gym_env_string)
         fitness = np.array([])
-        """ evaluate the neural net and return the final fitness """
         for trial in range(self.trials):
             observation = self.env.reset()
             action = self.net.graph.forward(observation).max(0)[1].item()
