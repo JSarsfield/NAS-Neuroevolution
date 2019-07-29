@@ -14,7 +14,7 @@ import random
 #from time import perf_counter  # Accurate timing
 
 from substrate import Substrate
-from environment import EnvironmentReinforcement
+from environment import EnvironmentReinforcement, get_env_spaces
 from species import Species
 from config import *
 from genes import GeneLink, GeneNode
@@ -22,20 +22,27 @@ from activations import ActivationFunctionSet, NodeFunctionSet
 
 
 # TODO pickle top performing genomes after each/x generations
-# TODO add connection cost to ensure
+# TODO !!!! add connection cost to ensure
 # TODO clamp weights to ensure minimum value
+# TODO investigate changing and dynamic environments
+# TODO select for novelty/diversity
 
 class Evolution:
 
-    def __init__(self, n_net_inputs, n_net_outputs, pop_size=10, dataset=None, yaml_config=None):
+    def __init__(self, n_net_inputs, n_net_outputs, pop_size=10, environment=None, gym_env_string="Acrobot-v1", dataset=None, yaml_config=None):
         self.gene_pool = GenePool(cppn_inputs=4)  # CPPN inputs x1 x2 y1 y2
         self.generation = 0
         self.pop_size = pop_size
         self.genomes = []  # Genomes in the current population
         self.neural_nets = []  # Neural networks (phenotype) in the current population
         self.species = []  # Group similar genomes into the same species
-        self.n_net_inputs = n_net_inputs
-        self.n_net_outputs = n_net_outputs
+        if environment is None:
+            self.n_net_inputs = n_net_inputs
+            self.n_net_outputs = n_net_outputs
+        else:
+            self.env = environment
+            self.gym_env_string = gym_env_string
+            self.n_net_inputs, self.n_net_outputs = get_env_spaces(gym_env_string)
         self.act_set = ActivationFunctionSet()
         self.node_set = NodeFunctionSet()
         self._get_initial_population()
@@ -80,7 +87,7 @@ class Evolution:
     def _evaluate_population(self):
         """ evaluate all neural networks in population and store fitnesses """
         for net in self.neural_nets:
-            env = EnvironmentReinforcement()
+            env = self.env(self.gym_env_string)
             env.evaluate(net)
 
     def _reproduce_new_generation(self):
@@ -144,8 +151,8 @@ class Evolution:
                         nodes_to_add.append(g1.gene_links[i].out_node)
                     else:
                         links_to_add.append(g2.gene_links[j])
-                        nodes_to_add.append(g1.gene_links[j].in_node)
-                        nodes_to_add.append(g1.gene_links[j].out_node)
+                        nodes_to_add.append(g2.gene_links[j].in_node)
+                        nodes_to_add.append(g2.gene_links[j].out_node)
                     i += 1
                     j += 1
                 elif g1.gene_links[i].historical_marker < g2.gene_links[j].historical_marker:
@@ -195,7 +202,7 @@ class Evolution:
 
     def _mutate_structural(self, gene_nodes, gene_links):
         """ mutate genome to add nodes and links. Note passed by reference """
-        # TODO allow nodes to become disabled and thus all ingoing out going links disabled
+        # TODO !!! allow nodes to become disabled and thus all ingoing out going links disabled
         # TODO add config probs for toggling NODE! enable/disable
         # Mutate attempt add link
         if event(link_add_prob):

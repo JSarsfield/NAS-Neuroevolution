@@ -46,7 +46,7 @@ class Substrate:
                         break
                 if express_node:
                     nodes.append(Node(link.x2, link.y2))
-        print("input to hid: ", perf_counter()-start_time)
+        #print("input to hid: ", perf_counter()-start_time)
         # Find hidden to hidden links and new nodes
         unexplored_nodes = deque()
         unexplored_nodes.extend(nodes)
@@ -73,7 +73,7 @@ class Substrate:
             if perf_counter()-start_time > substrate_search_max_time:
                 print("Too long, giving up, net set to void")
                 return Network(None, None, None, None, None, void=True)
-        print("hid to hid: ", perf_counter()-start_time)
+        #print("hid to hid: ", perf_counter()-start_time)
         start_time = perf_counter()
         # Find hidden to output links
         for i in np.linspace(-1, 1, n_net_outputs, dtype=np.float32):
@@ -89,7 +89,7 @@ class Substrate:
                         new_links_keep.append(n_link)
                         break
             links.extend(new_links_keep)
-        print("hid to output: ", perf_counter()-start_time)
+        #print("hid to output: ", perf_counter()-start_time)
         start_time = perf_counter()
         # Remove neurons and their connections that don't have a path from input to output
         # Add link references to relevant nodes
@@ -102,11 +102,11 @@ class Substrate:
                 elif node.x == link.x1 and node.y == link.y1:
                     node.add_out_link(link)
                     link.out_node = node
-        print("add link refs to nods: ", perf_counter()-start_time)
+        #print("add link refs to nods: ", perf_counter()-start_time)
         start_time = perf_counter()
         # Depth first search to find all links on all paths from input to output
         keep_links, keep_nodes = self.depth_first_search(input_nodes)
-        print("DFS: ", perf_counter()-start_time)
+        #print("DFS: ", perf_counter()-start_time)
         # Determine that each input and output node is in keep_nodes and thus on path
         if len(keep_nodes) < (n_net_inputs + n_net_outputs) or keep_nodes[n_net_inputs-1].y != -1 or keep_nodes[-n_net_outputs].y != 1:
             # An input/output node didn't have any outgoing/ingoing links thus neural net is void

@@ -43,7 +43,7 @@ class Network:
         self.graph = Network.Graph(self)
 
         # TODO debug code below
-        self.visualise_neural_net()
+        #self.visualise_neural_net()
 
     def visualise_neural_net(self):
         import matplotlib.pyplot as plt

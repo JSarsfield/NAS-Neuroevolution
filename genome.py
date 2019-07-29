@@ -22,12 +22,10 @@ from activations import ActivationFunctionSet
 from config import *
 
 
-# TODO visualise genome
-
 class CPPNGenome:
     """ CPPN genome - can express/decode to produce an ANN """
 
-    def __init__(self, gene_nodes_in, gene_nodes, gene_links, num_inputs=4, num_outputs=2, var_thresh=0.01, band_thresh=0.01):
+    def __init__(self, gene_nodes_in, gene_nodes, gene_links, num_inputs=4, num_outputs=2, var_thresh=0.3, band_thresh=0):
         """ Call on master thread then call a create graph function on the worker thread """
         self.weights = None  # Weight of links in graph. Sampled from parent/s genome/s or uniform distribution when no parent
         self.gene_nodes = copy.deepcopy(gene_nodes)

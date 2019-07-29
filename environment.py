@@ -5,6 +5,13 @@ Environment to evaluate a neural network during its lifetime
 import numpy as np
 
 
+def get_env_spaces(gym_env_string):
+    """ Get environment observation and action space for gym reinforcement environments """
+    import gym
+    temp_env = gym.make(gym_env_string)
+    return temp_env.observation_space.shape[0], temp_env.action_space.n
+
+
 class Environment:
     """ base class for all environments """
 
@@ -15,7 +22,7 @@ class Environment:
 class EnvironmentReinforcement(Environment):
     """ Reinforcement environments """
 
-    def __init__(self, gym_env_string="CartPole-v0", trials=10, steps=1000):
+    def __init__(self, gym_env_string, trials=10, steps=1000):
         super().__init__()
         self.net = None  # Neural network to evaluate
         self.trials = trials  # Fitness = average of all trials
