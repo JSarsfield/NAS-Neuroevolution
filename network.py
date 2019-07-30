@@ -26,7 +26,7 @@ class Network:
     def __init__(self, genome, links, nodes, n_net_inputs, n_net_outputs, void=False):
         self.is_void = void
         if void:
-            self.fitness = -1
+            self.fitness = -99999
             return
         self.genome = genome  # Genome used to express ANN
         self.links = links

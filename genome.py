@@ -112,6 +112,15 @@ class CPPNGenome:
             # Mutate activation func
             if event(change_act_prob):
                 node.act_func = self.act_set.get_random_activation_func()
+        # Mutate QuadTree variance
+        if event(var_mutate_prob):
+            self.var_thresh += np.random.normal(scale=gauss_var_scale)
+            self.var_thresh = self.var_thresh if self.var_thresh > 0 else 0
+        # Mutate QuadTree band thresh
+        if event(band_mutate_prob):
+            self.band_thresh += np.random.normal(scale=gauss_band_scale)
+            self.band_thresh = self.band_thresh if self.band_thresh > 0 else 0
+
 
     def set_species(self, species):
         """ set the species this genome belongs to """

@@ -14,7 +14,7 @@ import random
 #from time import perf_counter  # Accurate timing
 
 from substrate import Substrate
-from environment import EnvironmentReinforcement, get_env_spaces
+from environment import EnvironmentReinforcement, get_env_spaces, parallel_evaluate_net
 from species import Species
 from config import *
 from genes import GeneLink, GeneNode
@@ -29,7 +29,7 @@ from activations import ActivationFunctionSet, NodeFunctionSet
 
 class Evolution:
 
-    def __init__(self, n_net_inputs, n_net_outputs, pop_size=10, environment=None, gym_env_string="Acrobot-v1", dataset=None, yaml_config=None, parallel=True):
+    def __init__(self, n_net_inputs, n_net_outputs, pop_size=10, environment=None, gym_env_string="BipedalWalker-v2", dataset=None, yaml_config=None, parallel=True):
         self.gene_pool = GenePool(cppn_inputs=4)  # CPPN inputs x1 x2 y1 y2
         self.generation = 0
         self.pop_size = pop_size
@@ -37,6 +37,7 @@ class Evolution:
         self.neural_nets = []  # Neural networks (phenotype) in the current population
         self.species = []  # Group similar genomes into the same species
         self.parallel = parallel
+        self.best = []  # print best fitnesses for all generations TODO this is debug
         if environment is None:
             self.n_net_inputs = n_net_inputs
             self.n_net_outputs = n_net_outputs
@@ -91,10 +92,12 @@ class Evolution:
     def _evaluate_population(self):
         """ evaluate all neural networks in population and store fitnesses """
         if self.parallel:
-            pool.map(f,
+            fitnesses = self.pool.starmap(parallel_evaluate_net, [(net, self.env, self.gym_env_string) for net in self.neural_nets])
+            for i, net in enumerate(self.neural_nets):
+                net.set_fitness(fitnesses[i])
         else:
             for net in self.neural_nets:
-                env = self.env(self.gym_env_string)
+                env = self.env(self.gym_env_string, parallel=False)
                 env.evaluate(net)
 
     def _reproduce_new_generation(self):
@@ -103,7 +106,8 @@ class Evolution:
         new_nets = []  # next gen nets
         new_species = []  # next gen speices
         self.neural_nets.sort(key=lambda net: net.fitness, reverse=True)  # Sort nets by fitness - element 0 = fittest
-        print("Best fitness unnorm ", self.neural_nets[0].fitness_unnorm)
+        self.best.append(self.neural_nets[0].fitness_unnorm)
+        print("Best fitnesses unnorm ", self.best[-100:])
         # sort species genomes by fitness
         for s in self.species:
             s.genomes.sort(key=lambda x: x.net.fitness, reverse=True)  # Sort genomes within species by fitness
@@ -231,6 +235,7 @@ class Evolution:
                     for i, link in enumerate(gene_links):
                         if link[1] == gene_nodes[in_node_ind].historical_marker:
                             existing_links.append(link[2])
+                    existing_links = np.unique(existing_links)
                     # If number of existing ingoing links is less than the number of nodes before this node then add a new link
                     if len(existing_links) != ind_node_before+1:
                         existing_links = [i for i, node in enumerate(gene_nodes) if node.historical_marker in existing_links]
