@@ -19,6 +19,7 @@ from species import Species
 from config import *
 from genes import GeneLink, GeneNode
 from activations import ActivationFunctionSet, NodeFunctionSet
+import keyboard
 
 
 # TODO pickle top performing genomes after each/x generations
@@ -108,6 +109,8 @@ class Evolution:
         self.neural_nets.sort(key=lambda net: net.fitness, reverse=True)  # Sort nets by fitness - element 0 = fittest
         self.best.append(self.neural_nets[0].fitness_unnorm)
         print("Best fitnesses unnorm ", self.best[-100:])
+        if keyboard.is_pressed('v'):
+            self.env(self.gym_env_string, trials=1).evaluate(self.neural_nets[0], render=True)
         # sort species genomes by fitness
         for s in self.species:
             s.genomes.sort(key=lambda x: x.net.fitness, reverse=True)  # Sort genomes within species by fitness
@@ -133,13 +136,13 @@ class Evolution:
             # Express the genome to produce a neural network
             new_net = Substrate().build_network_from_genome(new_genome, self.n_net_inputs, self.n_net_outputs)
             # Add new genome and net if not void
-            if not new_net.is_void:
-                new_genomes.append(new_genome)
-                new_nets.append(new_net)
-                i = 0 if i+1 == stop else i+1
-                print("Added genome ",len(new_genomes), " of ", self.pop_size)
-                if len(new_genomes) == self.pop_size:
-                    break
+            # if not new_net.is_void:
+            new_genomes.append(new_genome)
+            new_nets.append(new_net)
+            i = 0 if i+1 == stop else i+1
+            print("Added genome ",len(new_genomes), " of ", self.pop_size)
+            if len(new_genomes) == self.pop_size:
+                break
         # Overwrite current generation genomes/nets/species TODO pickle best performing
         self.genomes = new_genomes
         self.neural_nets = new_nets

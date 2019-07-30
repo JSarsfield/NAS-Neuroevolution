@@ -75,9 +75,6 @@ class CPPNGenome:
 
     def create_initial_graph(self):
         """ Create an initial graph for generation zero that has no parent/s. Call on worker thread """
-        # TODO mutate first, structural mutation?
-        self.var_thresh = 0.3
-        self.band_thresh = 0
         # Initialise weights
         for link in self.gene_links:
             link.weight = random.uniform(weight_init_min, weight_init_max)
@@ -202,9 +199,18 @@ class CPPNGenome:
             for node in genome.gene_nodes:
                 node_weights = []
                 in_node_inds = []
+                all_links_disabled = True
                 for link in node.ingoing_links:
-                    node_weights.append(link.weight)
+                    if link.enabled:
+                        node_weights.append(link.weight)
+                        all_links_disabled = False
+                    else:
+                        node_weights.append(0)  # Disable link
                     in_node_inds.append(link.out_node.node_ind)
+                if all_links_disabled:
+                    self.node_biases.append(0)  # Disable node as all in going links are disabled
+                else:
+                    self.node_biases.append(node.bias)
                 self.output_inds.append(torch.tensor(in_node_inds))
                 self.weights.append(torch.tensor(node_weights, dtype=torch.float32))
                 self.node_funcs.append(node.node_func)

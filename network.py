@@ -18,6 +18,10 @@ def relu(x):
     return max(0, x)
 
 
+def step(x):
+    return 1 if x > 0 else 0
+
+
 class Network:
     # TODO determine how activation func of nodes is going to be determined
     # TODO if number of outputs is greater than 1 is there always going to be a path to all output nodes??
@@ -25,9 +29,6 @@ class Network:
 
     def __init__(self, genome, links, nodes, n_net_inputs, n_net_outputs, void=False):
         self.is_void = void
-        if void:
-            self.fitness = -99999
-            return
         self.genome = genome  # Genome used to express ANN
         self.links = links
         self.nodes = nodes
@@ -40,6 +41,8 @@ class Network:
         self.fitness_unnorm = None  # Un-normalised fitness of net
         self.fitness = None  # Fitness of net normalised for size of species
         self.genome.net = self
+        if void:
+            return
         self.graph = Network.Graph(self)
 
         # TODO debug code below
@@ -81,7 +84,7 @@ class Network:
 
     def set_fitness(self, fitness_unnorm):
         self.fitness_unnorm = fitness_unnorm
-        self.fitness = fitness_unnorm/len(self.genome.species.genomes)
+        self.fitness = fitness_unnorm  # TODO set back to fitness_unnorm/len(self.genome.species.genomes)
 
     class Graph(nn.Module):
         """ computational graph """

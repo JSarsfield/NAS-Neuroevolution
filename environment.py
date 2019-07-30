@@ -38,6 +38,10 @@ class EnvironmentReinforcement(Environment):
 
     def evaluate(self, net, render=False):
         """ evaluate the neural net and return the final fitness """
+        if net.is_void:
+            return -9999  # return low fitness for void networks
+        if render:
+            import keyboard
         import gym
         self.net = net
         self.env = gym.make(self.gym_env_string)
@@ -48,10 +52,16 @@ class EnvironmentReinforcement(Environment):
             trial_reward = 0
             for step in range(self.steps):
                 if render:
-                    self.env.render()
+                    if keyboard.is_pressed('q'):
+                        self.env.close()
+                        return
+                    else:
+                        self.env.render()
                 observation, reward, done, info = self.env.step(action)
                 trial_reward += reward
                 if done:
+                    if render:
+                        self.env.close()
                     break
                 action = self.net.graph.forward(observation).numpy()  # self.net.graph.forward(observation).max(0)[1].item()
             fitness = np.append(fitness, trial_reward)
