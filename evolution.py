@@ -67,6 +67,7 @@ class Evolution:
         while True:  # For infinite generations
             print("Start of generation ", str(self.generation))
             self._speciate_genomes()
+            print("Num of species ", len(self.species))
             self._evaluate_population()
             print("End of generation ", str(self.generation))
             self._reproduce_new_generation()
@@ -75,6 +76,7 @@ class Evolution:
 
     def _speciate_genomes(self):
         """ Put genomes into species """
+        global compatibility_dist
         genomes_unmatched = deque(self.genomes)
         # Put all unmatched genomes into a species or create new species if no match
         while genomes_unmatched:
@@ -82,13 +84,19 @@ class Evolution:
             matched = False
             # Search existing species to find match for this genome
             for s in self.species:
-                if s.get_distance(genome) < compatibility_thresh:
+                if s.get_distance(genome) < compatibility_dist:
                     s.add_to_species(genome)
                     matched = True
                     break
             # No species found so create new species and use this genome as the representative genome
             if not matched:
                 self.species.append(Species(genome))
+        # Adjust compatibility_dist if number of species is less or more than target_num_species
+        if len(self.species) < target_num_species:
+            compatibility_dist -= compatibility_adjust
+        elif len(self.species) > target_num_species:
+            compatibility_dist += compatibility_adjust
+        print("compatibility_dist ", compatibility_dist)
 
     def _evaluate_population(self):
         """ evaluate all neural networks in population and store fitnesses """
@@ -150,8 +158,6 @@ class Evolution:
 
     def _crossover(self, g1, g2):
         """ crossover of two parent genomes """
-        gene_nodes = set()
-        gene_links = []
         i = 0
         j = 0
         nodes_to_add = []
@@ -190,6 +196,16 @@ class Evolution:
                     nodes_to_add.append(g2.gene_links[j].out_node)
                     links_to_add.append(g2.gene_links[j])
                     j += 1
+        return self._create_new_genome(nodes_to_add, links_to_add, g1.cppn_inputs)
+
+    def _copy_with_mutation(self, g1):
+        """ copy a genome with mutation """
+        return self._create_new_genome(g1.gene_nodes_in + g1.gene_nodes, g1.gene_links, g1.cppn_inputs)
+
+    def _create_new_genome(self, nodes_to_add, links_to_add, cppn_inputs):
+        """ Create new genome - perform structural & non structural mutation """
+        gene_nodes = set()
+        gene_links = []
         # Add in/out nodes and links
         for node in nodes_to_add:
             gene_nodes.add(GeneNode(node.depth,
@@ -208,8 +224,8 @@ class Evolution:
         gene_nodes = list(gene_nodes)
         gene_nodes.sort(key=lambda x: x.depth)
         self._mutate_structural(gene_nodes, gene_links)  # This is performed on master thread to ensure only new genes are added to gene pool
-        gene_nodes_in = gene_nodes[:g1.cppn_inputs]
-        gene_nodes = gene_nodes[g1.cppn_inputs:]
+        gene_nodes_in = gene_nodes[:cppn_inputs]
+        gene_nodes = gene_nodes[cppn_inputs:]
         new_genome = CPPNGenome(gene_nodes_in, gene_nodes, gene_links)
         new_genome.mutate_nonstructural()  # TODO this should be called on a worker thread
         return new_genome
@@ -288,17 +304,3 @@ class Evolution:
                                new_link.historical_marker,
                                new_link.enabled))
         gene_nodes.sort(key=lambda x: x.depth)
-
-    def _copy_with_mutation(self, g1):
-        """ copy a genome with mutation """
-        # Mutate genome
-        gene_nodes, gene_links = self._perform_mutations(gene_nodes, gene_links)
-        return CPPNGenome(g1.gene_nodes_in, gene_nodes, gene_links)
-
-    def _perform_mutations(self, gene_nodes, gene_links):
-        """ perform structural and weight mutations """
-        # mutate weights
-        # mutate toggle links
-        # mutate add links
-        # mutate add nodes
-        return gene_nodes, gene_links

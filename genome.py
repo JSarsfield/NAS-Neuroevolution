@@ -71,7 +71,7 @@ class CPPNGenome:
         for node in self.gene_nodes_in:
             if node.historical_marker == hist_marker:
                 return node
-        raise Exception("No node with historical marker found in func get_node_from_hist_marker genome.py")
+        raise Exception("No node with historical marker found in func get_node_from_hist_marker genome.py hist maker: ", hist_marker)
 
     def create_initial_graph(self):
         """ Create an initial graph for generation zero that has no parent/s. Call on worker thread """

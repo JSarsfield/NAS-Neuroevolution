@@ -84,7 +84,7 @@ class Network:
 
     def set_fitness(self, fitness_unnorm):
         self.fitness_unnorm = fitness_unnorm
-        self.fitness = fitness_unnorm  # TODO set back to fitness_unnorm/len(self.genome.species.genomes)
+        self.fitness = fitness_unnorm/len(self.genome.species.genomes)
 
     class Graph(nn.Module):
         """ computational graph """

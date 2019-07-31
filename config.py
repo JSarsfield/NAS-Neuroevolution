@@ -49,12 +49,11 @@ elitism_thresh = 1  # Number of fittest organisms in each species that is preser
 pop_survival_thresh = 0.2  # Fraction of population that is allowed to reproduce for next generation
 min_species_size = 2  # min number of organisms/nets in a species
 
-compatibility_thresh = 3  # Max distance two genomes can be considered as the same species TODO !!! needs to be adaptive
-compatibility_excess_coeff = 1  # Balance the distance calculation against weights and disjoint genes
-compatibility_disjoint_coeff = 2  # Balance the distance calculation against weights and excess genes
-compatibility_weight_coeff = 1.5  # Balance the distance calculation against excess and disjoint genes
-
-
+compatibility_dist = 0.2  # Max distance two genomes can be considered as the same species TODO !!! needs to be adaptive
+compatibility_adjust = 0.1  # Amount to adjust compatibility_dist each gen to achieve target num species
+compatibility_excess_coeff = 3  # Balance the distance calculation against weights and disjoint genes
+compatibility_disjoint_coeff = 1  # Balance the distance calculation against weights and excess genes
+compatibility_weight_coeff = 2  # Balance the distance calculation against excess and disjoint genes
 target_num_species = 10  # Number of species to target TODO if species grows above this increase compatibility_thresh to reduce species
 
 diversity_coeff = 1  # increase/decrease the level of mutation based on species sizes and species ages
