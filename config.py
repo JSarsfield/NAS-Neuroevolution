@@ -54,7 +54,7 @@ compatibility_adjust = 0.1  # Amount to adjust compatibility_dist each gen to ac
 compatibility_excess_coeff = 3  # Balance the distance calculation against weights and disjoint genes
 compatibility_disjoint_coeff = 1  # Balance the distance calculation against weights and excess genes
 compatibility_weight_coeff = 2  # Balance the distance calculation against excess and disjoint genes
-target_num_species = 10  # Number of species to target TODO if species grows above this increase compatibility_thresh to reduce species
+target_num_species = 12  # Number of species to target TODO if species grows above this increase compatibility_thresh to reduce species
 
 diversity_coeff = 1  # increase/decrease the level of mutation based on species sizes and species ages
 
