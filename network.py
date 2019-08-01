@@ -38,8 +38,8 @@ class Network:
         del self.nodes[:n_net_inputs] # Remove input nodes
         self.n_net_inputs = n_net_inputs
         self.n_net_outputs = n_net_outputs
-        self.fitness_unnorm = None  # Un-normalised fitness of net
-        self.fitness = None  # Fitness of net normalised for size of species
+        self.fitness_unnorm = 0  # Un-normalised fitness of net
+        self.fitness = 0  # Fitness of net normalised for size of species
         self.genome.net = self
         if void:
             return
@@ -82,9 +82,14 @@ class Network:
         nx.draw_networkx(G, pos=pos, node_size=650, node_color='#ffaaaa', linewidth=100, with_labels=True, width=min_width+weights)
         plt.show()
 
-    def set_fitness(self, fitness_unnorm):
-        self.fitness_unnorm = fitness_unnorm
-        self.fitness = fitness_unnorm/len(self.genome.species.genomes)
+    def set_fitness(self, fitness):
+        self.fitness = fitness
+
+    """
+    def set_fitness(self, fitness):
+        # Adjust fitness for number of species. NOTE no longer used as species no longer compete (local competition)
+        self.fitness = self.fitness_unnorm/len(self.genome.species.genomes)
+    """
 
     class Graph(nn.Module):
         """ computational graph """
