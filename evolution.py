@@ -53,15 +53,6 @@ class Evolution:
         self.node_set = NodeFunctionSet()
         self._get_initial_population()
 
-    def _get_initial_population(self):
-        while len(self.neural_nets) != self.pop_size:
-            genome = CPPNGenome(self.gene_pool.gene_nodes_in, self.gene_pool.gene_nodes, self.gene_pool.gene_links)
-            genome.create_initial_graph()
-            net = Substrate().build_network_from_genome(genome, self.n_net_inputs, self.n_net_outputs)  # Express the genome to produce a neural network
-            if not net.is_void:
-                self.genomes.append(genome)
-                self.neural_nets.append(net)
-
     def begin_evolution(self):
         print("Starting evolution...")
         while True:  # For infinite generations
@@ -74,9 +65,19 @@ class Evolution:
             print("New generation reproduced")
             self.generation += 1
 
+    def _get_initial_population(self):
+        while len(self.neural_nets) != self.pop_size:
+            genome = CPPNGenome(self.gene_pool.gene_nodes_in, self.gene_pool.gene_nodes, self.gene_pool.gene_links)
+            genome.create_initial_graph()
+            net = Substrate().build_network_from_genome(genome, self.n_net_inputs, self.n_net_outputs)  # Express the genome to produce a neural network
+            self.genomes.append(genome)
+            self.neural_nets.append(net)
+            print("Added genome ", len(self.genomes), " of ", self.pop_size)
+
     def _speciate_genomes(self):
         """ Put genomes into species """
         global compatibility_dist
+        # TODO calc normed fitness for all nets
         genomes_unmatched = deque(self.genomes)
         # Put all unmatched genomes into a species or create new species if no match
         while genomes_unmatched:
@@ -143,8 +144,6 @@ class Evolution:
             new_genome.create_graph()
             # Express the genome to produce a neural network
             new_net = Substrate().build_network_from_genome(new_genome, self.n_net_inputs, self.n_net_outputs)
-            # Add new genome and net if not void
-            # if not new_net.is_void:
             new_genomes.append(new_genome)
             new_nets.append(new_net)
             i = 0 if i+1 == stop else i+1
