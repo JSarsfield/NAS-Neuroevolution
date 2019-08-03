@@ -72,7 +72,7 @@ class Substrate:
             # If taking too long give up and return void net
             if perf_counter()-start_time > substrate_search_max_time:
                 print("Too long, giving up, net set to void")
-                return Network(None, None, None, None, None, void=True)
+                return Network(genome, [], [], n_net_inputs, n_net_outputs, void=True)
         #print("hid to hid: ", perf_counter()-start_time)
         start_time = perf_counter()
         # Find hidden to output links
