@@ -38,8 +38,8 @@ class Network:
         del self.nodes[:n_net_inputs] # Remove input nodes
         self.n_net_inputs = n_net_inputs
         self.n_net_outputs = n_net_outputs
-        self.fitness_unnorm = 0  # Un-normalised fitness of net
-        self.fitness = 0  # Fitness of net normalised for size of species
+        self.fitness_unnorm = -9999  # Un-normalised fitness of net
+        self.fitness = -9999  # Fitness of net normalised for size of species
         self.genome.net = self
         if void:
             return

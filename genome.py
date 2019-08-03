@@ -51,7 +51,7 @@ class CPPNGenome:
                                                 link.historical_marker,
                                                 enabled=link.enabled))
         self.gene_nodes.sort(key=operator.attrgetter('depth'))
-        self.gene_links.sort(key=lambda x: x.historical_marker)  # Sorted genome required for speciation
+        #self.gene_links.sort(key=lambda x: x.historical_marker)  # Sorted genome required for speciation
         node_ind = 0
         for node in self.gene_nodes_in:
             node.node_ind = node_ind

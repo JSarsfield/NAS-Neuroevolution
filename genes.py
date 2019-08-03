@@ -44,9 +44,10 @@ class GenePool:
                                        "node_func": self.node_functions.get("dot")}, is_input=False)
         # Add a single initial link for each input node
         for i in range(self.num_inputs):
-            self.create_gene_link({"weight": None,
-                                   "in_node": self.gene_nodes[0],
-                                   "out_node": self.gene_nodes_in[i]})
+            self.create_gene_link((None,
+                                   self.gene_nodes[0],
+                                   self.gene_nodes_in[i],
+                                   self.get_new_hist_marker()))
         # Create initial LEO gaussian hidden nodes with bias towards locality
         for i in range(self.n_dims):
             self.create_initial_gene_node({"depth": 0.5,
@@ -62,14 +63,16 @@ class GenePool:
         offset = 1
         for i in range(self.num_inputs):
             in_ind = offset + (i % self.n_dims)
-            self.create_gene_link({"weight": 1,
-                                   "in_node": self.gene_nodes[in_ind],
-                                   "out_node": self.gene_nodes_in[i]})
+            self.create_gene_link((1,
+                                   self.gene_nodes[in_ind],
+                                   self.gene_nodes_in[i],
+                                   self.get_new_hist_marker()))
         # Create LEO gaussian to step output links
         for i in range(self.n_dims):
-            self.create_gene_link({"weight": 1,
-                                   "in_node": self.gene_nodes[-1],
-                                   "out_node": self.gene_nodes[offset + i]})
+            self.create_gene_link((1,
+                                   self.gene_nodes[-1],
+                                   self.gene_nodes[offset + i],
+                                   self.get_new_hist_marker()))
         self.gene_links.sort(key=lambda x: x.historical_marker)
     """
     def create_minimal_graphs(self, n):
@@ -92,13 +95,13 @@ class GenePool:
         """ Create a gene e.g. link or node
         Must have a historical marker required for crossover of parents
         """
-        gene_config["historical_marker"] = self.get_new_hist_marker()
-        self.gene_nodes.append(GeneNode(**gene_config))
+        #gene_config["historical_marker"] = self.get_new_hist_marker()
+        self.gene_nodes.append(GeneNode(*gene_config))
         return self.gene_nodes[-1]
 
     def create_gene_link(self, gene_config):
-        gene_config["historical_marker"] = self.get_new_hist_marker()
-        self.gene_links.append(GeneLink(**gene_config))
+        #gene_config["historical_marker"] = self.get_new_hist_marker()
+        self.gene_links.append(GeneLink(*gene_config))
         return self.gene_links[-1]
 
     def get_or_create_gene_link(self, in_node_hist_marker, out_node_hist_marker):
@@ -107,11 +110,12 @@ class GenePool:
             if link.in_node.historical_marker == in_node_hist_marker and link.out_node.historical_marker == out_node_hist_marker:
                 return link
         # No existing link so create one
-        return GeneLink(None,
-                        self.get_node_from_hist_marker(in_node_hist_marker),
-                        self.get_node_from_hist_marker(out_node_hist_marker),
-                        self.get_new_hist_marker(),
-                        enabled=True)
+        self.gene_links.append(GeneLink(None,
+                                        self.get_node_from_hist_marker(in_node_hist_marker),
+                                        self.get_node_from_hist_marker(out_node_hist_marker),
+                                        self.get_new_hist_marker(),
+                                        enabled=True))
+        return self.gene_links[-1]
 
     def get_new_hist_marker(self):
         self._hist_marker_num += 1

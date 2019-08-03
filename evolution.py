@@ -31,15 +31,17 @@ import keyboard
 def parallel_reproduce_eval(parent_genomes, n_net_inputs, n_net_outputs, env, gym_env_string):
     # Reproduce from parent genomes
     if type(parent_genomes) is tuple:  # Two parent genomes so crossover
-        genome = crossover(parent_genomes[0], parent_genomes[1])
+        genome, new_structures = crossover(parent_genomes[0], parent_genomes[1])
     else:  # One parent genome so mutate
-        genome = copy_with_mutation(parent_genomes)
+        genome, new_structures = copy_with_mutation(parent_genomes)
+    # Create genome graph
+    genome.create_graph()
     # Create net from genome
     net = Substrate().build_network_from_genome(genome, n_net_inputs, n_net_outputs)
     # Evaluate
     fitness = env(gym_env_string).evaluate(net)
     net.set_fitness(fitness)
-    return genome, net
+    return (genome, net, new_structures)
 
 
 def crossover(g1, g2):
@@ -111,18 +113,26 @@ def create_new_genome(nodes_to_add, links_to_add, cppn_inputs):
                            link.enabled))
     gene_nodes = list(gene_nodes)
     gene_nodes.sort(key=lambda x: x.depth)
-    mutate_structural(gene_nodes, gene_links)  # This is performed on master thread to ensure only new genes are added to gene pool
+    new_structures = mutate_structural(gene_nodes, gene_links)  # This is performed on master thread to ensure only new genes are added to gene pool
     gene_nodes_in = gene_nodes[:cppn_inputs]
     gene_nodes = gene_nodes[cppn_inputs:]
     new_genome = CPPNGenome(gene_nodes_in, gene_nodes, gene_links)
     new_genome.mutate_nonstructural()  # TODO this should be called on a worker thread
-    return new_genome
+    return new_genome, new_structures
+
+
+def get_node_from_hist_marker(gene_nodes, hist_marker):
+    for node in gene_nodes:
+        if node.historical_marker == hist_marker:
+            return node
+    raise Exception("No node with historical marker found in func get_node_from_hist_marker evolution.py")
 
 
 def mutate_structural(gene_nodes, gene_links):
     """ mutate genome to add nodes and links. Note passed by reference """
     # TODO !!! allow nodes to become disabled and thus all ingoing out going links disabled
     # TODO add config probs for toggling NODE! enable/disable
+    new_structures = {}  # keep track of new links and nodes to ensure correct historical marker is applied after
     # Mutate attempt add link
     if event(link_add_prob):
         # shuffle node indices
@@ -149,12 +159,13 @@ def mutate_structural(gene_nodes, gene_links):
                     existing_links = [i for i, node in enumerate(gene_nodes) if node.historical_marker in existing_links]
                     out_node = gene_nodes[np.random.choice(np.setdiff1d(np.arange(ind_node_before+1), existing_links), 1)[0]]
                     # Add new link
-                    new_link = gene_pool.get_or_create_gene_link(gene_nodes[in_node_ind].historical_marker, out_node.historical_marker)
+                    #new_link = gene_pool.get_or_create_gene_link(gene_nodes[in_node_ind].historical_marker, out_node.historical_marker)
                     gene_links.append((random.uniform(weight_init_min, weight_init_max),
-                                       new_link.in_node.historical_marker,
-                                       new_link.out_node.historical_marker,
-                                       new_link.historical_marker,
-                                       new_link.enabled))
+                                           gene_nodes[in_node_ind].historical_marker,
+                                           out_node.historical_marker,
+                                           None,
+                                           True))
+                    new_structures["new_link"] = (gene_links[-1][1], gene_links[-1][2])
                     break
                 attempt += 1
             if attempt == new_link_attempts:
@@ -164,35 +175,37 @@ def mutate_structural(gene_nodes, gene_links):
         # Get a random link to split and add node
         gene_link_ind = random.randint(0, len(gene_links)-1)
         old_link = gene_links[gene_link_ind]
-        in_node = gene_pool.get_node_from_hist_marker(old_link[1])
-        out_node = gene_pool.get_node_from_hist_marker(old_link[2])
+        in_node = get_node_from_hist_marker(gene_nodes, old_link[1])
+        out_node = get_node_from_hist_marker(gene_nodes, old_link[2])
         old_link_update = (old_link[0], old_link[1], old_link[2], old_link[3], False)
         del gene_links[gene_link_ind]
         gene_links.append(old_link_update)
+        act_set = ActivationFunctionSet()
+        node_set = NodeFunctionSet()
         # Create new node
-        gene_nodes.append(gene_pool.create_gene_node({"depth": out_node.depth+((in_node.depth-out_node.depth)/2),
-                                         "activation_func": act_set.get_random_activation_func(),
-                                         "node_func": node_set.get("dot"),
-                                         "bias": random.uniform(bias_init_min, bias_init_max)}))
+        new_structures["new_node"] = (old_link[1], old_link[2])
+        new_structures["node_depth"] = out_node.depth+((in_node.depth-out_node.depth)/2)
+        gene_nodes.append(GeneNode(new_structures["node_depth"],
+                                   act_set.get_random_activation_func(),
+                                   node_set.get("dot"),
+                                   None,
+                                   True,
+                                   True,
+                                   random.uniform(bias_init_min, bias_init_max)))
         # Create new link going into new node
-        new_link = gene_pool.create_gene_link({"weight": 1,
-                               "in_node": in_node,
-                               "out_node": gene_nodes[-1]})
-        gene_links.append((new_link.weight,
-                           new_link.in_node.historical_marker,
-                           new_link.out_node.historical_marker,
-                           new_link.historical_marker,
-                           new_link.enabled))
+        gene_links.append((1,
+                           in_node.historical_marker,
+                           gene_nodes[-1].historical_marker,
+                           None,
+                           True))
         # Create new link going out of new node
-        new_link = gene_pool.create_gene_link({"weight": old_link[0],
-                                                    "in_node": gene_nodes[-1],
-                                                    "out_node":  out_node})
-        gene_links.append((new_link.weight,
-                           new_link.in_node.historical_marker,
-                           new_link.out_node.historical_marker,
-                           new_link.historical_marker,
-                           new_link.enabled))
+        gene_links.append((old_link[0],
+                           gene_nodes[-1].historical_marker,
+                           out_node.historical_marker,
+                           None,
+                           True))
     gene_nodes.sort(key=lambda x: x.depth)
+    return new_structures
 
 
 class Evolution:
@@ -229,7 +242,7 @@ class Evolution:
             parent_genomes = self._match_genomes()
             self._reproduce_and_eval_generation(parent_genomes)
             print("New generation reproduced")
-            self._evaluate_population()
+            #self._evaluate_population()
             self._generation_stats()
             # TODO add new links and nodes to gene pool
             print("End of generation ", str(self.generation))
@@ -238,6 +251,7 @@ class Evolution:
     def _speciate_genomes(self):
         """ Put genomes into species """
         global compatibility_dist
+        self.species = []
         genomes_unmatched = deque(self.genomes)
         # Put all unmatched genomes into a species or create new species if no match
         while genomes_unmatched:
@@ -269,32 +283,73 @@ class Evolution:
             s.genomes.sort(key=lambda genome: genome.net.fitness, reverse=True)
         # Match suitable parent genomes. Note local competition means ~equal num of genomes reproduce for each species
         for i, s in enumerate(self.species):
-            for j in range(inds_to_reproduce[i]):
+            j = 0  # index of genomes in species that are allowed to reproduce
+            stop_ind = math.ceil(len(s.genomes) * species_survival_thresh)  # j resets to 0 when equal to stop_ind
+            for _ in range(inds_to_reproduce[i]):
                 if event(interspecies_mating_prob): # mate outside of species. NOTE no guarantee selected genome outside of species
                     mate_species_ind = np.random.randint(0, len(self.species))
-                    mate_ind = np.random.randint(0, inds_to_reproduce[mate_species_ind])
+                    mate_ind = np.random.randint(0, math.ceil(len(self.species[mate_species_ind].genomes) * species_survival_thresh))
                     parent_genomes.append((s.genomes[j], self.species[mate_species_ind].genomes[mate_ind]))
                 else:  # mate within species
                     if len(s.genomes) != 1:  # For species with more than 1 genome
-                        parent_genomes.append((s.genomes[j], s.genomes[np.random.randint(0, len(s.genomes))]))
+                        parent_genomes.append((s.genomes[j], s.genomes[np.random.randint(0, stop_ind)]))
                     else:  # Species only has 1 genome so copy and mutate
                         parent_genomes.append(s.genomes[j])
+                j = 0 if j == stop_ind-1 else j+1
         return parent_genomes
 
     def _reproduce_and_eval_generation(self, parent_genomes):
         """ reproduce next generation given fitnesses of current generation """
         if self.parallel:
-            new_genomes, new_nets, new_structures = self.pool.starmap(parallel_reproduce_eval, [(parent_genomes,
-                                                                                 self.n_net_inputs,
-                                                                                 self.n_net_outputs,
-                                                                                 self.env,
-                                                                                 self.gym_env_string) for parent_genomes in parent_genomes])
+            res = self.pool.starmap(parallel_reproduce_eval, [(parent_genomes,
+                                                               self.n_net_inputs,
+                                                               self.n_net_outputs,
+                                                               self.env,
+                                                               self.gym_env_string) for parent_genomes in parent_genomes])
+            new_genomes = []
+            new_nets = []
+            new_structures = []
+            for r in res:
+                new_genomes.append(r[0])
+                new_nets.append(r[1])
+                new_structures.append(r[2])
         else:
             pass
         # Add new structures to gene pool
-        for structures in new_structures:
-            for structure in structures:
-                pass
+        nodes_added = []
+        hists = []
+        for i, structures in enumerate(new_structures):
+            if "new_link" in structures:
+                link = self.gene_pool.get_or_create_gene_link(structures["new_link"][0], structures["new_link"][1])
+                if "new_node" in structures:
+                    if new_genomes[i].gene_links[-4].historical_marker is None:
+                        new_genomes[i].gene_links[-4].historical_marker = link.historical_marker
+                    else:
+                        new_genomes[i].gene_links[-3].historical_marker = link.historical_marker
+                else:
+                    new_genomes[i].gene_links[-1].historical_marker = link.historical_marker
+            if "new_node" in structures:
+                # If not new node
+                try:
+                    ind = nodes_added.index(structures["new_node"])
+                    for node in new_genomes[i].gene_nodes:
+                        if node.historical_marker is None:
+                            node.historical_marker = hists[ind][0]
+                            break
+                    new_genomes[i].gene_links[-2].historical_marker = hists[ind][1]
+                    new_genomes[i].gene_links[-1].historical_marker = hists[ind][2]
+                except ValueError:
+                    nodes_added.append(structures["new_node"])
+                    hists.append((self.gene_pool.get_new_hist_marker(), self.gene_pool.get_new_hist_marker(), self.gene_pool.get_new_hist_marker()))
+                    self.gene_pool.create_gene_node((structures["node_depth"], None, None, hists[-1][0]))
+                    self.gene_pool.create_gene_link((None, self.gene_pool.get_node_from_hist_marker(structures["new_node"][0]), self.gene_pool.gene_nodes[-1], hists[-1][1]))
+                    self.gene_pool.create_gene_link((None, self.gene_pool.gene_nodes[-1], self.gene_pool.get_node_from_hist_marker(structures["new_node"][1]), hists[-1][2]))
+                    for node in new_genomes[i].gene_nodes:
+                        if node.historical_marker is None:
+                            node.historical_marker = hists[-1][0]
+                            break
+                    new_genomes[i].gene_links[-2].historical_marker = hists[-1][1]
+                    new_genomes[i].gene_links[-1].historical_marker = hists[-1][2]
         # Overwrite current generation genomes/nets/species TODO pickle best performing
         self.genomes = new_genomes
         self.neural_nets = new_nets
@@ -302,8 +357,8 @@ class Evolution:
     def _generation_stats(self):
         self.neural_nets.sort(key=lambda net: net.fitness,
                               reverse=True)  # Sort nets by fitness - element 0 = fittest
-        self.best.append(self.neural_nets[0].fitness_unnorm)
-        print("Best fitnesses unnorm ", self.best[-100:])
+        self.best.append(self.neural_nets[0].fitness)
+        print("Best fitnesses ", self.best[-100:])
         if keyboard.is_pressed('v'):
             self.env(self.gym_env_string, trials=1).evaluate(self.neural_nets[0], render=True)
 

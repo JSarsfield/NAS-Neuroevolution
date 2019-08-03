@@ -39,26 +39,22 @@ band_mutate_prob = 0.05
 gauss_var_scale = 0.01  # Scale of gaussian function for adjusting QuadTree variance threshold
 gauss_band_scale = 0.01  # Scale of gaussian function for adjusting QuadTree band pruning threshold
 quad_tree_max_depth = 10  # The max depth the quadtree will split if variance is still above variance threshold
-
-
 substrate_search_max_time = 20  # max num of seconds to search for hid nodes on substrate before giving up and marking net as void
-
 change_act_prob = 0.05  # Chance of changing activation function to random act func
-
-elitism_thresh = 1  # Number of fittest organisms in each species that is preserved as-is to next generation
-pop_survival_thresh = 0.2  # Fraction of population that is allowed to reproduce for next generation
-min_species_size = 2  # min number of organisms/nets in a species
-
-compatibility_dist = 0.2  # Max distance two genomes can be considered as the same species TODO !!! needs to be adaptive
+# reproduce params
+compatibility_dist = 2  # Max distance two genomes can be considered as the same species TODO !!! needs to be adaptive
 compatibility_adjust = 0.1  # Amount to adjust compatibility_dist each gen to achieve target num species
 compatibility_excess_coeff = 3  # Balance the distance calculation against weights and disjoint genes
 compatibility_disjoint_coeff = 1  # Balance the distance calculation against weights and excess genes
 compatibility_weight_coeff = 2  # Balance the distance calculation against excess and disjoint genes
-target_num_species = 12  # Number of species to target TODO if species grows above this increase compatibility_thresh to reduce species
+target_num_species = 8  # Number of species to target TODO if species grows above this increase compatibility_thresh to reduce species
+species_survival_thresh = 0.2  # Fraction of species that is allowed to reproduce for next generation
+interspecies_mating_prob = 0.01  # Chance of genome mating outside of species
 
 diversity_coeff = 1  # increase/decrease the level of mutation based on species sizes and species ages
 
-interspecies_mating_prob = 0.01  # Chance of genome mating outside of species
+#elitism_thresh = 1  # Number of fittest organisms in each species that is preserved as-is to next generation
+#min_species_size = 2  # min number of organisms/nets in a species
 
 
 def event(x):
