@@ -84,12 +84,12 @@ class CPPNGenome:
             if node.can_modify:
                 node.act_func = self.act_set.get_random_activation_func()
         self.graph = CPPNGenome.Graph(self)
-        self.visualise_cppn()
+        #self.visualise_cppn()
 
     def create_graph(self):
         """ Create graph """
         self.graph = CPPNGenome.Graph(self)
-        self.visualise_cppn()
+        #self.visualise_cppn()
 
     def mutate_nonstructural(self):
         """ perform nonstructural mutations to existing gene nodes & links """
@@ -102,11 +102,17 @@ class CPPNGenome:
                 link.enabled = True
             # Mutate weights
             if event(weight_mutate_rate):
-                link.weight += np.random.normal(scale=gauss_weight_scale)
+                if event(weight_replace_rate):  # replace with random weight
+                    link.weight = random.uniform(weight_init_min, weight_init_max)
+                else:  # adjust weight
+                    link.weight += np.random.normal(scale=gauss_weight_scale)
         for node in self.gene_nodes:
             # Mutate bias
             if event(bias_mutate_rate):
-                node.bias += np.random.normal(scale=gauss_weight_scale)
+                if event(bias_replace_rate):  # replace with random bias
+                    node.bias = random.uniform(bias_init_min, bias_init_max)
+                else:  # adjust bias
+                    node.bias += np.random.normal(scale=gauss_weight_scale)
             # Mutate activation func
             if event(change_act_prob):
                 node.act_func = self.act_set.get_random_activation_func()
@@ -118,7 +124,6 @@ class CPPNGenome:
         if event(band_mutate_prob):
             self.band_thresh += np.random.normal(scale=gauss_band_scale)
             self.band_thresh = self.band_thresh if self.band_thresh > 0 else 0
-
 
     def set_species(self, species):
         """ set the species this genome belongs to """
@@ -158,7 +163,6 @@ class CPPNGenome:
             labels[(node.layer, node.unit)] = node.act_func.__name__
             for link in node.ingoing_links:
                 G.add_edge((link.out_node.layer, link.out_node.unit), (node.layer, node.unit), weight=link.weight)
-
         pos = nx.spring_layout(G, pos=dict(G.nodes(data='pos')), fixed=G.nodes)
         weights = np.array([G[u][v]['weight'] for u, v in G.edges]) * 4
         plt.subplot(2, 1, 1)

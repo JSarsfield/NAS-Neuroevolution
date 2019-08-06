@@ -316,40 +316,7 @@ class Evolution:
         else:
             pass
         # Add new structures to gene pool
-        nodes_added = []
-        hists = []
-        for i, structures in enumerate(new_structures):
-            if "new_link" in structures:
-                link = self.gene_pool.get_or_create_gene_link(structures["new_link"][0], structures["new_link"][1])
-                if "new_node" in structures:
-                    if new_genomes[i].gene_links[-4].historical_marker is None:
-                        new_genomes[i].gene_links[-4].historical_marker = link.historical_marker
-                    else:
-                        new_genomes[i].gene_links[-3].historical_marker = link.historical_marker
-                else:
-                    new_genomes[i].gene_links[-1].historical_marker = link.historical_marker
-            if "new_node" in structures:
-                # If not new node
-                try:
-                    ind = nodes_added.index(structures["new_node"])
-                    for node in new_genomes[i].gene_nodes:
-                        if node.historical_marker is None:
-                            node.historical_marker = hists[ind][0]
-                            break
-                    new_genomes[i].gene_links[-2].historical_marker = hists[ind][1]
-                    new_genomes[i].gene_links[-1].historical_marker = hists[ind][2]
-                except ValueError:
-                    nodes_added.append(structures["new_node"])
-                    hists.append((self.gene_pool.get_new_hist_marker(), self.gene_pool.get_new_hist_marker(), self.gene_pool.get_new_hist_marker()))
-                    self.gene_pool.create_gene_node((structures["node_depth"], None, None, hists[-1][0]))
-                    self.gene_pool.create_gene_link((None, self.gene_pool.get_node_from_hist_marker(structures["new_node"][0]), self.gene_pool.gene_nodes[-1], hists[-1][1]))
-                    self.gene_pool.create_gene_link((None, self.gene_pool.gene_nodes[-1], self.gene_pool.get_node_from_hist_marker(structures["new_node"][1]), hists[-1][2]))
-                    for node in new_genomes[i].gene_nodes:
-                        if node.historical_marker is None:
-                            node.historical_marker = hists[-1][0]
-                            break
-                    new_genomes[i].gene_links[-2].historical_marker = hists[-1][1]
-                    new_genomes[i].gene_links[-1].historical_marker = hists[-1][2]
+        self.gene_pool.add_new_structures(new_genomes, new_structures)
         # Overwrite current generation genomes/nets/species TODO pickle best performing
         self.genomes = new_genomes
         self.neural_nets = new_nets
