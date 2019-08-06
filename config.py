@@ -26,9 +26,9 @@ bias_init_min = -0.1  # min value of bias initialisation range
 bias_init_max = 0.1  # max value of bias initialisation range
 # structural params
 link_toggle_prob = 0.05  # Chance of link being toggled between enabled/disabled
-link_add_prob = 0.06  # Chance of adding a new link
+link_add_prob = 1  # TODO 0.06 Chance of adding a new link
 link_add_attempts = 10  # Number of attempts to find new link until give up
-node_add_prob = 0.02
+node_add_prob = 1 # TODO 0.02
 link_enable_prob = 0.2  # Chance of disabled link being re-enabled
 new_link_attempts = 10  # How many attempts should we try and find a new node before giving up
 # es-hyperneat params
@@ -36,8 +36,8 @@ init_var_thresh = 0.3
 init_band_thresh = 0
 var_mutate_prob = 0.05
 band_mutate_prob = 0.05
-gauss_var_scale = 0.0001  # Scale of gaussian function for adjusting QuadTree variance threshold
-gauss_band_scale = 0.0001  # Scale of gaussian function for adjusting QuadTree band pruning threshold
+gauss_var_scale = 0.00001  # Scale of gaussian function for adjusting QuadTree variance threshold
+gauss_band_scale = 0.00001  # Scale of gaussian function for adjusting QuadTree band pruning threshold
 quad_tree_max_depth = 10  # The max depth the quadtree will split if variance is still above variance threshold
 substrate_search_max_time = 10  # max num of seconds to search for hid nodes on substrate before giving up and marking net as void
 change_act_prob = 0.05  # Chance of changing activation function to random act func

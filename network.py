@@ -115,7 +115,7 @@ class Network:
                     print("")
                 self.output_inds.append(torch.tensor(in_node_inds))
                 self.weights.append(torch.tensor(node_weights, dtype=torch.float32))  # TODO requires_grad=True when adding gradient based lifetime learning
-                self.activs.append(relu)
+                self.activs.append(F.tanh)
 
         def forward(self, x):
             """ feedforward activation of graph and return output """

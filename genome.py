@@ -84,11 +84,12 @@ class CPPNGenome:
             if node.can_modify:
                 node.act_func = self.act_set.get_random_activation_func()
         self.graph = CPPNGenome.Graph(self)
-        #self.visualise_cppn()
+        self.visualise_cppn()
 
     def create_graph(self):
         """ Create graph """
         self.graph = CPPNGenome.Graph(self)
+        self.visualise_cppn()
 
     def mutate_nonstructural(self):
         """ perform nonstructural mutations to existing gene nodes & links """
