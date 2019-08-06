@@ -50,10 +50,12 @@ def crossover(g1, g2):
     j = 0
     nodes_to_add = []
     links_to_add = []
+    sub_width = g1.substrate_width if g1.net.fitness >= g2.net.fitness else g2.substrate_width
+    sub_height = g1.substrate_height if g1.net.fitness >= g2.net.fitness else g2.substrate_height
     while i < len(g1.gene_links) or j < len(g2.gene_links):
         if i < len(g1.gene_links) and j < len(g2.gene_links):
             if g1.gene_links[i].historical_marker == g2.gene_links[j].historical_marker:
-                if g1.net.fitness > g2.net.fitness:
+                if g1.net.fitness >= g2.net.fitness:
                     links_to_add.append(g1.gene_links[i])
                     nodes_to_add.append(g1.gene_links[i].in_node)
                     nodes_to_add.append(g1.gene_links[i].out_node)
@@ -84,15 +86,19 @@ def crossover(g1, g2):
                 nodes_to_add.append(g2.gene_links[j].out_node)
                 links_to_add.append(g2.gene_links[j])
                 j += 1
-    return create_new_genome(nodes_to_add, links_to_add, g1.cppn_inputs)
+    return create_new_genome(nodes_to_add, links_to_add, g1.cppn_inputs, sub_width, sub_height)
 
 
 def copy_with_mutation(g1):
     """ copy a genome with mutation """
-    return create_new_genome(g1.gene_nodes_in + g1.gene_nodes, g1.gene_links, g1.cppn_inputs)
+    return create_new_genome(g1.gene_nodes_in + g1.gene_nodes,
+                             g1.gene_links,
+                             g1.cppn_inputs,
+                             g1.substrate_width,
+                             g1.substrate_height)
 
 
-def create_new_genome(nodes_to_add, links_to_add, cppn_inputs):
+def create_new_genome(nodes_to_add, links_to_add, cppn_inputs, sub_width, sub_height):
     """ Create new genome - perform structural & non structural mutation """
     gene_nodes = set()
     gene_links = []
@@ -116,7 +122,7 @@ def create_new_genome(nodes_to_add, links_to_add, cppn_inputs):
     new_structures = mutate_structural(gene_nodes, gene_links)  # This is performed on master thread to ensure only new genes are added to gene pool
     gene_nodes_in = gene_nodes[:cppn_inputs]
     gene_nodes = gene_nodes[cppn_inputs:]
-    new_genome = CPPNGenome(gene_nodes_in, gene_nodes, gene_links)
+    new_genome = CPPNGenome(gene_nodes_in, gene_nodes, gene_links, substrate_width=sub_width, substrate_height=sub_height)
     new_genome.mutate_nonstructural()  # TODO this should be called on a worker thread
     return new_genome, new_structures
 

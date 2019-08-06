@@ -41,6 +41,11 @@ gauss_band_scale = 0.00001  # Scale of gaussian function for adjusting QuadTree 
 quad_tree_max_depth = 10  # The max depth the quadtree will split if variance is still above variance threshold
 substrate_search_max_time = 10  # max num of seconds to search for hid nodes on substrate before giving up and marking net as void
 change_act_prob = 1  # Chance of changing activation function to random act func
+# substrate params
+init_substrate_width = 1
+init_substrate_height = 1
+width_mutate_prob = 0.05
+height_mutate_prob = 0.05
 # reproduce params
 compatibility_dist = 2  # Max distance two genomes can be considered as the same species TODO !!! needs to be adaptive
 compatibility_adjust = 0.1  # Amount to adjust compatibility_dist each gen to achieve target num species

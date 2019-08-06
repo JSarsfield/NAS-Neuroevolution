@@ -24,6 +24,28 @@ class Substrate:
         pass
 
     def build_network_from_genome(self, genome, n_net_inputs, n_net_outputs):
+        """ Split substrate into rectangles and determine whether a rectangle becomes a node given CPPN """
+        # TODO check if node should be expressed given variance with local nodes, width = 2/substrate_width
+        input_x_locs = np.linspace(-1, 1, n_net_inputs, dtype=np.float32)
+        hidden_x_locs = np.linspace(-1, 1, genome.substrate_width, dtype=np.float32)
+        hidden_y_locs = np.linspace(-1, 1, genome.substrate_height+2, dtype=np.float32)[1:-1]
+        output_x_locs = np.linspace(-1, 1, n_net_outputs, dtype=np.float32)
+        # Add links from input to hidden/output
+        for i in input_x_locs:
+
+        genome.graph.forward([i, -1, ])
+        # Add links from hidden to hidden/output
+
+        return Network(genome, keep_links, keep_nodes, n_net_inputs, n_net_outputs, void=is_void)
+
+
+class SubstrateESHyperNeat:
+    """ neural network architecture space for finding nodes when expressing a genome to a neural network """
+
+    def __init__(self):
+        pass
+
+    def build_network_from_genome(self, genome, n_net_inputs, n_net_outputs):
         """" Algorithm 3. express the genome to produce a phenotype (ANN). Return network class. """
         links = []
         nodes = []

@@ -25,14 +25,22 @@ from config import *
 class CPPNGenome:
     """ CPPN genome - can express/decode to produce an ANN """
 
-    def __init__(self, gene_nodes_in, gene_nodes, gene_links, num_inputs=4, num_outputs=2, var_thresh=0.3, band_thresh=0):
+    def __init__(self, gene_nodes_in,
+                 gene_nodes,
+                 gene_links,
+                 num_inputs=4,
+                 num_outputs=2,
+                 substrate_width=1,
+                 substrate_height=1):  #, var_thresh=0.3, band_thresh=0):
         """ Call on master thread then call a create graph function on the worker thread """
         self.weights = None  # Weight of links in graph. Sampled from parent/s genome/s or uniform distribution when no parent
         self.gene_nodes = copy.deepcopy(gene_nodes)
         self.gene_nodes_in = copy.deepcopy(gene_nodes_in)
         self.gene_links = []
-        self.var_thresh = var_thresh
-        self.band_thresh = band_thresh
+        self.substrate_width = substrate_width  # Number of horizontal rectangles on the substrate, CPPN decides if to express node
+        self.substrate_height = substrate_height  # Number of vertical rectangles on the substrate
+        #self.var_thresh = var_thresh  # ES-hyperneat parameter determining variance threshold for further splitting
+        #self.band_thresh = band_thresh  # ES-hyperneat parameter
         self.species = None  # Species this genome belongs to
         self.act_set = ActivationFunctionSet()
         # Deepcopy links
@@ -75,6 +83,8 @@ class CPPNGenome:
 
     def create_initial_graph(self):
         """ Create an initial graph for generation zero that has no parent/s. Call on worker thread """
+        self.substrate_width = 1
+        self.substrate_height = 1
         # Initialise weights
         for link in self.gene_links:
             link.weight = random.uniform(weight_init_min, weight_init_max)
@@ -116,6 +126,18 @@ class CPPNGenome:
             # Mutate activation func
             if event(change_act_prob):
                 node.act_func = self.act_set.get_random_activation_func()
+        # Mutate substrate width/height rectangles
+        if event(width_mutate_prob):
+            if event(0.5):
+                self.substrate_width += 1
+            elif self.substrate_width > 1:
+                self.substrate_width -= 1
+        if event(height_mutate_prob):
+            if event(0.5):
+                self.substrate_height += 1
+            elif self.substrate_height > 1:
+                self.substrate_height -= 1
+        """ ES-HyperNeat - no longer used
         # Mutate QuadTree variance
         if event(var_mutate_prob):
             self.var_thresh += np.random.normal(scale=gauss_var_scale)
@@ -124,6 +146,7 @@ class CPPNGenome:
         if event(band_mutate_prob):
             self.band_thresh += np.random.normal(scale=gauss_band_scale)
             self.band_thresh = self.band_thresh if self.band_thresh > 0 else 0
+        """
 
     def set_species(self, species):
         """ set the species this genome belongs to """
