@@ -155,7 +155,7 @@ class Link:
 
 class Node:
 
-    def __init__(self, x, y, act_func=F.sigmoid, node_ind=None):
+    def __init__(self, x, y, act_func=F.tanh, node_ind=None):
         self.x = x
         self.y = y
         self.act_func = act_func

@@ -26,15 +26,40 @@ class Substrate:
     def build_network_from_genome(self, genome, n_net_inputs, n_net_outputs):
         """ Split substrate into rectangles and determine whether a rectangle becomes a node given CPPN """
         # TODO check if node should be expressed given variance with local nodes, width = 2/substrate_width
+        nodes = []
+        links = []
         input_x_locs = np.linspace(-1, 1, n_net_inputs, dtype=np.float32)
         hidden_x_locs = np.linspace(-1, 1, genome.substrate_width, dtype=np.float32)
-        hidden_y_locs = np.linspace(-1, 1, genome.substrate_height+2, dtype=np.float32)[1:-1]
+        hidden_y_locs = np.linspace(-1, 1, genome.substrate_height+2, dtype=np.float32)[1:-1] # Leave out -1 and 1
         output_x_locs = np.linspace(-1, 1, n_net_outputs, dtype=np.float32)
+        neighbour_width = 2/genome.substrate_width
+        # Add input nodes
+        for i in input_x_locs:
+            nodes.append(Node(i, -1))
+        # Add suitable hidden nodes
+        for layer in hidden_y_locs:
+            for node in hidden_x_locs:
+                node_weight =  genome.graph.forward([node[0], node[1], node[0], node[1]])[0].item()
+                diff_left = abs(node_weight-genome.graph.forward([node[0], node[1], node[0] - neighbour_width, node[1]])[0].item())
+                diff_right = abs(node_weight-genome.graph.forward([node[0], node[1], node[0] + neighbour_width, node[1]])[0].item())
+                # If min diff is above variance threshold then express
+                if min(diff_left, diff_right) > 0.5:
+                    # TODO express node
+        # Add output nodes
+        for i in output_x_locs:
+            nodes.append(Node(i, 1))
         # Add links from input to hidden/output
         for i in input_x_locs:
+            nodes.append(Node(i, -1))
+            for layer in hidden_y_locs:
+                for node in hidden_x_locs:
+                    # Check if express node
+                    if genome.graph.forward([i, -1, node, layer])
 
+        for
         genome.graph.forward([i, -1, ])
         # Add links from hidden to hidden/output
+
 
         return Network(genome, keep_links, keep_nodes, n_net_inputs, n_net_outputs, void=is_void)
 
