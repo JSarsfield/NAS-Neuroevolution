@@ -9,6 +9,6 @@ from environment import EnvironmentReinforcement
 
 
 if __name__ == "__main__":
-    evolution = Evolution(n_net_inputs=4, n_net_outputs=2, pop_size=128, environment=EnvironmentReinforcement, processes=8)
+    evolution = Evolution(n_net_inputs=4, n_net_outputs=2, pop_size=128, environment=EnvironmentReinforcement, processes=64)
     evolution.begin_evolution()
     print("end")

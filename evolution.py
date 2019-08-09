@@ -30,10 +30,10 @@ import keyboard
 
 def parallel_reproduce_eval(parent_genomes, n_net_inputs, n_net_outputs, env, gym_env_string):
     # Reproduce from parent genomes
-    if type(parent_genomes) is tuple:  # Two parent genomes so crossover
+    if type(parent_genomes[-1]) is not bool:  # Two parent genomes so crossover
         genome, new_structures = crossover(parent_genomes[0], parent_genomes[1])
     else:  # One parent genome so mutate
-        genome, new_structures = copy_with_mutation(parent_genomes)
+        genome, new_structures = copy_with_mutation(parent_genomes[0], mutate=parent_genomes[1])
     # Create genome graph
     genome.create_graph()
     # Create net from genome
@@ -89,16 +89,17 @@ def crossover(g1, g2):
     return create_new_genome(nodes_to_add, links_to_add, g1.cppn_inputs, sub_width, sub_height)
 
 
-def copy_with_mutation(g1):
+def copy_with_mutation(g1, mutate=True):
     """ copy a genome with mutation """
     return create_new_genome(g1.gene_nodes_in + g1.gene_nodes,
                              g1.gene_links,
                              g1.cppn_inputs,
                              g1.substrate_width,
-                             g1.substrate_height)
+                             g1.substrate_height,
+                             mutate=mutate)
 
 
-def create_new_genome(nodes_to_add, links_to_add, cppn_inputs, sub_width, sub_height):
+def create_new_genome(nodes_to_add, links_to_add, cppn_inputs, sub_width, sub_height, mutate=True):
     """ Create new genome - perform structural & non structural mutation """
     gene_nodes = set()
     gene_links = []
@@ -119,11 +120,15 @@ def create_new_genome(nodes_to_add, links_to_add, cppn_inputs, sub_width, sub_he
                            link.enabled))
     gene_nodes = list(gene_nodes)
     gene_nodes.sort(key=lambda x: x.depth)
-    new_structures = mutate_structural(gene_nodes, gene_links)  # This is performed on master thread to ensure only new genes are added to gene pool
+    if mutate:
+        new_structures = mutate_structural(gene_nodes, gene_links)  # This is performed on master thread to ensure only new genes are added to gene pool
+    else:
+        new_structures = []
     gene_nodes_in = gene_nodes[:cppn_inputs]
     gene_nodes = gene_nodes[cppn_inputs:]
     new_genome = CPPNGenome(gene_nodes_in, gene_nodes, gene_links, substrate_width=sub_width, substrate_height=sub_height)
-    new_genome.mutate_nonstructural()  # TODO this should be called on a worker thread
+    if mutate:
+        new_genome.mutate_nonstructural()  # TODO this should be called on a worker thread
     return new_genome, new_structures
 
 
@@ -216,7 +221,7 @@ def mutate_structural(gene_nodes, gene_links):
 
 class Evolution:
 
-    def __init__(self, n_net_inputs, n_net_outputs, pop_size=10, environment=None, gym_env_string="BipedalWalker-v2", dataset=None, yaml_config=None, parallel=True, processes=4):
+    def __init__(self, n_net_inputs, n_net_outputs, pop_size=10, environment=None, gym_env_string="BipedalWalker-v2", dataset=None, yaml_config=None, parallel=True, processes=64):
         self.gene_pool = GenePool(cppn_inputs=4)  # CPPN inputs x1 x2 y1 y2
         self.generation = 0
         self.pop_size = pop_size
@@ -291,7 +296,7 @@ class Evolution:
         for i, s in enumerate(self.species):
             j = 0  # index of genomes in species that are allowed to reproduce
             stop_ind = math.ceil(len(s.genomes) * species_survival_thresh)  # j resets to 0 when equal to stop_ind
-            for _ in range(inds_to_reproduce[i]):
+            for k in range(inds_to_reproduce[i]):
                 if event(interspecies_mating_prob): # mate outside of species. NOTE no guarantee selected genome outside of species
                     mate_species_ind = np.random.randint(0, len(self.species))
                     mate_ind = np.random.randint(0, math.ceil(len(self.species[mate_species_ind].genomes) * species_survival_thresh))
@@ -300,7 +305,10 @@ class Evolution:
                     if event(genome_crossover_prob) and len(s.genomes) != 1:  # For species with more than 1 genome
                         parent_genomes.append((s.genomes[j], s.genomes[np.random.randint(0, stop_ind)]))
                     else:  # Species only has 1 genome so copy and mutate
-                        parent_genomes.append(s.genomes[j])
+                        if k == 0:
+                            parent_genomes.append((s.genomes[j], False))  # Copy species winner without mutation
+                        else:
+                            parent_genomes.append((s.genomes[j], True))
                 j = 0 if j == stop_ind-1 else j+1
         return parent_genomes
 

@@ -27,7 +27,7 @@ class Environment:
 class EnvironmentReinforcement(Environment):
     """ Reinforcement environments """
 
-    def __init__(self, gym_env_string, parallel=True, trials=4, steps=1000):
+    def __init__(self, gym_env_string, parallel=True, trials=1, steps=1000):
         super().__init__()
         self.net = None  # Neural network to evaluate
         self.trials = trials  # Fitness = average of all trials
