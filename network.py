@@ -43,6 +43,8 @@ class Network:
         self.genome.net = self
         if void:
             return
+        else:
+            print("")
         self.graph = Network.Graph(self)
 
         # TODO debug code below

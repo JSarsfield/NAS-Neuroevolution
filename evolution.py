@@ -297,7 +297,7 @@ class Evolution:
                     mate_ind = np.random.randint(0, math.ceil(len(self.species[mate_species_ind].genomes) * species_survival_thresh))
                     parent_genomes.append((s.genomes[j], self.species[mate_species_ind].genomes[mate_ind]))
                 else:  # mate within species
-                    if len(s.genomes) != 1:  # For species with more than 1 genome
+                    if event(genome_crossover_prob) and len(s.genomes) != 1:  # For species with more than 1 genome
                         parent_genomes.append((s.genomes[j], s.genomes[np.random.randint(0, stop_ind)]))
                     else:  # Species only has 1 genome so copy and mutate
                         parent_genomes.append(s.genomes[j])

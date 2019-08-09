@@ -33,35 +33,124 @@ class Substrate:
         hidden_y_locs = np.linspace(-1, 1, genome.substrate_height+2, dtype=np.float32)[1:-1] # Leave out -1 and 1
         output_x_locs = np.linspace(-1, 1, n_net_outputs, dtype=np.float32)
         neighbour_width = 2/genome.substrate_width
+        nodes.append([])
         # Add input nodes
         for i in input_x_locs:
-            nodes.append(Node(i, -1))
+            nodes[-1].append(Node(i, -1))
         # Add suitable hidden nodes
         for layer in hidden_y_locs:
+            nodes.append([])
             for node in hidden_x_locs:
-                node_weight =  genome.graph.forward([node[0], node[1], node[0], node[1]])[0].item()
-                diff_left = abs(node_weight-genome.graph.forward([node[0], node[1], node[0] - neighbour_width, node[1]])[0].item())
-                diff_right = abs(node_weight-genome.graph.forward([node[0], node[1], node[0] + neighbour_width, node[1]])[0].item())
+                node_weight = genome.graph.forward([node, layer, node, layer])[0].item()
+                diff_left = abs(node_weight-genome.graph.forward([node, layer, node - neighbour_width, layer])[0].item())
+                diff_right = abs(node_weight-genome.graph.forward([node, layer, node + neighbour_width, layer])[0].item())
                 # If min diff is above variance threshold then express
                 if min(diff_left, diff_right) > 0.5:
-                    # TODO express node
+                    nodes[-1].append(Node(node, layer))
+        nodes.append([])
         # Add output nodes
         for i in output_x_locs:
-            nodes.append(Node(i, 1))
-        # Add links from input to hidden/output
-        for i in input_x_locs:
-            nodes.append(Node(i, -1))
-            for layer in hidden_y_locs:
-                for node in hidden_x_locs:
-                    # Check if express node
-                    if genome.graph.forward([i, -1, node, layer])
-
-        for
-        genome.graph.forward([i, -1, ])
-        # Add links from hidden to hidden/output
-
-
+            nodes[-1].append(Node(i, 1))
+        # Add links
+        for out_layer in range(len(nodes)-1):
+            for out_node in nodes[out_layer]:
+                for in_layer in range(out_layer+1, len(nodes)):
+                    for in_node in nodes[in_layer]:
+                        link_out = genome.graph.forward([out_node.x, out_node.y, in_node.x, in_node.y])
+                        weight = link_out[0].item()
+                        leo = link_out[1].item()
+                        # if express node
+                        if leo == 1:
+                            link = Link(out_node.x, out_node.y, in_node.x, in_node.y, weight)
+                            links.append(link)
+                            out_node.add_out_link(link)
+                            in_node.add_in_link(link)
+                            link.out_node = out_node
+                            link.in_node = in_node
+        # Depth first search to find all links on all paths from input to output
+        keep_links, keep_nodes = self.depth_first_search(nodes[0])
+        # Determine if each input and output node is in keep_nodes and thus on path
+        if len(keep_nodes) < (n_net_inputs + n_net_outputs) or keep_nodes[n_net_inputs - 1].y != -1 or \
+                keep_nodes[-n_net_outputs].y != 1:
+            # An input/output node didn't have any outgoing/ingoing links thus neural net is void
+            is_void = True
+        else:
+            is_void = False
         return Network(genome, keep_links, keep_nodes, n_net_inputs, n_net_outputs, void=is_void)
+
+    def depth_first_search(self, input_nodes):
+        """ find links and nodes on paths from input to output nodes """
+        # TODO rework this to only ensure all output nodes are on a path i.e. dangling input nodes are fine (filtered by evolution)
+        path = deque()  # lifo buffer storing currently explored path
+        links_2add = deque()  # life buffer storing new links to add if we reach output node
+        keep_links = []  # Set of links to keep because they are on a path from input to output
+        for input_ind, input in enumerate(input_nodes):
+            # Each element is a dict with link reference and local index of outgoing node's
+            if len(input.outgoing_links) == 0:
+                return [], []  # An input neuron has no links and thus this neural network is void
+            path.append({"link": input.outgoing_links[0], "ind": 0})
+            links_2add.append(path[-1])
+            is_forward = True  # False when link to dangling node
+            # while unexplored links on from this input node exist
+            while path:
+                new_link = {}
+                if is_forward:
+                    if len(path[-1]["link"].in_node.outgoing_links) > 0:  # if ingoing node of link also has link then add and keep going forward
+                        new_link["link"] = path[-1]["link"].in_node.outgoing_links[0]
+                        new_link["ind"] = 0
+                        if new_link["link"] in keep_links:  # If we reach a link on the keep_links path then add links_2add and go back
+                            keep_links.extend([d["link"] for d in links_2add])
+                            links_2add.clear()
+                            is_forward = False
+                            continue
+                        path.append(new_link)
+                        links_2add.append(new_link)
+                    else:  # No new links to explore
+                        # Check if node is output
+                        if path[-1]["link"].in_node.y == 1:
+                            keep_links.extend([d["link"] for d in links_2add])
+                            links_2add.clear()
+                        # Node is dangling or output node hit so go back through path
+                        is_forward = False
+                        continue
+                else:
+                    # Go back through path until new link then go forward
+                    new_ind = path[-1]["ind"]+1
+                    if new_ind < len(path[-1]["link"].out_node.outgoing_links):  # If outgoing node of link has more links to explore
+                        new_link["link"] = path[-1]["link"].out_node.outgoing_links[new_ind]
+                        new_link["ind"] = new_ind
+                        if new_link["link"] in keep_links:
+                            if len(links_2add) > 0 and links_2add[-1]["link"] == path[-1]["link"]:
+                                links_2add.pop()
+                            path.pop()
+                            continue
+                        if len(links_2add) > 0 and links_2add[-1]["link"] == path[-1]["link"]:
+                            links_2add.pop()
+                        links_2add.append(new_link)
+                        path.pop()
+                        path.append(new_link)
+                        is_forward = True  # new link to explore
+                        continue
+                    else:  # No unexplored links at this node so keep going back through path
+                        if len(links_2add) > 0 and links_2add[-1]["link"] == path[-1]["link"]:
+                            links_2add.pop()
+                        path.pop()
+                        continue
+        # Get unique nodes in keep_links
+        keep_nodes = []
+        for link in keep_links:
+            in_node = next((x for x in keep_nodes if x == link.in_node), None)
+            if in_node is None:
+                keep_nodes.append(link.in_node.copy(link, is_in_node=True))
+            else:
+                in_node.update_in_node(link)
+            out_node = next((x for x in keep_nodes if x == link.out_node), None)
+            if out_node is None:
+                keep_nodes.append(link.out_node.copy(link, is_in_node=False))
+            else:
+                out_node.update_out_node(link)
+        keep_nodes.sort(key=lambda node: (node.y, node.x))  # Sort nodes by y (layer) then x (pos in layer)
+        return keep_links, keep_nodes
 
 
 class SubstrateESHyperNeat:
