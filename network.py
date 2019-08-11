@@ -38,13 +38,12 @@ class Network:
         del self.nodes[:n_net_inputs] # Remove input nodes
         self.n_net_inputs = n_net_inputs
         self.n_net_outputs = n_net_outputs
+        self.discrete = True if n_net_outputs == 1 else False
         self.fitness_unnorm = -9999  # Un-normalised fitness of net
         self.fitness = -9999  # Fitness of net normalised for size of species
         self.genome.net = self
         if void:
             return
-        else:
-            print("")
         self.graph = Network.Graph(self)
 
         # TODO debug code below
@@ -60,11 +59,11 @@ class Network:
             node.unit = unit
             G.add_node((1, unit), pos=(node.y, node.x))
             unit += 1
-        layer = 2
+        layer = 1
         unit = 1
-        last_y = None
+        last_y = -1
         for node in self.nodes:
-            if last_y and last_y != node.y:
+            if last_y != node.y:
                 layer += 1
                 unit = 1
             node.layer = layer
@@ -117,7 +116,10 @@ class Network:
                     print("")
                 self.output_inds.append(torch.tensor(in_node_inds))
                 self.weights.append(torch.tensor(node_weights, dtype=torch.float32))  # TODO requires_grad=True when adding gradient based lifetime learning
-                self.activs.append(torch.sigmoid)
+                self.activs.append(torch.relu)
+            if net.discrete:
+                from activations import step
+                self.activs[-1] = step
 
         def forward(self, x):
             """ feedforward activation of graph and return output """
@@ -157,7 +159,7 @@ class Link:
 
 class Node:
 
-    def __init__(self, x, y, act_func=torch.sigmoid, node_ind=None):
+    def __init__(self, x, y, act_func=torch.relu, node_ind=None):
         self.x = x
         self.y = y
         self.act_func = act_func

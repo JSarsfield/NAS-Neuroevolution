@@ -9,7 +9,7 @@ def get_env_spaces(gym_env_string):
     """ Get environment observation and action space for gym reinforcement environments """
     import gym
     temp_env = gym.make(gym_env_string)
-    return temp_env.observation_space.shape[0], temp_env.action_space.shape[0]
+    return temp_env.observation_space.shape[0], 1 if "Discrete" in str(type(temp_env.action_space)) else temp_env.action_space.shape[0]
 
 
 def parallel_evaluate_net(net, env, gym_env_string):
@@ -27,7 +27,7 @@ class Environment:
 class EnvironmentReinforcement(Environment):
     """ Reinforcement environments """
 
-    def __init__(self, gym_env_string, parallel=True, trials=1, steps=1000):
+    def __init__(self, gym_env_string, parallel=True, trials=2, steps=1000):
         super().__init__()
         self.net = None  # Neural network to evaluate
         self.trials = trials  # Fitness = average of all trials
@@ -57,6 +57,7 @@ class EnvironmentReinforcement(Environment):
                         return
                     else:
                         self.env.render()
+                action = int(action[0]) if len(action) == 1 else action
                 observation, reward, done, info = self.env.step(action)
                 trial_reward += reward
                 if done:
@@ -65,9 +66,9 @@ class EnvironmentReinforcement(Environment):
                     break
                 action = self.net.graph.forward(observation).numpy()  # self.net.graph.forward(observation).max(0)[1].item()
             fitness = np.append(fitness, trial_reward)
-        self.net.set_fitness(fitness.mean())
+        self.net.set_fitness(fitness.max())
         print("fitness", self.net.fitness)
-        return fitness.mean()
+        return fitness.max()
 
 
 class EnvironmentClassification(Environment):

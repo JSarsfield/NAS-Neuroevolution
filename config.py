@@ -52,8 +52,8 @@ compatibility_adjust = 0.1  # Amount to adjust compatibility_dist each gen to ac
 compatibility_excess_coeff = 1  # Balance the distance calculation against weights and disjoint genes
 compatibility_disjoint_coeff = 1  # Balance the distance calculation against weights and excess genes
 compatibility_weight_coeff = 2  # Balance the distance calculation against excess and disjoint genes
-target_num_species = 8  # Number of species to target TODO if species grows above this increase compatibility_thresh to reduce species
-species_survival_thresh = 0.2  # Fraction of species that is allowed to reproduce for next generation
+target_num_species = 25  # Number of species to target TODO if species grows above this increase compatibility_thresh to reduce species
+species_survival_thresh = 0.3  # Fraction of species that is allowed to reproduce for next generation
 interspecies_mating_prob = 0  # TODO 0.01 crossover poor perf  # Chance of genome mating outside of species
 genome_crossover_prob = 0  # TODO crossover disabled poor performance also direct copy winners with no mutation # chance of crossover with another genome instead of copy with mutation
 

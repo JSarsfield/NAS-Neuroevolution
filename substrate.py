@@ -45,7 +45,7 @@ class Substrate:
                 diff_left = abs(node_weight-genome.graph.forward([node, layer, node - neighbour_width, layer])[0].item())
                 diff_right = abs(node_weight-genome.graph.forward([node, layer, node + neighbour_width, layer])[0].item())
                 # If min diff is above variance threshold then express
-                if min(diff_left, diff_right) > 0.5:
+                if max(diff_left, diff_right) > 0.5: # TODO debug
                     nodes[-1].append(Node(node, layer))
         nodes.append([])
         # Add output nodes
@@ -60,6 +60,7 @@ class Substrate:
                         weight = link_out[0].item()
                         leo = link_out[1].item()
                         # if express node
+                        #leo = 1 # TODO debug code
                         if leo == 1:
                             link = Link(out_node.x, out_node.y, in_node.x, in_node.y, weight)
                             links.append(link)
@@ -78,7 +79,8 @@ class Substrate:
             is_void = False
         return Network(genome, keep_links, keep_nodes, n_net_inputs, n_net_outputs, void=is_void)
 
-    def depth_first_search(self, input_nodes):
+    @staticmethod
+    def depth_first_search(input_nodes):
         """ find links and nodes on paths from input to output nodes """
         # TODO rework this to only ensure all output nodes are on a path i.e. dangling input nodes are fine (filtered by evolution)
         path = deque()  # lifo buffer storing currently explored path

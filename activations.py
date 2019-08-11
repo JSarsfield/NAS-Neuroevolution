@@ -121,7 +121,7 @@ def validate_activation(function):
 
 
 def step(x):
-    return torch.tensor(1, dtype=torch.float32) if x > 0 else torch.tensor(0, dtype=torch.float32)
+    return torch.tensor(1, dtype=torch.float32) if x > 0.5 else torch.tensor(0, dtype=torch.float32)
 
 
 def gaussian(z):

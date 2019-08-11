@@ -230,6 +230,7 @@ class Evolution:
         self.species = []  # Group similar genomes into the same species
         self.parallel = parallel
         self.best = []  # print best fitnesses for all generations TODO this is debug
+        self.evolution_best = None  # fittest genome over all generations
         if environment is None:
             self.n_net_inputs = n_net_inputs
             self.n_net_outputs = n_net_outputs
@@ -263,6 +264,8 @@ class Evolution:
         """ Put genomes into species """
         global compatibility_dist
         self.species = []
+        if self.evolution_best is not None:
+            self.genomes.append(self.evolution_best)  # Add best genome from all generations
         genomes_unmatched = deque(self.genomes)
         # Put all unmatched genomes into a species or create new species if no match
         while genomes_unmatched:
@@ -339,13 +342,20 @@ class Evolution:
         self.neural_nets.sort(key=lambda net: net.fitness,
                               reverse=True)  # Sort nets by fitness - element 0 = fittest
         self.best.append(self.neural_nets[0].fitness)
+        if self.evolution_best is None or self.neural_nets[0].fitness > self.evolution_best.net.fitness:
+            self.evolution_best = self.neural_nets[0].genome
+        self.neural_nets[0].visualise_neural_net()
         print("Best fitnesses ", self.best[-100:])
         if keyboard.is_pressed('v'):
             self.env(self.gym_env_string, trials=1).evaluate(self.neural_nets[0], render=True)
 
     def _get_initial_population(self):
         while len(self.neural_nets) != self.pop_size:
-            genome = CPPNGenome(self.gene_pool.gene_nodes_in, self.gene_pool.gene_nodes, self.gene_pool.gene_links)
+            genome = CPPNGenome(self.gene_pool.gene_nodes_in,
+                                self.gene_pool.gene_nodes,
+                                self.gene_pool.gene_links,
+                                substrate_width=init_substrate_width,
+                                substrate_height=init_substrate_height)
             genome.create_initial_graph()
             net = Substrate().build_network_from_genome(genome, self.n_net_inputs, self.n_net_outputs)  # Express the genome to produce a neural network
             self.genomes.append(genome)
