@@ -10,6 +10,7 @@ __email__ = "joe.sarsfield@gmail.com"
 import torch
 import random
 import math
+import numpy as np
 
 """
 def sigmoid_activation(z):
@@ -119,14 +120,26 @@ def validate_activation(function):
         raise InvalidActivationFunction("A single-argument function is required.")
 """
 
+"""
+def gaussian(z):
+    z = max(-3.4, min(3.4, z))
+    return torch.tensor(math.exp(-5.0 * z ** 2), dtype=torch.float32)
+
+def exp(x, freq=1, amp=0):
+    return torch.tensor((freq*x**2)+amp, dtype=torch.float32)
+"""
+
 
 def step(x):
     return torch.tensor(1, dtype=torch.float32) if x > 0.5 else torch.tensor(0, dtype=torch.float32)
 
 
-def gaussian(z):
-    z = max(-3.4, min(3.4, z))
-    return torch.tensor(math.exp(-5.0 * z ** 2), dtype=torch.float32)
+def gaussian(x, freq=0.314, amp=2, vshift=-1):
+    return torch.tensor(((np.sign(freq)*(amp*(math.e**(-(0.5*(x/freq)**2)))))+vshift), dtype=torch.float32)
+
+
+def sin(x, freq=3.14, amp=1, vshift=0):
+    return torch.tensor((amp*np.sin(freq*x))+vshift, dtype=torch.float32)
 
 
 class ActivationFunctionSet(object):
@@ -141,8 +154,8 @@ class ActivationFunctionSet(object):
         self.add('gauss', gaussian)
         #self.add('tanh', torch.tanh)
         #self.add('sigmoid', torch.sigmoid)
-        self.add('sin', torch.sin)
-        self.add('cos', torch.cos)
+        self.add('sin', sin)
+        #self.add('exp', exp)
         #self.add('log', torch.log)
         #self.add('abs', torch.abs) # unbalanced function
         # self.add('exp', torch.exp)  # unbalanced function creates loads of nodes - investigate

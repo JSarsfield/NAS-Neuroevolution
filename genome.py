@@ -124,8 +124,11 @@ class CPPNGenome:
                 else:  # adjust bias
                     node.bias += np.random.normal(scale=gauss_weight_scale)
             # Mutate activation func
-            if node.can_modify and event(change_act_prob):
-                node.act_func = self.act_set.get_random_activation_func()
+            if node.can_modify:
+                if event(change_act_prob):
+                    node.act_func = self.act_set.get_random_activation_func()
+                if event(func_adjust_prob):
+
         # Mutate substrate width/height rectangles
         if event(width_mutate_prob):
             if event(0.5):

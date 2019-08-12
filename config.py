@@ -17,7 +17,7 @@ weight_replace_rate = 0.002  # Chance of link weight being replaced with random 
 weight_init_min = -2  # min value of weight initialisation range
 weight_init_max = 2  # max value of weight initialisation range
 gauss_weight_scale = 0.07  # Scale of gaussian function for adjusting gene link weights
-# bias params
+# bias params  / phase shift into act func
 bias_max_value = 5
 bias_min_value = -5
 bias_mutate_rate = 0.7
@@ -26,21 +26,30 @@ bias_init_min = -2  # min value of bias initialisation range
 bias_init_max = 2  # max value of bias initialisation range
 # structural params
 link_toggle_prob = 0.05  # Chance of link being toggled between enabled/disabled
-link_add_prob = 0.08  # TODO 0.06 Chance of adding a new link
+link_add_prob = 0.08  # TODO 0.08 Chance of adding a new link
 link_add_attempts = 10  # Number of attempts to find new link until give up
-node_add_prob = 0.04  # TODO 0.02
+node_add_prob = 0.04  # TODO 0.04
 link_enable_prob = 0.2  # Chance of disabled link being re-enabled
 new_link_attempts = 10  # How many attempts should we try and find a new node before giving up
+change_act_prob = 0.03  # TODO 0.03 # Chance of changing activation function to random act func
+# act func coefficients
+func_adjust_prob = 0.4
+guass_freq_adjust = 0.01  # adjust function frequency
+sin_freq_adjust = 0.5
+exp_freq_adjust = 0.25
+func_amp_adjust = 0.05  # adjust function amplitude
+func_amp_range = 1.5
+func_vshift_adjust = 0.05  # adjust function vertical shift
+gauss_range  = 1
 # es-hyperneat params
 init_var_thresh = 0.3
 init_band_thresh = 0
 var_mutate_prob = 0.05
 band_mutate_prob = 0.05
-gauss_var_scale = 0.00001  # Scale of gaussian function for adjusting QuadTree variance threshold
-gauss_band_scale = 0.00001  # Scale of gaussian function for adjusting QuadTree band pruning threshold
+#gauss_var_scale = 0.00001  # Scale of gaussian function for adjusting QuadTree variance threshold
+#gauss_band_scale = 0.00001  # Scale of gaussian function for adjusting QuadTree band pruning threshold
 quad_tree_max_depth = 10  # The max depth the quadtree will split if variance is still above variance threshold
 substrate_search_max_time = 10  # max num of seconds to search for hid nodes on substrate before giving up and marking net as void
-change_act_prob = 0.03  # Chance of changing activation function to random act func
 # substrate params
 init_substrate_width = 5
 init_substrate_height = 5

@@ -344,7 +344,7 @@ class Evolution:
         self.best.append(self.neural_nets[0].fitness)
         if self.evolution_best is None or self.neural_nets[0].fitness > self.evolution_best.net.fitness:
             self.evolution_best = self.neural_nets[0].genome
-        self.neural_nets[0].visualise_neural_net()
+        self.neural_nets[0].genome.visualise_cppn()
         print("Best fitnesses ", self.best[-100:])
         if keyboard.is_pressed('v'):
             self.env(self.gym_env_string, trials=1).evaluate(self.neural_nets[0], render=True)
