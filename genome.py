@@ -20,6 +20,7 @@ import random  # random uniform weight
 from genes import GeneLink
 from activations import ActivationFunctionSet
 from config import *
+import functools
 
 
 class CPPNGenome:
@@ -30,8 +31,8 @@ class CPPNGenome:
                  gene_links,
                  num_inputs=4,
                  num_outputs=2,
-                 substrate_width=1,
-                 substrate_height=1):  #, var_thresh=0.3, band_thresh=0):
+                 substrate_width=init_substrate_width,
+                 substrate_height=init_substrate_height):  #, var_thresh=0.3, band_thresh=0):
         """ Call on master thread then call a create graph function on the worker thread """
         self.weights = None  # Weight of links in graph. Sampled from parent/s genome/s or uniform distribution when no parent
         self.gene_nodes = copy.deepcopy(gene_nodes)
@@ -83,8 +84,6 @@ class CPPNGenome:
 
     def create_initial_graph(self):
         """ Create an initial graph for generation zero that has no parent/s. Call on worker thread """
-        self.substrate_width = 1
-        self.substrate_height = 1
         # Initialise weights
         for link in self.gene_links:
             link.weight = random.uniform(weight_init_min, weight_init_max)
@@ -115,20 +114,37 @@ class CPPNGenome:
                 if event(weight_replace_rate):  # replace with random weight
                     link.weight = random.uniform(weight_init_min, weight_init_max)
                 else:  # adjust weight
-                    link.weight += np.random.normal(scale=gauss_weight_scale)
+                    link.weight += random.uniform(-uniform_weight_scale, uniform_weight_scale)
         for node in self.gene_nodes:
             # Mutate bias
             if event(bias_mutate_rate):
                 if event(bias_replace_rate):  # replace with random bias
                     node.bias = random.uniform(bias_init_min, bias_init_max)
                 else:  # adjust bias
-                    node.bias += np.random.normal(scale=gauss_weight_scale)
+                    node.bias += random.uniform(-uniform_weight_scale, uniform_weight_scale)
             # Mutate activation func
             if node.can_modify:
                 if event(change_act_prob):
                     node.act_func = self.act_set.get_random_activation_func()
-                if event(func_adjust_prob):
-
+                    # reinit freq amp and vshift when act func changes
+                    if node.act_func.__name__[0] == "g":
+                        node.freq = random.uniform(-gauss_freq_range, gauss_freq_range)
+                        node.amp = random.uniform(-func_amp_range, func_amp_range)
+                        node.vshift = random.uniform(-gauss_vshift_range, gauss_vshift_range)
+                    elif node.act_func.__name__[0] == "s":
+                        node.freq = random.uniform(-sin_freq_range, sin_freq_range)
+                        node.amp = random.uniform(-func_amp_range, func_amp_range)
+                        node.vshift = random.uniform(-sin_vshift_range, sin_vshift_range)
+            # Adjust freq amp and vshift of activation function
+            if event(func_adjust_prob):
+                if node.act_func.__name__[0] == "g":
+                    node.freq += random.uniform(-guass_freq_adjust, guass_freq_adjust)
+                elif node.act_func.__name__[0] == "s":
+                    node.freq += random.uniform(-sin_freq_adjust, sin_freq_adjust)
+            if event(func_adjust_prob):
+                node.amp += random.uniform(-func_amp_adjust, func_amp_adjust)
+            if event(func_adjust_prob):
+                node.vshift += random.uniform(-func_vshift_adjust, func_vshift_adjust)
         # Mutate substrate width/height rectangles
         if event(width_mutate_prob):
             if event(0.5):
@@ -223,6 +239,7 @@ class CPPNGenome:
             self.weights = []  # torch tensor weights for each node
             self.node_funcs = []  # torch node funcs
             self.activs = []  # torch activation funcs for each node
+            self.activ_params = []  # freq, amp and vshift parameters for each node
             self.outputs = torch.tensor((), dtype=torch.float32).new_empty((len(genome.gene_nodes) + genome.cppn_inputs))
             self.output_inds = []  # Store node indices to get output of nodes going into this node
             self.node_biases = []
@@ -246,6 +263,10 @@ class CPPNGenome:
                 self.weights.append(torch.tensor(node_weights, dtype=torch.float32))
                 self.node_funcs.append(node.node_func)
                 self.activs.append(node.act_func)
+                if node.can_modify and node.act_func.__name__[0:2] == "ga" or node.act_func.__name__[0:2] == "si":
+                    self.activ_params.append([node.freq, node.amp, node.vshift])
+                else:
+                    self.activ_params.append([])
                 self.node_biases.append(node.bias)
             self.node_biases = torch.tensor(self.node_biases, dtype=torch.float32)
 
@@ -258,7 +279,7 @@ class CPPNGenome:
             for i in range(len(self.activs)):
                 y_unactiv = self.node_funcs[i](self.outputs[self.output_inds[i]], self.weights[i], self.node_biases[i])
                 try:
-                    y = self.activs[i](y_unactiv)
+                    y = self.activs[i](y_unactiv, *self.activ_params[i])
                 except:
                     print("")
                 self.outputs[i + n_inputs] = y

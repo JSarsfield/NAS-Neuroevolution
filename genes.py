@@ -8,6 +8,7 @@ __email__ = "joe.sarsfield@gmail.com"
 import activations
 import random
 from copy import deepcopy
+from config import gauss_freq_range, func_amp_range, gauss_vshift_range, sin_freq_range, sin_vshift_range
 
 
 class GenePool:
@@ -200,7 +201,16 @@ class GeneLink(Gene):
 
 class GeneNode(Gene):
 
-    def __init__(self, depth, activation_func, node_func, historical_marker, can_modify=True, enabled=True, bias=None):
+    def __init__(self, depth,
+                 activation_func,
+                 node_func,
+                 historical_marker,
+                 can_modify=True,
+                 enabled=True,
+                 bias=None,
+                 freq=None,
+                 amp=None,
+                 vshift=None):
         super().__init__(historical_marker)
         # Constants
         self.depth = depth  # Ensures CPPN links don't go backwards i.e. DAG
@@ -214,6 +224,20 @@ class GeneNode(Gene):
         self.node_ind = None  # Set differently for each genome
         self.can_modify = can_modify
         self.enabled = enabled
+        self.freq = freq
+        self.amp = amp
+        self.vshift = vshift
+        if activation_func is not None:
+            if str(activation_func.__name__)[0] == "g":
+                if freq is None:
+                    self.freq = random.uniform(-gauss_freq_range, gauss_freq_range)
+                    self.amp = random.uniform(-func_amp_range, func_amp_range)
+                    self.vshift = random.uniform(-gauss_vshift_range, gauss_vshift_range)
+            elif str(activation_func.__name__)[0] == "s":
+                if freq is None:
+                    self.freq = random.uniform(-sin_freq_range, sin_freq_range)
+                    self.amp = random.uniform(-func_amp_range, func_amp_range)
+                    self.vshift = random.uniform(-sin_vshift_range, sin_vshift_range)
 
     def __deepcopy__(self, memo):
         """ deepcopy but exclude ingoing_links &  outgoing_links as these will be created later """
@@ -223,7 +247,10 @@ class GeneNode(Gene):
                         deepcopy(self.historical_marker, memo),
                         deepcopy(self.can_modify, memo),
                         deepcopy(self.enabled, memo),
-                        deepcopy(self.bias, memo))
+                        deepcopy(self.bias, memo),
+                        deepcopy(self.freq, memo),
+                        deepcopy(self.amp, memo),
+                        deepcopy(self.vshift, memo))
 
     def __eq__(self, other):
         return True if self.historical_marker == other.historical_marker else False

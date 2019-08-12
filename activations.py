@@ -134,11 +134,11 @@ def step(x):
     return torch.tensor(1, dtype=torch.float32) if x > 0.5 else torch.tensor(0, dtype=torch.float32)
 
 
-def gaussian(x, freq=0.314, amp=2, vshift=-1):
+def gaussian(x=None, freq=0.314, amp=2, vshift=-1):
     return torch.tensor(((np.sign(freq)*(amp*(math.e**(-(0.5*(x/freq)**2)))))+vshift), dtype=torch.float32)
 
 
-def sin(x, freq=3.14, amp=1, vshift=0):
+def sin(x=None, freq=3.14, amp=1, vshift=0):
     return torch.tensor((amp*np.sin(freq*x))+vshift, dtype=torch.float32)
 
 

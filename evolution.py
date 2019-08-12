@@ -230,7 +230,7 @@ class Evolution:
         self.species = []  # Group similar genomes into the same species
         self.parallel = parallel
         self.best = []  # print best fitnesses for all generations TODO this is debug
-        self.evolution_best = None  # fittest genome over all generations
+        self.evolution_champs = []  # fittest genomes over all generations
         if environment is None:
             self.n_net_inputs = n_net_inputs
             self.n_net_outputs = n_net_outputs
@@ -264,8 +264,8 @@ class Evolution:
         """ Put genomes into species """
         global compatibility_dist
         self.species = []
-        if self.evolution_best is not None:
-            self.genomes.append(self.evolution_best)  # Add best genome from all generations
+        for genome in self.evolution_champs:
+            self.genomes.append(genome)  # Add best genome from all generations
         genomes_unmatched = deque(self.genomes)
         # Put all unmatched genomes into a species or create new species if no match
         while genomes_unmatched:
@@ -342,9 +342,13 @@ class Evolution:
         self.neural_nets.sort(key=lambda net: net.fitness,
                               reverse=True)  # Sort nets by fitness - element 0 = fittest
         self.best.append(self.neural_nets[0].fitness)
-        if self.evolution_best is None or self.neural_nets[0].fitness > self.evolution_best.net.fitness:
-            self.evolution_best = self.neural_nets[0].genome
-        self.neural_nets[0].genome.visualise_cppn()
+        self.evolution_champs.sort(key=lambda genome: genome.net.fitness)
+        if len(self.evolution_champs) < num_evolution_champs:
+            self.evolution_champs.append(self.neural_nets[0].genome)
+        elif self.neural_nets[0].fitness > self.evolution_champs[0].net.fitness:
+            self.evolution_champs.pop(0)
+            self.evolution_champs.append(self.neural_nets[0].genome)
+        self.neural_nets[0].visualise_neural_net()
         print("Best fitnesses ", self.best[-100:])
         if keyboard.is_pressed('v'):
             self.env(self.gym_env_string, trials=1).evaluate(self.neural_nets[0], render=True)

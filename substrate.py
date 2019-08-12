@@ -45,8 +45,8 @@ class Substrate:
                 diff_left = abs(node_weight-genome.graph.forward([node, layer, node - neighbour_width, layer])[0].item())
                 diff_right = abs(node_weight-genome.graph.forward([node, layer, node + neighbour_width, layer])[0].item())
                 # If min diff is above variance threshold then express
-                if max(diff_left, diff_right) > 0.5: # TODO debug
-                    nodes[-1].append(Node(node, layer))
+                #if max(diff_left, diff_right) > 0.5: # TODO debug
+                nodes[-1].append(Node(node, layer))
         nodes.append([])
         # Add output nodes
         for i in output_x_locs:
