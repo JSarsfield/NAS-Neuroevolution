@@ -70,7 +70,7 @@ genome_crossover_prob = 0.2  # TODO crossover disabled poor performance also dir
 
 diversity_coeff = 1  # increase/decrease the level of mutation based on species sizes and species ages
 
-num_evolution_champs = 8  # Number of all time champs to put back into the population after each generation
+num_evolution_champs = 15  # Number of all time champs to put back into the population after each generation
 link_cost_coeff = 0.2  # coefficient cost for adjusting fitness based on number of links/connections in neural network
 #elitism_thresh = 1  # Number of fittest organisms in each species that is preserved as-is to next generation
 #min_species_size = 2  # min number of organisms/nets in a species

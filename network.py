@@ -12,6 +12,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import random
 import numpy as np
+from config import link_cost_coeff
 
 
 def relu(x):
