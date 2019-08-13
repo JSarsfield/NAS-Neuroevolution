@@ -52,12 +52,12 @@ def crossover(g1, g2):
     j = 0
     nodes_to_add = []
     links_to_add = []
-    sub_width = g1.substrate_width if g1.net.fitness >= g2.net.fitness else g2.substrate_width
-    sub_height = g1.substrate_height if g1.net.fitness >= g2.net.fitness else g2.substrate_height
+    sub_width = g1.substrate_width if g1.fitness >= g2.fitness else g2.substrate_width
+    sub_height = g1.substrate_height if g1.fitness >= g2.fitness else g2.substrate_height
     while i < len(g1.gene_links) or j < len(g2.gene_links):
         if i < len(g1.gene_links) and j < len(g2.gene_links):
             if g1.gene_links[i].historical_marker == g2.gene_links[j].historical_marker:
-                if g1.net.fitness >= g2.net.fitness:
+                if g1.fitness >= g2.fitness:
                     links_to_add.append(g1.gene_links[i])
                     nodes_to_add.append(g1.gene_links[i].in_node)
                     nodes_to_add.append(g1.gene_links[i].out_node)
@@ -267,7 +267,12 @@ class Evolution:
         global compatibility_dist
         self.species = []
         for genome in self.evolution_champs:
-            self.genomes.append(copy.deepcopy(genome))  # Add best genome from all generations
+            self.genomes.append(CPPNGenome(genome.gene_nodes_in,
+                                           genome.gene_nodes,
+                                           genome.gene_links,
+                                           substrate_width=genome.substrate_width,
+                                           substrate_height=genome.substrate_height,
+                                           fitness=genome.fitness))  # Add best genome from all generations
         genomes_unmatched = deque(self.genomes)
         # Put all unmatched genomes into a species or create new species if no match
         while genomes_unmatched:
@@ -296,7 +301,7 @@ class Evolution:
         parent_genomes = []
         # Sort genomes in each species by net fitness
         for s in self.species:
-            s.genomes.sort(key=lambda genome: genome.net.fitness, reverse=True)
+            s.genomes.sort(key=lambda genome: genome.fitness, reverse=True)
         # Match suitable parent genomes. Note local competition means ~equal num of genomes reproduce for each species
         for i, s in enumerate(self.species):
             j = 0  # index of genomes in species that are allowed to reproduce
@@ -344,20 +349,31 @@ class Evolution:
         self.neural_nets.sort(key=lambda net: net.fitness,
                               reverse=True)  # Sort nets by fitness - element 0 = fittest
         self.best.append(self.neural_nets[0].fitness)
-        self.species.sort(key=lambda x: x.genomes[0].net.fitness, reverse=True)  # Sort species by fittest genome in species
-        self.evolution_champs.sort(key=lambda genome: genome.net.fitness)
-        # TODO loop num_evolution_champs to find closest champ to potentailly replace if fitness greater (kind of like MAP elites)
+        self.species.sort(key=lambda x: x.genomes[0].fitness, reverse=True)  # Sort species by fittest genome in species
+        self.evolution_champs.sort(key=lambda genome: genome.fitness)
+        if len(self.evolution_champs) > len(self.species):
+            self.evolution_champs = self.evolution_champs[:len(self.species)]
         # Add champs of first generation
-        if len(self.evolution_champs) == 0:
-            for i in range(num_evolution_champs):
-                self.evolution_champs.append(self.species[i].genomes[0])
+        if len(self.evolution_champs) < len(self.species):
+            for i in range(len(self.evolution_champs), len(self.species)):
+                self.evolution_champs.append(CPPNGenome(self.species[i].genomes[0].gene_nodes_in, # TODO implement genome copy
+                                                        self.species[i].genomes[0].gene_nodes,
+                                                        self.species[i].genomes[0].gene_links,
+                                                        substrate_width=self.species[i].genomes[0].substrate_width,
+                                                        substrate_height=self.species[i].genomes[0].substrate_height,
+                                                        fitness=self.species[i].genomes[0].fitness))
         else:  # Replace champs with closest genome that is fitter
-            for i in range(num_evolution_champs):
+            for i in range(len(self.species)):
                 ind, _ = min(enumerate(self.evolution_champs), key=lambda champ: self.species[i].get_distance(champ[1]))
                 # Replace if species best genome is fitter than closest champ genome
-                if self.species[i].genomes[0].net.fitness > self.evolution_champs[ind].net.fitness:
-                    self.evolution_champs[ind] = self.species[i].genomes[0]
-        self.neural_nets[0].visualise_neural_net()
+                if self.species[i].genomes[0].fitness > self.evolution_champs[ind].fitness:
+                    self.evolution_champs[ind] = CPPNGenome(self.species[i].genomes[0].gene_nodes_in,
+                                                            self.species[i].genomes[0].gene_nodes,
+                                                            self.species[i].genomes[0].gene_links,
+                                                            substrate_width=self.species[i].genomes[0].substrate_width,
+                                                            substrate_height=self.species[i].genomes[0].substrate_height,
+                                                            fitness=self.species[i].genomes[0].fitness)
+        #self.neural_nets[0].visualise_neural_net()
         print("Best fitnesses ", self.best[-100:])
         if keyboard.is_pressed('v'):
             self.env(self.gym_env_string, trials=1).evaluate(self.neural_nets[0], render=True)

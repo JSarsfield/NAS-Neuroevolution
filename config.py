@@ -26,7 +26,7 @@ bias_init_min = -2  # min value of bias initialisation range
 bias_init_max = 2  # max value of bias initialisation range
 # structural params
 link_toggle_prob = 0.05  # Chance of link being toggled between enabled/disabled
-link_add_prob = 0.08  # TODO 0.08 Chance of adding a new link
+link_add_prob = 0.2  # TODO 0.08 Chance of adding a new link
 link_add_attempts = 10  # Number of attempts to find new link until give up
 node_add_prob = 0.04  # TODO 0.04
 link_enable_prob = 0.2  # Chance of disabled link being re-enabled
@@ -40,7 +40,7 @@ func_amp_adjust = 0.02  # adjust function amplitude
 func_vshift_adjust = 0.02  # adjust function vertical shift
 func_amp_range = 0.5  # init ranges
 gauss_freq_range = 0.5
-sin_freq_range = 5
+sin_freq_range = 12
 gauss_vshift_range = 0.25
 sin_vshift_range = 0.25
 # es-hyperneat params
@@ -71,7 +71,7 @@ genome_crossover_prob = 0.2  # TODO crossover disabled poor performance also dir
 diversity_coeff = 1  # increase/decrease the level of mutation based on species sizes and species ages
 
 num_evolution_champs = 15  # Number of all time champs to put back into the population after each generation
-link_cost_coeff = 0.2  # coefficient cost for adjusting fitness based on number of links/connections in neural network
+link_cost_coeff = 0.01  # coefficient cost for adjusting fitness based on number of links/connections in neural network
 #elitism_thresh = 1  # Number of fittest organisms in each species that is preserved as-is to next generation
 #min_species_size = 2  # min number of organisms/nets in a species
 

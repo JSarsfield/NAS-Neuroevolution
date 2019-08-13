@@ -19,7 +19,7 @@ def relu(x):
     return max(0, x)
 
 
-def step(x):
+def step_zero(x):
     return 1 if x > 0 else 0
 
 
@@ -86,6 +86,7 @@ class Network:
 
     def set_fitness(self, fitness):
         self.fitness = fitness-(len(self.links)*link_cost_coeff)  # fitness reward minus link/connection cost
+        self.genome.fitness = self.fitness
 
     """
     def set_fitness(self, fitness):
