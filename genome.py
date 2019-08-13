@@ -135,16 +135,16 @@ class CPPNGenome:
                         node.freq = random.uniform(-sin_freq_range, sin_freq_range)
                         node.amp = random.uniform(-func_amp_range, func_amp_range)
                         node.vshift = random.uniform(-sin_vshift_range, sin_vshift_range)
-            # Adjust freq amp and vshift of activation function
-            if event(func_adjust_prob):
-                if node.act_func.__name__[0] == "g":
-                    node.freq += random.uniform(-guass_freq_adjust, guass_freq_adjust)
-                elif node.act_func.__name__[0] == "s":
-                    node.freq += random.uniform(-sin_freq_adjust, sin_freq_adjust)
-            if event(func_adjust_prob):
-                node.amp += random.uniform(-func_amp_adjust, func_amp_adjust)
-            if event(func_adjust_prob):
-                node.vshift += random.uniform(-func_vshift_adjust, func_vshift_adjust)
+                # Adjust freq amp and vshift of activation function
+                if event(func_adjust_prob):
+                    if node.act_func.__name__[0] == "g":
+                        node.freq += random.uniform(-guass_freq_adjust, guass_freq_adjust)
+                    elif node.act_func.__name__[0] == "s":
+                        node.freq += random.uniform(-sin_freq_adjust, sin_freq_adjust)
+                if event(func_adjust_prob):
+                    node.amp += random.uniform(-func_amp_adjust, func_amp_adjust)
+                if event(func_adjust_prob):
+                    node.vshift += random.uniform(-func_vshift_adjust, func_vshift_adjust)
         # Mutate substrate width/height rectangles
         if event(width_mutate_prob):
             if event(0.5):

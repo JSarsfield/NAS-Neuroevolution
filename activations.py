@@ -131,15 +131,15 @@ def exp(x, freq=1, amp=0):
 
 
 def step(x):
-    return torch.tensor(1, dtype=torch.float32) if x > 0.5 else torch.tensor(0, dtype=torch.float32)
+    return torch.tensor(1, dtype=torch.float32) if x > 2 else torch.tensor(0, dtype=torch.float32)
 
 
 def gaussian(x=None, freq=0.314, amp=2, vshift=-1):
-    return torch.tensor(((np.sign(freq)*(amp*(math.e**(-(0.5*(x/freq)**2)))))+vshift), dtype=torch.float32)
+    return (np.sign(freq)*(amp*(math.e**(-(0.5*(x/freq)**2)))))+vshift
 
 
 def sin(x=None, freq=3.14, amp=1, vshift=0):
-    return torch.tensor((amp*np.sin(freq*x))+vshift, dtype=torch.float32)
+    return (amp*np.sin(freq*x))+vshift
 
 
 class ActivationFunctionSet(object):

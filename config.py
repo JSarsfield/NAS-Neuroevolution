@@ -33,14 +33,14 @@ link_enable_prob = 0.2  # Chance of disabled link being re-enabled
 new_link_attempts = 10  # How many attempts should we try and find a new node before giving up
 change_act_prob = 0.03  # TODO 0.03 # Chance of changing activation function to random act func
 # act func coefficients
-func_adjust_prob = 0.06
+func_adjust_prob = 0.02
 guass_freq_adjust = 0.02  # adjust function frequency
-sin_freq_adjust = 0.04
-func_amp_adjust = 0.04  # adjust function amplitude
-func_vshift_adjust = 0.04  # adjust function vertical shift
+sin_freq_adjust = 0.02
+func_amp_adjust = 0.02  # adjust function amplitude
+func_vshift_adjust = 0.02  # adjust function vertical shift
 func_amp_range = 0.5  # init ranges
 gauss_freq_range = 0.5
-sin_freq_range = 6
+sin_freq_range = 5
 gauss_vshift_range = 0.25
 sin_vshift_range = 0.25
 # es-hyperneat params
@@ -64,14 +64,14 @@ compatibility_excess_coeff = 1  # Balance the distance calculation against weigh
 compatibility_disjoint_coeff = 1  # Balance the distance calculation against weights and excess genes
 compatibility_weight_coeff = 2  # Balance the distance calculation against excess and disjoint genes
 target_num_species = 25  # Number of species to target TODO if species grows above this increase compatibility_thresh to reduce species
-species_survival_thresh = 0.15  # Fraction of species that is allowed to reproduce for next generation
-interspecies_mating_prob = 0  # TODO 0.01 crossover poor perf  # Chance of genome mating outside of species
-genome_crossover_prob = 0  # TODO crossover disabled poor performance also direct copy winners with no mutation # chance of crossover with another genome instead of copy with mutation
+species_survival_thresh = 0.3  # Fraction of species that is allowed to reproduce for next generation
+interspecies_mating_prob = 0.05  # TODO 0.01 crossover poor perf  # Chance of genome mating outside of species
+genome_crossover_prob = 0.2  # TODO crossover disabled poor performance also direct copy winners with no mutation # chance of crossover with another genome instead of copy with mutation
 
 diversity_coeff = 1  # increase/decrease the level of mutation based on species sizes and species ages
 
 num_evolution_champs = 8  # Number of all time champs to put back into the population after each generation
-
+link_cost_coeff = 0.2  # coefficient cost for adjusting fitness based on number of links/connections in neural network
 #elitism_thresh = 1  # Number of fittest organisms in each species that is preserved as-is to next generation
 #min_species_size = 2  # min number of organisms/nets in a species
 

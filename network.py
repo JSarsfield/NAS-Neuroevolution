@@ -84,7 +84,7 @@ class Network:
         plt.show()
 
     def set_fitness(self, fitness):
-        self.fitness = fitness
+        self.fitness = fitness-(len(self.links)*link_cost_coeff)  # fitness reward minus link/connection cost
 
     """
     def set_fitness(self, fitness):

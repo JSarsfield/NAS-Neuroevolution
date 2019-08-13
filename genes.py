@@ -9,6 +9,7 @@ import activations
 import random
 from copy import deepcopy
 from config import gauss_freq_range, func_amp_range, gauss_vshift_range, sin_freq_range, sin_vshift_range
+import torch
 
 
 class GenePool:
@@ -41,8 +42,9 @@ class GenePool:
                                            "node_func": None})
         # Create random output node
         self.create_initial_gene_node({"depth": 1,
-                                       "activation_func": self.activation_functions.get_random_activation_func(), # TODO set back to rand? self.activation_functions.get_random_activation_func()
-                                       "node_func": self.node_functions.get("dot")}, is_input=False)
+                                       "activation_func": torch.tanh, # TODO set back to rand? self.activation_functions.get_random_activation_func()
+                                       "node_func": self.node_functions.get("dot"),
+                                       "can_modify": False}, is_input=False)
         # Add a single initial link for each input node
         for i in range(self.num_inputs):
             self.create_gene_link((None,
