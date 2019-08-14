@@ -12,7 +12,7 @@ import random
 # weight params
 weight_max_value = 2
 weight_min_value = -2
-weight_mutate_rate = 0.2  # Chance of link weight being adjusted by value drawn from zero-centered normal distribution
+weight_mutate_rate = 0.3  # Chance of link weight being adjusted by value drawn from zero-centered normal distribution
 weight_replace_rate = 0.002  # Chance of link weight being replaced with random value
 weight_init_min = -2  # min value of weight initialisation range
 weight_init_max = 2  # max value of weight initialisation range
@@ -53,15 +53,15 @@ band_mutate_prob = 0.05
 quad_tree_max_depth = 10  # The max depth the quadtree will split if variance is still above variance threshold
 substrate_search_max_time = 10  # max num of seconds to search for hid nodes on substrate before giving up and marking net as void
 # substrate params
-init_substrate_width = 8
+init_substrate_width = 6
 init_substrate_height = 4
 width_mutate_prob = 0.05
 height_mutate_prob = 0.05
 # reproduce params
 compatibility_dist = 2  # Max distance two genomes can be considered as the same species TODO !!! needs to be adaptive
 compatibility_adjust = 0.1  # Amount to adjust compatibility_dist each gen to achieve target num species
-compatibility_excess_coeff = 1  # Balance the distance calculation against weights and disjoint genes
-compatibility_disjoint_coeff = 1.5  # Balance the distance calculation against weights and excess genes
+compatibility_excess_coeff = 3  # Balance the distance calculation against weights and disjoint genes
+compatibility_disjoint_coeff = 4  # Balance the distance calculation against weights and excess genes
 compatibility_weight_coeff = 2  # Balance the distance calculation against excess and disjoint genes
 target_num_species = 25  # Number of species to target TODO if species grows above this increase compatibility_thresh to reduce species
 species_survival_thresh = 0.3  # Fraction of species that is allowed to reproduce for next generation
