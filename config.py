@@ -55,8 +55,8 @@ substrate_search_max_time = 10  # max num of seconds to search for hid nodes on 
 # substrate params
 init_substrate_width = 3
 init_substrate_height = 3
-width_mutate_prob = 0.3
-height_mutate_prob = 0.3
+width_mutate_prob = 0.05
+height_mutate_prob = 0.05
 # reproduce params
 compatibility_dist = 2  # Max distance two genomes can be considered as the same species TODO !!! needs to be adaptive
 compatibility_adjust = 0.1  # Amount to adjust compatibility_dist each gen to achieve target num species
