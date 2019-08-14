@@ -297,7 +297,7 @@ class Evolution:
         for s in self.species:
             s.genomes.sort(key=lambda x: x.fitness, reverse=True)
         self.species.sort(key=lambda x: x.genomes[0].fitness, reverse=True)  # Sort species by fittest genome in species
-        self.evolution_champs.sort(key=lambda genome: genome.fitness)
+        self.evolution_champs.sort(key=lambda genome: genome.fitness, reverse=True)
         # Cull champs
         if len(self.evolution_champs) > len(self.species):
             self.evolution_champs = self.evolution_champs[:len(self.species)]
