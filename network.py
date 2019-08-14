@@ -118,7 +118,7 @@ class Network:
                     print("")
                 self.output_inds.append(torch.tensor(in_node_inds))
                 self.weights.append(torch.tensor(node_weights, dtype=torch.float32))  # TODO requires_grad=True when adding gradient based lifetime learning
-                self.activs.append(torch.relu)
+                self.activs.append(node.act_func)
             if net.discrete:
                 from activations import step
                 self.activs[-1] = step
@@ -161,10 +161,10 @@ class Link:
 
 class Node:
 
-    def __init__(self, x, y, act_func=torch.relu, node_ind=None):
+    def __init__(self, x, y, act_func=torch.tanh, node_ind=None):
         self.x = x
         self.y = y
-        self.act_func = act_func
+        self.act_func = act_func if y != 1 else torch.tanh
         self.ingoing_links = []  # links going into the node
         self.outgoing_links = []  # links going out of the node
         self.node_ind = node_ind  # node index, including input nodes
