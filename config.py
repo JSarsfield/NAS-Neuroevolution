@@ -40,9 +40,9 @@ func_amp_adjust = 0.02  # adjust function amplitude
 func_vshift_adjust = 0.02  # adjust function vertical shift
 func_amp_range = 0.5  # init ranges
 gauss_freq_range = 0.5
-sin_freq_range = 12
+sin_freq_range = 6
 gauss_vshift_range = 0.25
-sin_vshift_range = 0.25
+sin_vshift_range = 1
 # es-hyperneat params
 init_var_thresh = 0.3
 init_band_thresh = 0

@@ -373,9 +373,10 @@ class Evolution:
                                                             substrate_width=self.species[i].genomes[0].substrate_width,
                                                             substrate_height=self.species[i].genomes[0].substrate_height,
                                                             fitness=self.species[i].genomes[0].fitness)
-        #self.neural_nets[0].visualise_neural_net()
         print("Best fitnesses ", self.best[-100:])
         if keyboard.is_pressed('v'):
+            self.neural_nets[0].visualise_neural_net()
+            self.neural_nets[0].genome.visualise_cppn()
             self.env(self.gym_env_string, trials=1).evaluate(self.neural_nets[0], render=True)
 
     def _get_initial_population(self):
