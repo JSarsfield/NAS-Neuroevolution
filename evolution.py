@@ -293,6 +293,35 @@ class Evolution:
         elif len(self.species) > target_num_species:
             compatibility_dist += compatibility_adjust
         print("compatibility_dist ", compatibility_dist)
+        # Sort species and champs
+        for s in self.species:
+            s.genomes.sort(key=lambda x: x.fitness, reverse=True)
+        self.species.sort(key=lambda x: x.genomes[0].fitness, reverse=True)  # Sort species by fittest genome in species
+        self.evolution_champs.sort(key=lambda genome: genome.fitness)
+        # Cull champs
+        if len(self.evolution_champs) > len(self.species):
+            self.evolution_champs = self.evolution_champs[:len(self.species)]
+        # Add champs of first generation
+        if len(self.evolution_champs) < len(self.species):
+            for i in range(len(self.evolution_champs), len(self.species)):
+                self.evolution_champs.append(CPPNGenome(self.species[i].genomes[0].gene_nodes_in, # TODO implement genome copy
+                                                        self.species[i].genomes[0].gene_nodes,
+                                                        self.species[i].genomes[0].gene_links,
+                                                        substrate_width=self.species[i].genomes[0].substrate_width,
+                                                        substrate_height=self.species[i].genomes[0].substrate_height,
+                                                        fitness=self.species[i].genomes[0].fitness))
+        else:  # Replace champs with closest genome that is fitter
+            for i in range(len(self.species)):
+                ind, _ = min(enumerate(self.evolution_champs), key=lambda champ: self.species[i].get_distance(champ[1]))
+                # Replace if species best genome is fitter than closest champ genome
+                if self.species[i].genomes[0].fitness > self.evolution_champs[ind].fitness:
+                    self.evolution_champs[ind] = CPPNGenome(self.species[i].genomes[0].gene_nodes_in,
+                                                            self.species[i].genomes[0].gene_nodes,
+                                                            self.species[i].genomes[0].gene_links,
+                                                            substrate_width=self.species[i].genomes[0].substrate_width,
+                                                            substrate_height=self.species[i].genomes[0].substrate_height,
+                                                            fitness=self.species[i].genomes[0].fitness)
+        print("champs ", [c.fitness for c in self.evolution_champs])
 
     def _match_genomes(self):
         """ match suitable genomes ready for reproduction """
@@ -349,30 +378,6 @@ class Evolution:
         self.neural_nets.sort(key=lambda net: net.fitness,
                               reverse=True)  # Sort nets by fitness - element 0 = fittest
         self.best.append(self.neural_nets[0].fitness)
-        self.species.sort(key=lambda x: x.genomes[0].fitness, reverse=True)  # Sort species by fittest genome in species
-        self.evolution_champs.sort(key=lambda genome: genome.fitness)
-        if len(self.evolution_champs) > len(self.species):
-            self.evolution_champs = self.evolution_champs[:len(self.species)]
-        # Add champs of first generation
-        if len(self.evolution_champs) < len(self.species):
-            for i in range(len(self.evolution_champs), len(self.species)):
-                self.evolution_champs.append(CPPNGenome(self.species[i].genomes[0].gene_nodes_in, # TODO implement genome copy
-                                                        self.species[i].genomes[0].gene_nodes,
-                                                        self.species[i].genomes[0].gene_links,
-                                                        substrate_width=self.species[i].genomes[0].substrate_width,
-                                                        substrate_height=self.species[i].genomes[0].substrate_height,
-                                                        fitness=self.species[i].genomes[0].fitness))
-        else:  # Replace champs with closest genome that is fitter
-            for i in range(len(self.species)):
-                ind, _ = min(enumerate(self.evolution_champs), key=lambda champ: self.species[i].get_distance(champ[1]))
-                # Replace if species best genome is fitter than closest champ genome
-                if self.species[i].genomes[0].fitness > self.evolution_champs[ind].fitness:
-                    self.evolution_champs[ind] = CPPNGenome(self.species[i].genomes[0].gene_nodes_in,
-                                                            self.species[i].genomes[0].gene_nodes,
-                                                            self.species[i].genomes[0].gene_links,
-                                                            substrate_width=self.species[i].genomes[0].substrate_width,
-                                                            substrate_height=self.species[i].genomes[0].substrate_height,
-                                                            fitness=self.species[i].genomes[0].fitness)
         print("Best fitnesses ", self.best[-100:])
         if keyboard.is_pressed('v'):
             self.neural_nets[0].visualise_neural_net()

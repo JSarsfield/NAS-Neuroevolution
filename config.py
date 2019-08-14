@@ -12,7 +12,7 @@ import random
 # weight params
 weight_max_value = 2
 weight_min_value = -2
-weight_mutate_rate = 0.8  # Chance of link weight being adjusted by value drawn from zero-centered normal distribution
+weight_mutate_rate = 0.2  # Chance of link weight being adjusted by value drawn from zero-centered normal distribution
 weight_replace_rate = 0.002  # Chance of link weight being replaced with random value
 weight_init_min = -2  # min value of weight initialisation range
 weight_init_max = 2  # max value of weight initialisation range
@@ -20,7 +20,7 @@ uniform_weight_scale = 0.1  # Scale of gaussian function for adjusting gene link
 # bias params  / phase shift into act func
 bias_max_value = 5
 bias_min_value = -5
-bias_mutate_rate = 0.7
+bias_mutate_rate = 0.1
 bias_replace_rate = 0.002  # TODO 0.05
 bias_init_min = -2  # min value of bias initialisation range
 bias_init_max = 2  # max value of bias initialisation range
@@ -61,7 +61,7 @@ height_mutate_prob = 0.05
 compatibility_dist = 2  # Max distance two genomes can be considered as the same species TODO !!! needs to be adaptive
 compatibility_adjust = 0.1  # Amount to adjust compatibility_dist each gen to achieve target num species
 compatibility_excess_coeff = 1  # Balance the distance calculation against weights and disjoint genes
-compatibility_disjoint_coeff = 1  # Balance the distance calculation against weights and excess genes
+compatibility_disjoint_coeff = 1.5  # Balance the distance calculation against weights and excess genes
 compatibility_weight_coeff = 2  # Balance the distance calculation against excess and disjoint genes
 target_num_species = 25  # Number of species to target TODO if species grows above this increase compatibility_thresh to reduce species
 species_survival_thresh = 0.3  # Fraction of species that is allowed to reproduce for next generation
