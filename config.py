@@ -21,17 +21,17 @@ uniform_weight_scale = 0.1  # Scale of gaussian function for adjusting gene link
 bias_max_value = 5
 bias_min_value = -5
 bias_mutate_rate = 0.1
-bias_replace_rate = 0.002  # TODO 0.05
+bias_replace_rate = 0.002
 bias_init_min = -2  # min value of bias initialisation range
 bias_init_max = 2  # max value of bias initialisation range
 # structural params
 link_toggle_prob = 0.05  # Chance of link being toggled between enabled/disabled
-link_add_prob = 0.1  # TODO 0.08 Chance of adding a new link
+link_add_prob = 0.1  # Chance of adding a new link
 link_add_attempts = 10  # Number of attempts to find new link until give up
-node_add_prob = 0.05  # TODO 0.04
+node_add_prob = 0.05
 link_enable_prob = 0.2  # Chance of disabled link being re-enabled
 new_link_attempts = 10  # How many attempts should we try and find a new node before giving up
-change_act_prob = 0.05  # TODO 0.03 # Chance of changing activation function to random act func
+change_act_prob = 0.05  # Chance of changing activation function to random act func
 # act func coefficients
 func_adjust_prob = 0.02
 guass_freq_adjust = 0.02  # adjust function frequency

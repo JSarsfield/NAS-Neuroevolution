@@ -23,9 +23,12 @@ import keyboard
 import copy
 import operator
 
+# TODO !!! kill off under-performing species after x (maybe 8) generations, investigate ways of introducing new random genomes
+
+
 
 # TODO pickle top performing genomes after each/x generations
-# TODO !!!! add connection cost to ensure
+# TODO review connection cost
 # TODO clamp weights to ensure minimum value
 # TODO investigate changing and dynamic environments
 # TODO select for novelty/diversity
