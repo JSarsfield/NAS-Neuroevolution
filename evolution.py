@@ -303,18 +303,22 @@ class Evolution:
             self.evolution_champs = self.evolution_champs[:len(self.species)]
         # Add champs
         elif len(self.evolution_champs) < len(self.species):
-            # find genomes that are furthest away from the other champs
+            # find genomes that are furthest away from the other champs (encourage diversity)
             dists = []
-            for i in range(len(self.species)):
-                dists.append((sum([self.species[i].get_distance(c) for c in self.evolution_champs]), i))
-            dists.sort(key=lambda x: x[0], reverse=True)
+            if event(select_diverse_champs_prob):  # diverge by selecting best genomes from species with max genomic dist
+                for i in range(len(self.species)):
+                    dists.append((i, sum([self.species[i].get_distance(c) for c in self.evolution_champs])))
+                dists.sort(key=lambda x: x[1], reverse=True)
+            else:  # Add best genomes from best performing species
+                for i in range(0, len(self.species)-len(self.evolution_champs)):
+                    dists.append([i])
             for i in range(0, len(self.species)-len(self.evolution_champs)):
-                self.evolution_champs.append(CPPNGenome(self.species[dists[i][1]].genomes[0].gene_nodes_in, # TODO implement genome copy
-                                                        self.species[dists[i][1]].genomes[0].gene_nodes,
-                                                        self.species[dists[i][1]].genomes[0].gene_links,
-                                                        substrate_width=self.species[dists[i][1]].genomes[0].substrate_width,
-                                                        substrate_height=self.species[dists[i][1]].genomes[0].substrate_height,
-                                                        fitness=self.species[dists[i][1]].genomes[0].fitness))
+                self.evolution_champs.append(CPPNGenome(self.species[dists[i][0]].genomes[0].gene_nodes_in, # TODO implement genome copy
+                                                        self.species[dists[i][0]].genomes[0].gene_nodes,
+                                                        self.species[dists[i][0]].genomes[0].gene_links,
+                                                        substrate_width=self.species[dists[i][0]].genomes[0].substrate_width,
+                                                        substrate_height=self.species[dists[i][0]].genomes[0].substrate_height,
+                                                        fitness=self.species[dists[i][0]].genomes[0].fitness))
         # Replace champs with closest genome that is fitter
         for i in range(len(self.species)):
             ind, _ = min(enumerate(self.evolution_champs), key=lambda champ: self.species[i].get_distance(champ[1]))

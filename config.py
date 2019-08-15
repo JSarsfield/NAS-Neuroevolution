@@ -12,7 +12,7 @@ import random
 # weight params
 weight_max_value = 2
 weight_min_value = -2
-weight_mutate_rate = 0.25  # Chance of link weight being adjusted by value drawn from zero-centered normal distribution
+weight_mutate_rate = 0.2  # Chance of link weight being adjusted by value drawn from zero-centered normal distribution
 weight_replace_rate = 0.002  # Chance of link weight being replaced with random value
 weight_init_min = -2  # min value of weight initialisation range
 weight_init_max = 2  # max value of weight initialisation range
@@ -40,9 +40,9 @@ func_amp_adjust = 0.02  # adjust function amplitude
 func_vshift_adjust = 0.02  # adjust function vertical shift
 func_amp_range = 0.5  # init ranges
 gauss_freq_range = 0.5
-sin_freq_range = 6
+sin_freq_range = 9
 gauss_vshift_range = 0.25
-sin_vshift_range = 1
+sin_vshift_range = 0.5
 # es-hyperneat params
 init_var_thresh = 0.3
 init_band_thresh = 0
@@ -58,18 +58,19 @@ init_substrate_height = 4
 width_mutate_prob = 0.05
 height_mutate_prob = 0.05
 # reproduce params
-compatibility_dist = 2  # Max distance two genomes can be considered as the same species TODO !!! needs to be adaptive
+compatibility_dist = 2  # Max distance two genomes can be considered as the same species
 compatibility_adjust = 0.1  # Amount to adjust compatibility_dist each gen to achieve target num species
 compatibility_excess_coeff = 1  # Balance the distance calculation against weights and disjoint genes
 compatibility_disjoint_coeff = 2  # Balance the distance calculation against weights and excess genes
 compatibility_weight_coeff = 2  # Balance the distance calculation against excess and disjoint genes
-target_num_species = 25  # Number of species to target TODO if species grows above this increase compatibility_thresh to reduce species
+target_num_species = 25  # Number of species to target
 species_survival_thresh = 0.3  # Fraction of species that is allowed to reproduce for next generation
-interspecies_mating_prob = 0.15  # TODO 0.01 crossover poor perf  # Chance of genome mating outside of species
-genome_crossover_prob = 0.2  # TODO crossover disabled poor performance also direct copy winners with no mutation # chance of crossover with another genome instead of copy with mutation
+interspecies_mating_prob = 0.15  # Chance of genome mating outside of species
+genome_crossover_prob = 0.2  # chance of crossover with another genome instead of copy with mutation
 
 diversity_coeff = 1  # increase/decrease the level of mutation based on species sizes and species ages
 
+select_diverse_champs_prob = 0.5  # The probability of filling champs based on max genomic distance (encourages diversity)
 num_evolution_champs = 15  # Number of all time champs to put back into the population after each generation
 link_cost_coeff = 0.01  # coefficient cost for adjusting fitness based on number of links/connections in neural network
 #elitism_thresh = 1  # Number of fittest organisms in each species that is preserved as-is to next generation

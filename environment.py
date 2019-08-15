@@ -61,8 +61,6 @@ class EnvironmentReinforcement(Environment):
                 observation, reward, done, info = self.env.step(action)
                 trial_reward += reward
                 if done:
-                    if render:
-                        self.env.close()
                     break
                 action = self.net.graph.forward(observation).numpy()  # self.net.graph.forward(observation).max(0)[1].item()
             fitness = np.append(fitness, trial_reward)
