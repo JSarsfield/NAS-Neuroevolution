@@ -40,9 +40,9 @@ func_amp_adjust = 0.02  # adjust function amplitude
 func_vshift_adjust = 0.02  # adjust function vertical shift
 func_amp_range = 0.5  # init ranges
 gauss_freq_range = 0.5
-sin_freq_range = 9
+sin_freq_range = 6
 gauss_vshift_range = 0.25
-sin_vshift_range = 0.5
+sin_vshift_range = 1
 # es-hyperneat params
 init_var_thresh = 0.3
 init_band_thresh = 0
@@ -70,7 +70,7 @@ genome_crossover_prob = 0.2  # chance of crossover with another genome instead o
 
 diversity_coeff = 1  # increase/decrease the level of mutation based on species sizes and species ages
 
-select_diverse_champs_prob = 0.5  # The probability of filling champs based on max genomic distance (encourages diversity)
+select_diverse_champs_prob = 0.1  # The probability of filling champs based on max genomic distance (encourages diversity)
 num_evolution_champs = 15  # Number of all time champs to put back into the population after each generation
 link_cost_coeff = 0.01  # coefficient cost for adjusting fitness based on number of links/connections in neural network
 #elitism_thresh = 1  # Number of fittest organisms in each species that is preserved as-is to next generation
