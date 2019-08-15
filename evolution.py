@@ -301,26 +301,31 @@ class Evolution:
         # Cull champs
         if len(self.evolution_champs) > len(self.species):
             self.evolution_champs = self.evolution_champs[:len(self.species)]
-        # Add champs of first generation
-        if len(self.evolution_champs) < len(self.species):
-            for i in range(len(self.evolution_champs), len(self.species)):
-                self.evolution_champs.append(CPPNGenome(self.species[i].genomes[0].gene_nodes_in, # TODO implement genome copy
+        # Add champs
+        elif len(self.evolution_champs) < len(self.species):
+            # find genomes that are furthest away from the other champs
+            dists = []
+            for i in range(len(self.species)):
+                dists.append((sum([self.species[i].get_distance(c) for c in self.evolution_champs]), i))
+            dists.sort(key=lambda x: x[0], reverse=True)
+            for i in range(0, len(self.species)-len(self.evolution_champs)):
+                self.evolution_champs.append(CPPNGenome(self.species[dists[i][1]].genomes[0].gene_nodes_in, # TODO implement genome copy
+                                                        self.species[dists[i][1]].genomes[0].gene_nodes,
+                                                        self.species[dists[i][1]].genomes[0].gene_links,
+                                                        substrate_width=self.species[dists[i][1]].genomes[0].substrate_width,
+                                                        substrate_height=self.species[dists[i][1]].genomes[0].substrate_height,
+                                                        fitness=self.species[dists[i][1]].genomes[0].fitness))
+        # Replace champs with closest genome that is fitter
+        for i in range(len(self.species)):
+            ind, _ = min(enumerate(self.evolution_champs), key=lambda champ: self.species[i].get_distance(champ[1]))
+            # Replace if species best genome is fitter than closest champ genome
+            if self.species[i].genomes[0].fitness > self.evolution_champs[ind].fitness:
+                self.evolution_champs[ind] = CPPNGenome(self.species[i].genomes[0].gene_nodes_in,
                                                         self.species[i].genomes[0].gene_nodes,
                                                         self.species[i].genomes[0].gene_links,
                                                         substrate_width=self.species[i].genomes[0].substrate_width,
                                                         substrate_height=self.species[i].genomes[0].substrate_height,
-                                                        fitness=self.species[i].genomes[0].fitness))
-        else:  # Replace champs with closest genome that is fitter
-            for i in range(len(self.species)):
-                ind, _ = min(enumerate(self.evolution_champs), key=lambda champ: self.species[i].get_distance(champ[1]))
-                # Replace if species best genome is fitter than closest champ genome
-                if self.species[i].genomes[0].fitness > self.evolution_champs[ind].fitness:
-                    self.evolution_champs[ind] = CPPNGenome(self.species[i].genomes[0].gene_nodes_in,
-                                                            self.species[i].genomes[0].gene_nodes,
-                                                            self.species[i].genomes[0].gene_links,
-                                                            substrate_width=self.species[i].genomes[0].substrate_width,
-                                                            substrate_height=self.species[i].genomes[0].substrate_height,
-                                                            fitness=self.species[i].genomes[0].fitness)
+                                                        fitness=self.species[i].genomes[0].fitness)
         print("champs ", [c.fitness for c in self.evolution_champs])
 
     def _match_genomes(self):
