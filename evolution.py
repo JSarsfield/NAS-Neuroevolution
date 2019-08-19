@@ -14,7 +14,7 @@ import random
 #from time import perf_counter  # Accurate timing
 
 from substrate import Substrate
-from environment import EnvironmentReinforcement, get_env_spaces, parallel_evaluate_net
+from environment import EnvironmentReinforcement, get_env_spaces
 from species import Species
 from config import *
 from genes import GeneLink, GeneNode
@@ -25,13 +25,16 @@ import operator
 
 # TODO !!! kill off under-performing species after x (maybe 8) generations, investigate ways of introducing new random genomes
 
-
+# TODO analysis of algorithms. Implement an analysis module that can determine the performance of two algorithms
+#  e.g. plot the accuracy/score of algorithm a & b over x generations. Required for determining if algorithmic changes
+#  are improving performance
 
 # TODO pickle top performing genomes after each/x generations
 # TODO review connection cost
 # TODO clamp weights to ensure minimum value
 # TODO investigate changing and dynamic environments
 # TODO select for novelty/diversity
+
 
 def parallel_reproduce_eval(parent_genomes, n_net_inputs, n_net_outputs, env, gym_env_string):
     # Reproduce from parent genomes
@@ -43,9 +46,11 @@ def parallel_reproduce_eval(parent_genomes, n_net_inputs, n_net_outputs, env, gy
     genome.create_graph()
     # Create net from genome
     net = Substrate().build_network_from_genome(genome, n_net_inputs, n_net_outputs)
+    net.init_graph()  # init TF graph
     # Evaluate
     fitness = env(gym_env_string).evaluate(net)
     net.set_fitness(fitness)
+    net.graph = None  # TF graph can't be pickled so delete it
     return (genome, net, new_structures)
 
 
@@ -226,7 +231,15 @@ def mutate_structural(gene_nodes, gene_links):
 
 class Evolution:
 
-    def __init__(self, n_net_inputs, n_net_outputs, pop_size=10, environment=None, gym_env_string="BipedalWalker-v2", dataset=None, yaml_config=None, parallel=True, processes=64):
+    def __init__(self, n_net_inputs,
+                 n_net_outputs,
+                 pop_size=10,
+                 environment=None,
+                 gym_env_string="BipedalWalker-v2",
+                 dataset=None,
+                 yaml_config=None,
+                 parallel=True,
+                 processes=64):
         self.gene_pool = GenePool(cppn_inputs=4)  # CPPN inputs x1 x2 y1 y2
         self.generation = 0
         self.pop_size = pop_size

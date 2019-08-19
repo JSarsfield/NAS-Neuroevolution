@@ -11,10 +11,11 @@ def get_env_spaces(gym_env_string):
     temp_env = gym.make(gym_env_string)
     return temp_env.observation_space.shape[0], 1 if "Discrete" in str(type(temp_env.action_space)) else temp_env.action_space.shape[0]
 
-
+"""
 def parallel_evaluate_net(net, env, gym_env_string):
-    """ parallel evaluation of neural net """
+   
     return env(gym_env_string).evaluate(net)
+"""
 
 
 class Environment:
@@ -48,7 +49,7 @@ class EnvironmentReinforcement(Environment):
         fitness = np.array([])
         for trial in range(self.trials):
             observation = self.env.reset()
-            action = self.net.graph.forward(observation).numpy()  # self.net.graph.forward(observation).max(0)[1].item()
+            action = self.net.graph(observation).numpy()  # self.net.graph.forward(observation).max(0)[1].item()
             trial_reward = 0
             for step in range(self.steps):
                 if render:
@@ -62,7 +63,7 @@ class EnvironmentReinforcement(Environment):
                 trial_reward += reward
                 if done:
                     break
-                action = self.net.graph.forward(observation).numpy()  # self.net.graph.forward(observation).max(0)[1].item()
+                action = self.net.graph(observation).numpy()  # self.net.graph.forward(observation).max(0)[1].item()
             fitness = np.append(fitness, trial_reward)
         if render:
             try:

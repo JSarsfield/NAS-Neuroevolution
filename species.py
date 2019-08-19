@@ -7,6 +7,7 @@ __email__ = "joe.sarsfield@gmail.com"
 from config import *
 import numpy as np
 
+
 class Species:
 
     def __init__(self, representative_genome):

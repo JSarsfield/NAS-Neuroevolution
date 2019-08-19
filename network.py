@@ -7,9 +7,8 @@ Artificial Neural Network / Phenotype. Expressed given a genome.
 __author__ = "Joe Sarsfield"
 __email__ = "joe.sarsfield@gmail.com"
 """
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
+
+import tensorflow as tf
 import random
 import numpy as np
 from config import link_cost_coeff
@@ -45,10 +44,36 @@ class Network:
         self.genome.net = self
         if void:
             return
-        self.graph = Network.Graph(self)
+        self.graph = None # Graph(self)
 
         # TODO debug code below
         #self.visualise_neural_net()
+
+    def init_graph(self):
+        # get numpy weights and biases
+        unit = 0
+        for node in self.input_nodes:
+            node.layer = 0
+            node.unit = unit
+            unit += 1
+        layer = 0
+        unit = 0
+        last_y = -1
+        layer_units =
+        layer_inits
+        for node in self.nodes:
+            if last_y != node.y:
+                layer += 1
+                unit = 0
+            node.layer = layer
+            node.unit = unit
+            # x = node.x if node.y != 1 else 0  # TODO this is hack to get nets with one output node looking pretty - rethink when multiple output nodes
+            G.add_node((node.layer, node.unit), pos=(node.y, node.x))
+            for link in node.ingoing_links:
+                G.add_edge((link.out_node.layer, link.out_node.unit), (node.layer, node.unit), weight=link.weight)
+            unit += 1
+            last_y = node.y
+        self.graph = Graph(self.n_net_inputs, None, None)
 
     def visualise_neural_net(self):
         import matplotlib.pyplot as plt
@@ -94,9 +119,40 @@ class Network:
         self.fitness = self.fitness_unnorm/len(self.genome.species.genomes)
     """
 
-    class Graph(nn.Module):
-        """ computational graph """
+class Graph(tf.keras.Model):
+    """ computational graph of neural network """
 
+    def __init__(self, n_net_inputs, layer_units, layer_inits):
+        """
+        layer_units = list of num of units in each layer
+        layer_inits = list of each layer's initialisation values for weights and biases
+        """
+        super(Graph, self).__init__()
+        self.layers = []
+        for l in layer_units:
+            self.layers.append(tf.keras.layers.Dense(units=l,
+                                                     activation=None,
+                                                     use_bias=True,
+                                                     kernel_initializer='zeros',
+                                                     bias_initializer='zeros',
+                                                     input_shape=(n_net_inputs,)))
+        #elf.layers.append(dense1)
+        #for node in net.nodes:
+
+    def build(self, input_shape):
+        # init layer weights and biases
+        self.dense1.build(input_shape)
+        self.dense1.set_weights([self.dense1.get_weights()[0], np.array([2, 3])])
+        self.outputs = tf.Variable(initial_value=tf.zeros([9]), trainable=False, validate_shape=True, name="flattened_outputs_vector")
+        print("")
+
+
+    def call(self, inputs, training=False):
+        self.outputs = tf.tensor_scatter_nd_update(self.outputs, [[3], [4], [5]], [9, 10, 5])
+        tf.gather(self.outputs, [0, 3, 8])
+        return 0
+
+        """
         def __init__(self, net):
             super().__init__()
             self.layers = []
@@ -117,9 +173,11 @@ class Network:
 
         def forward(self, x):
             return x
+        """
 
+    """
     class GraphOld(nn.Module):
-        """ computational graph """
+        
 
         def __init__(self, net):
             super().__init__()
@@ -148,7 +206,7 @@ class Network:
                 self.activs[-1] = step
 
         def forward(self, x):
-            """ feedforward activation of graph and return output """
+            
             n_inputs = len(x)
             # Update outputs vector with inputs
             self.outputs[torch.arange(n_inputs)] = torch.tensor(x, dtype=torch.float32)
@@ -158,6 +216,7 @@ class Network:
                 y = self.activs[i](y_unactiv)
                 self.outputs[i+n_inputs] = y
             return self.outputs[-self.net.n_net_outputs:]
+    """
 
 
 class Link:
@@ -185,10 +244,10 @@ class Link:
 
 class Node:
 
-    def __init__(self, x, y, act_func=torch.tanh, node_ind=None):
+    def __init__(self, x, y, act_func=step_zero, node_ind=None):
         self.x = x
         self.y = y
-        self.act_func = act_func if y != 1 else torch.tanh
+        self.act_func = step_zero  # act_func if y != 1 else torch.tanh
         self.ingoing_links = []  # links going into the node
         self.outgoing_links = []  # links going out of the node
         self.node_ind = node_ind  # node index, including input nodes
