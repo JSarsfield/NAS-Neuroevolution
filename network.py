@@ -59,12 +59,24 @@ class Network:
         layer = 0
         unit = 0
         last_y = -1
-        #layer_units =
+        layer_sizes = []  # Number of nodes in layer
+        layer_link_size = []  # Determined by node in layer with most ingoing links, for efficient TF layer calculations
+        layer_weights = []  # ingoing link weights for each node in each layer as a vector
+        most_links = 0
         #layer_inits
         for node in self.nodes:
             if last_y != node.y:
+                if last_y != -1:
+                    layer_sizes.append(unit)
+                    layer_link_size.append(most_links)
+                layer_weights.append([])
                 layer += 1
                 unit = 0
+            if len(node.ingoing_links) > most_links:
+                most_links = len(node.ingoing_links)
+            layer_weights[-1].append([])
+            for link in node.ingoing_links:
+                layer_weights[-1][-1].append(link.weight)
             node.layer = layer
             node.unit = unit
             # x = node.x if node.y != 1 else 0  # TODO this is hack to get nets with one output node looking pretty - rethink when multiple output nodes
@@ -73,33 +85,35 @@ class Network:
             #    G.add_edge((link.out_node.layer, link.out_node.unit), (node.layer, node.unit), weight=link.weight)
             unit += 1
             last_y = node.y
-        self.graph = Graph(self.n_net_inputs, None, None)
+        if last_y != -1:
+            layer_sizes.append(unit)
+        self.graph = Graph(self.n_net_inputs, layer_sizes, layer_link_size, layer_weights)
 
     def visualise_neural_net(self):
         import matplotlib.pyplot as plt
         import networkx as nx
         G = nx.DiGraph()
-        unit = 1
+        #unit = 1
         for node in self.input_nodes:
-            node.layer = 1
-            node.unit = unit
-            G.add_node((1, unit), pos=(node.y, node.x))
-            unit += 1
-        layer = 1
-        unit = 1
-        last_y = -1
+            #node.layer = 1
+            #node.unit = unit
+            G.add_node((1, node.unit), pos=(node.y, node.x))
+            #unit += 1
+        #layer = 1
+        #unit = 1
+        #last_y = -1
         for node in self.nodes:
-            if last_y != node.y:
-                layer += 1
-                unit = 1
-            node.layer = layer
-            node.unit = unit
+            #if last_y != node.y:
+            #    layer += 1
+            #    unit = 1
+            #node.layer = layer
+            #node.unit = unit
             #x = node.x if node.y != 1 else 0  # TODO this is hack to get nets with one output node looking pretty - rethink when multiple output nodes
             G.add_node((node.layer, node.unit), pos=(node.y, node.x))
             for link in node.ingoing_links:
                 G.add_edge((link.out_node.layer, link.out_node.unit), (node.layer, node.unit), weight=link.weight)
-            unit += 1
-            last_y = node.y
+            #unit += 1
+            #last_y = node.y
         pos = nx.spring_layout(G, pos=dict(G.nodes(data='pos')), fixed=G.nodes)
         weights = np.array([G[u][v]['weight'] for u,v in G.edges]) * 4
         min_width = 0.1
@@ -123,10 +137,11 @@ class Network:
 class Graph(tf.keras.Model):
     """ computational graph of neural network """
 
-    def __init__(self, n_net_inputs, layer_units, layer_inits):
+    def __init__(self, n_net_inputs, layer_sizes, layer_link_size, layer_weights):
         """
-        layer_units = list of num of units in each layer
-        layer_inits = list of each layer's initialisation values for weights and biases
+        layer_sizes = list of num of nodes in each layer (excl. input layer)
+        layer_link_size = list of max num of ingoing links for a node within the layer (excl. input layer)
+        layer_weights = list of each layer's initialisation values for weights and biases Note bias currently unused
         """
         super(Graph, self).__init__()
         self.layers = []
