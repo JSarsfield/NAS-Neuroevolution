@@ -59,8 +59,8 @@ class Network:
         layer = 0
         unit = 0
         last_y = -1
-        layer_units =
-        layer_inits
+        #layer_units =
+        #layer_inits
         for node in self.nodes:
             if last_y != node.y:
                 layer += 1
@@ -68,9 +68,9 @@ class Network:
             node.layer = layer
             node.unit = unit
             # x = node.x if node.y != 1 else 0  # TODO this is hack to get nets with one output node looking pretty - rethink when multiple output nodes
-            G.add_node((node.layer, node.unit), pos=(node.y, node.x))
-            for link in node.ingoing_links:
-                G.add_edge((link.out_node.layer, link.out_node.unit), (node.layer, node.unit), weight=link.weight)
+            #G.add_node((node.layer, node.unit), pos=(node.y, node.x))
+            #for link in node.ingoing_links:
+            #    G.add_edge((link.out_node.layer, link.out_node.unit), (node.layer, node.unit), weight=link.weight)
             unit += 1
             last_y = node.y
         self.graph = Graph(self.n_net_inputs, None, None)
@@ -118,6 +118,7 @@ class Network:
         # Adjust fitness for number of species. NOTE no longer used as species no longer compete (local competition)
         self.fitness = self.fitness_unnorm/len(self.genome.species.genomes)
     """
+
 
 class Graph(tf.keras.Model):
     """ computational graph of neural network """
