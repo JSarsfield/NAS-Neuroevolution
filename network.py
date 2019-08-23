@@ -44,13 +44,16 @@ class Network:
         self.genome.net = self
         if void:
             return
-        self.graph = None # Graph(self)
-
-        # TODO debug code below
-        #self.visualise_neural_net()
+        self.graph = None
 
     def init_graph(self):
-        # get numpy weights and biases
+        """ We need to arrange the network inputs and weights for each layer into balanced matrices for calculating
+        layer outputs efficiently with TensorFlow
+        """
+        layer_sizes = []  # Number of nodes in layer
+        layer_link_size = []  # Determined by node in layer with most ingoing links, for efficient TF layer calculations
+        layer_weights = []  # ingoing link weights for each node in each layer as a vector
+        most_links = 0
         unit = 0
         for node in self.input_nodes:
             node.layer = 0
@@ -59,10 +62,6 @@ class Network:
         layer = 0
         unit = 0
         last_y = -1
-        layer_sizes = []  # Number of nodes in layer
-        layer_link_size = []  # Determined by node in layer with most ingoing links, for efficient TF layer calculations
-        layer_weights = []  # ingoing link weights for each node in each layer as a vector
-        most_links = 0
         for node in self.nodes:
             if last_y != node.y:
                 if last_y != -1:
@@ -82,8 +81,6 @@ class Network:
             last_y = node.y
         if last_y != -1:
             layer_sizes.append(unit)
-        if len(self.nodes) > 0:          # TODO debug code
-            self.visualise_neural_net()  # TODO debug code
         self.graph = Graph(self.n_net_inputs, layer_sizes, layer_link_size, layer_weights)
 
     def visualise_neural_net(self):
