@@ -206,14 +206,24 @@ class CPPNGenome:
             G.add_node((node.layer, node.unit), pos=(node.depth, x_spaces[node.layer-2][node.unit-1]))
             labels[(node.layer, node.unit)] = node.act_func.__name__
             for link in node.ingoing_links:
-                G.add_edge((link.out_node.layer, link.out_node.unit), (node.layer, node.unit), weight=link.weight)
+                G.add_edge((link.out_node.layer, link.out_node.unit),
+                           (node.layer, node.unit),
+                           weight=link.weight,
+                           color='r' if link.weight < 0 else 'b')
         pos = nx.spring_layout(G, pos=dict(G.nodes(data='pos')), fixed=G.nodes)
         weights = np.array([G[u][v]['weight'] for u, v in G.edges]) * 4
         plt.subplot(2, 1, 1)
         plt.title('Genome Graph Visualisation')
-        min_width = 0.2
-        nx.draw_networkx(G, pos=pos, node_size=650, node_color='#ffaaaa', linewidth=100, with_labels=True,
-                         width=min_width + weights, labels=labels)
+        colors = [G[u][v]['color'] for u, v in G.edges()]
+        nx.draw_networkx(G,
+                         pos=pos,
+                         node_size=650,
+                         node_color='#ffaaaa',
+                         linewidth=100,
+                         with_labels=True,
+                         edge_color=colors,
+                         width=weights,
+                         labels=labels)
         if not is_subplot:
             plt.show()
 
