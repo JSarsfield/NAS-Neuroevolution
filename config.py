@@ -58,7 +58,7 @@ init_substrate_height = 4
 width_mutate_prob = 0.05
 height_mutate_prob = 0.05
 # reproduce params
-compatibility_dist = 2  # Max distance two genomes can be considered as the same species
+compatibility_dist_init = 2  # Max distance two genomes can be considered as the same species
 compatibility_adjust = 0.1  # Amount to adjust compatibility_dist each gen to achieve target num species
 compatibility_excess_coeff = 1  # Balance the distance calculation against weights and disjoint genes
 compatibility_disjoint_coeff = 2  # Balance the distance calculation against weights and excess genes

@@ -24,7 +24,6 @@ def step_zero(x):
 
 class Network:
     # TODO determine how activation func of nodes is going to be determined
-    # TODO if number of outputs is greater than 1 is there always going to be a path to all output nodes??
     # TODO GRADIENT BASED LIFETIME LEARNING - each node should have trainable bias initialised close to zero. Don't put bias nodes on output layer?
 
     def __init__(self, genome, links, nodes, n_net_inputs, n_net_outputs, void=False):

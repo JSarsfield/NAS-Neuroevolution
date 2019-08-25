@@ -104,7 +104,7 @@ class CPPNGenome:
 
     def mutate_nonstructural(self):
         """ perform nonstructural mutations to existing gene nodes & links """
-        # TODO clamp weights and biases to config params?
+        # TODO consider clamping weights and biases?
         for link in self.gene_links:
             # Disable/Enable links
             if event(link_toggle_prob):  # Chance of toggling link

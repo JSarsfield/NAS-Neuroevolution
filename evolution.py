@@ -31,7 +31,6 @@ import operator
 
 # TODO pickle top performing genomes after each/x generations
 # TODO review connection cost
-# TODO clamp weights to ensure minimum value
 # TODO investigate changing and dynamic environments
 # TODO select for novelty/diversity
 
@@ -139,7 +138,7 @@ def create_new_genome(nodes_to_add, links_to_add, cppn_inputs, sub_width, sub_he
     gene_nodes = gene_nodes[cppn_inputs:]
     new_genome = CPPNGenome(gene_nodes_in, gene_nodes, gene_links, substrate_width=sub_width, substrate_height=sub_height)
     if mutate:
-        new_genome.mutate_nonstructural()  # TODO this should be called on a worker thread
+        new_genome.mutate_nonstructural()
     return new_genome, new_structures
 
 
@@ -237,7 +236,6 @@ class Evolution:
                  pop_size=10,
                  environment=None,
                  gym_env_string="BipedalWalker-v2",
-                 dataset=None,
                  yaml_config=None,
                  parallel=True,
                  processes=64):
@@ -250,6 +248,7 @@ class Evolution:
         self.parallel = parallel
         self.best = []  # print best fitnesses for all generations TODO this is debug
         self.evolution_champs = []  # fittest genomes over all generations
+        self.compatibility_dist = compatibility_dist_init
         if environment is None:
             self.n_net_inputs = n_net_inputs
             self.n_net_outputs = n_net_outputs
@@ -273,15 +272,12 @@ class Evolution:
             parent_genomes = self._match_genomes()
             self._reproduce_and_eval_generation(parent_genomes)
             print("New generation reproduced")
-            #self._evaluate_population()
             self._generation_stats()
-            # TODO add new links and nodes to gene pool
             print("End of generation ", str(self.generation))
             self.generation += 1
 
     def _speciate_genomes(self):
         """ Put genomes into species """
-        global compatibility_dist
         self.species = []
         for genome in self.evolution_champs:
             self.genomes.append(CPPNGenome(genome.gene_nodes_in,
@@ -297,7 +293,7 @@ class Evolution:
             matched = False
             # Search existing species to find match for this genome
             for s in self.species:
-                if s.get_distance(genome) < compatibility_dist:
+                if s.get_distance(genome) < self.compatibility_dist:
                     s.add_to_species(genome)
                     matched = True
                     break
@@ -306,10 +302,10 @@ class Evolution:
                 self.species.append(Species(genome))
         # Adjust compatibility_dist if number of species is less or more than target_num_species
         if len(self.species) < target_num_species:
-            compatibility_dist -= compatibility_adjust
+            self.compatibility_dist -= compatibility_adjust
         elif len(self.species) > target_num_species:
-            compatibility_dist += compatibility_adjust
-        print("compatibility_dist ", compatibility_dist)
+            self.compatibility_dist += compatibility_adjust
+        print("compatibility_dist ", self.compatibility_dist)
         # Sort species and champs
         for s in self.species:
             s.genomes.sort(key=lambda x: x.fitness, reverse=True)
@@ -330,7 +326,7 @@ class Evolution:
                 for i in range(0, len(self.species)-len(self.evolution_champs)):
                     dists.append([i])
             for i in range(0, len(self.species)-len(self.evolution_champs)):
-                self.evolution_champs.append(CPPNGenome(self.species[dists[i][0]].genomes[0].gene_nodes_in, # TODO implement genome copy
+                self.evolution_champs.append(CPPNGenome(self.species[dists[i][0]].genomes[0].gene_nodes_in, # TODO consider overriding genome copy instead
                                                         self.species[dists[i][0]].genomes[0].gene_nodes,
                                                         self.species[dists[i][0]].genomes[0].gene_links,
                                                         substrate_width=self.species[dists[i][0]].genomes[0].substrate_width,

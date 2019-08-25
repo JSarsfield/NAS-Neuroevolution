@@ -16,7 +16,6 @@ class Species:
         self.representative_genome = representative_genome  # The genome that this species represents when calculating distance to new genomes
         self.genomes = []
         self.add_to_species(representative_genome)
-        self.inds = None  # inds of genomes in species that is allowed to reproduce TODO !!!!!! reset this to None after new generation is reproduced
 
     def get_distance(self, new_genome):
         """ get distance between new_genome and representative_genome to determine if belongs to this species"""
