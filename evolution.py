@@ -46,11 +46,12 @@ def parallel_reproduce_eval(parent_genomes, n_net_inputs, n_net_outputs, env, gy
     genome.create_graph()
     # Create net from genome
     net = Substrate().build_network_from_genome(genome, n_net_inputs, n_net_outputs)
-    net.init_graph()  # init TF graph
-    # Evaluate
-    fitness = env(gym_env_string).evaluate(net)
-    net.set_fitness(fitness)
-    net.graph = None  # TF graph can't be pickled so delete it
+    if not net.is_void:
+        net.init_graph()  # init TF graph
+        # Evaluate
+        fitness = env(gym_env_string).evaluate(net)
+        net.set_fitness(fitness)
+        net.graph = None  # TF graph can't be pickled so delete it
     return (genome, net, new_structures)
 
 

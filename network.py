@@ -52,7 +52,8 @@ class Network:
         """
         layer_sizes = []  # Number of nodes in layer
         layer_link_size = []  # Determined by node in layer with most ingoing links, for efficient TF layer calculations
-        layer_weights = []  # ingoing link weights for each node in each layer as a vector
+        layer_info = []  # ingoing link weights for each node in each layer as a vector
+        lyr_node_inds = []  # node_inds for layer, used to gather indices for input into layer
         most_links = 0
         unit = 0
         for node in self.input_nodes:
@@ -65,23 +66,42 @@ class Network:
         for node in self.nodes:
             if last_y != node.y:
                 if last_y != -1:
+                    lyr_node_inds[-1] = list(lyr_node_inds[-1])
                     layer_sizes.append(unit)
                     layer_link_size.append(most_links)
-                layer_weights.append([])
+                layer_info.append({})  # Add layer
+                lyr_node_inds.append(set())  # unique node_inds in the layer
+                layer_info[-1]["node_inds"] = []  # 2D array whereby each row is a node in the layer
+                layer_info[-1]["weights"] = []  # 2D array whereby each row is a node in the layer
                 layer += 1
                 unit = 0
             if len(node.ingoing_links) > most_links:
                 most_links = len(node.ingoing_links)
-            layer_weights[-1].append([])
+            layer_info[-1]["node_inds"].append([]) # Node info in layer
+            layer_info[-1]["weights"].append([])  # Node info in layer
             for link in node.ingoing_links:
-                layer_weights[-1][-1].append(link.weight)
+                lyr_node_inds[-1].add(link.out_node.node_ind)
+                layer_info[-1]["node_inds"][-1].append(link.out_node.node_ind)  # Add in node ind and link weight to node in layer
+                layer_info[-1]["weights"][-1].append(link.weight)
             node.layer = layer
             node.unit = unit
             unit += 1
             last_y = node.y
         if last_y != -1:
+            lyr_node_inds[-1] = list(lyr_node_inds[-1])
             layer_sizes.append(unit)
-        self.graph = Graph(self.n_net_inputs, layer_sizes, layer_link_size, layer_weights)
+            layer_link_size.append(most_links)
+        lyr_weights = []
+        for i, lyr in enumerate(layer_info):
+            lyr_weights.append(np.empty([len(lyr["node_inds"]), len(lyr_node_inds[i])], dtype=np.float32))
+            for j, node in enumerate(lyr["node_inds"]):
+                new_inds = [in_node for in_node in lyr_node_inds[i] if in_node not in node]
+                node.extend(new_inds)
+                lyr["weights"][j].extend([0]*len(new_inds))
+                np_node = np.array(node)
+                lyr["weights"][j] = np.array(lyr["weights"][j], dtype=np.float32)
+                lyr_weights[-1][j] = np.copy(lyr["weights"][j][np.argsort(np_node)])
+        self.graph = Graph(self.n_net_inputs, layer_sizes, lyr_node_inds, lyr_weights)
 
     def visualise_neural_net(self):
         import matplotlib.pyplot as plt
@@ -126,36 +146,53 @@ class Network:
 class Graph(tf.keras.Model):
     """ computational graph of neural network """
 
-    def __init__(self, n_net_inputs, layer_sizes, layer_link_size, layer_weights):
+    def __init__(self, n_net_inputs, layer_sizes, lyr_node_inds, lyr_weights):
         """
         layer_sizes = list of num of nodes in each layer (excl. input layer)
-        layer_link_size = list of max num of ingoing links for a node within the layer (excl. input layer)
-        layer_weights = list of each layer's initialisation values for weights and biases Note bias currently unused
+        lyr_node_inds = list of max num of ingoing links for a node within the layer (excl. input layer)
+        lyr_weights = list of each layer's initialisation values for weights and biases Note bias currently unused
         """
         super(Graph, self).__init__()
-        self.layers = []
-        for l in layer_units:
-            self.layers.append(tf.keras.layers.Dense(units=l,
-                                                     activation=None,
-                                                     use_bias=True,
-                                                     kernel_initializer='zeros',
-                                                     bias_initializer='zeros',
-                                                     input_shape=(n_net_inputs,)))
-        #elf.layers.append(dense1)
-        #for node in net.nodes:
+        self.n_net_inputs = n_net_inputs
+        self.layer_sizes = layer_sizes
+        self.lyr_node_inds = [tf.constant(l, dtype=tf.int32) for l in lyr_node_inds]
+        self.lyr_weights = lyr_weights
+        self.lyrs = []
+        self.outputs = None
+        self.out_update_inds = [tf.constant(tf.expand_dims(tf.range(0, n_net_inputs, dtype=tf.int32), axis=1))]
+        start_ind = n_net_inputs
+        for i, size in enumerate(layer_sizes[:-1]):
+            finish_ind = start_ind+size
+            self.out_update_inds.append(tf.constant(tf.expand_dims(tf.range(start_ind, finish_ind, dtype=tf.int32), axis=1)))
+            start_ind = finish_ind
+        for size in layer_sizes:
+            self.lyrs.append(tf.keras.layers.Dense(units=size,
+                                                   activation=tf.nn.tanh,
+                                                   use_bias=True,
+                                                   kernel_initializer='zeros',
+                                                   bias_initializer='zeros',
+                                                   input_shape=(n_net_inputs,)))
 
     def build(self, input_shape):
         # init layer weights and biases
-        self.dense1.build(input_shape)
-        self.dense1.set_weights([self.dense1.get_weights()[0], np.array([2, 3])])
-        self.outputs = tf.Variable(initial_value=tf.zeros([9]), trainable=False, validate_shape=True, name="flattened_outputs_vector")
-        print("")
-
+        for i, l in enumerate(self.lyrs):
+            l.build(tf.TensorShape(len(self.lyr_node_inds[i]),))
+            l.set_weights([np.transpose(self.lyr_weights[i]), l.get_weights()[1]])
+        self.outputs = tf.Variable(initial_value=tf.zeros([self.n_net_inputs+sum(self.layer_sizes)]),
+                                   trainable=False,
+                                   validate_shape=True,
+                                   name="flattened_outputs_vector")
 
     def call(self, inputs, training=False):
-        self.outputs = tf.tensor_scatter_nd_update(self.outputs, [[3], [4], [5]], [9, 10, 5])
-        tf.gather(self.outputs, [0, 3, 8])
-        return 0
+        x = tf.cast(inputs, tf.float32)
+        # Call hidden layers
+        for i, l in enumerate(self.lyrs[:-1]):
+            tf.compat.v1.scatter_nd_update(self.outputs, self.out_update_inds[i], x)
+            x = tf.gather(self.outputs, self.lyr_node_inds[i])
+            x = l(tf.expand_dims(x, axis=0))[-1]
+        tf.compat.v1.scatter_nd_update(self.outputs, self.out_update_inds[-1], x)
+        x = tf.gather(self.outputs, self.lyr_node_inds[-1])
+        return self.lyrs[-1](tf.expand_dims(x, axis=0))[-1]  # call output layer and return result
 
         """
         def __init__(self, net):
