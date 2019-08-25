@@ -194,29 +194,6 @@ class Graph(tf.keras.Model):
         x = tf.gather(self.outputs, self.lyr_node_inds[-1])
         return self.lyrs[-1](tf.expand_dims(x, axis=0))[-1]  # call output layer and return result
 
-        """
-        def __init__(self, net):
-            super().__init__()
-            self.layers = []
-            current_layer_depth = net.nodes[0].y
-            nodes_in_layer = 0
-            # Add hidden layers
-            for node in net.nodes:
-                if current_layer_depth == node.y:
-                    nodes_in_layer += 1
-                else:
-                    self.layers.append(nn.Tanh(nodes_in_layer))
-                    nodes_in_layer = 1
-                    current_layer_depth = node.y
-            # Add output layer
-            self.layers.append(nn.Tanh(nodes_in_layer))
-            print("")
-
-
-        def forward(self, x):
-            return x
-        """
-
     """
     class GraphOld(nn.Module):
         

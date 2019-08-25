@@ -408,7 +408,9 @@ class Evolution:
         if keyboard.is_pressed('v'):
             self.neural_nets[0].visualise_neural_net()
             self.neural_nets[0].genome.visualise_cppn()
+            self.neural_nets[0].init_graph()
             self.env(self.gym_env_string, trials=1).evaluate(self.neural_nets[0], render=True)
+            self.neural_nets[0].graph = None
 
     def _get_initial_population(self):
         while len(self.neural_nets) != self.pop_size:
