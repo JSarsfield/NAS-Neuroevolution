@@ -23,6 +23,7 @@ import keyboard
 import copy
 import operator
 
+# TODO !!! for supervised learning envs remove weights from evolution and optimise within the lifetime
 # TODO !!! kill off under-performing species after x (maybe 8) generations, investigate ways of introducing new random genomes
 
 # TODO analysis of algorithms. Implement an analysis module that can determine the performance of two algorithms
