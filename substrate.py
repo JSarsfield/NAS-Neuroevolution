@@ -44,12 +44,15 @@ class Substrate:
         for layer in hidden_y_locs:
             nodes.append([])
             for node in hidden_x_locs:
+                # TODO currently unused, revisit this
+                """
                 node_weight = genome.graph.forward([node, layer, node, layer])[0].item()
                 diff_left = abs(node_weight-genome.graph.forward([node, layer, node - neighbour_width, layer])[0].item())
                 diff_right = abs(node_weight-genome.graph.forward([node, layer, node + neighbour_width, layer])[0].item())
                 # If min diff is above variance threshold then express
-                if max(diff_left, diff_right) > 0.05:  # TODO this needs revisiting, maybe use STEP
-                    nodes[-1].append(Node(node, layer))
+                if max(diff_left, diff_right) > 0.05:
+                """
+                nodes[-1].append(Node(node, layer))
         nodes.append([])
         # Add output nodes
         for i in output_x_locs:
