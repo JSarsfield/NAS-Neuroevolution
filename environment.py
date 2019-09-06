@@ -49,7 +49,7 @@ class EnvironmentReinforcement(Environment):
         fitness = np.array([])
         for trial in range(self.trials):
             observation = self.env.reset()
-            action = self.net.graph(observation).numpy()  # self.net.graph.forward(observation).max(0)[1].item()
+            action = self.net.graph(observation.astype(np.float32)).numpy()  # self.net.graph.forward(observation).max(0)[1].item()
             trial_reward = 0
             for step in range(self.steps):
                 if render:
@@ -63,7 +63,7 @@ class EnvironmentReinforcement(Environment):
                 trial_reward += reward
                 if done:
                     break
-                action = self.net.graph(observation).numpy()  # self.net.graph.forward(observation).max(0)[1].item()
+                action = self.net.graph(observation.astype(np.float32)).numpy()  # self.net.graph.forward(observation).max(0)[1].item()
             fitness = np.append(fitness, trial_reward)
         if render:
             try:

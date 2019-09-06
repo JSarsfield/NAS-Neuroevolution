@@ -11,9 +11,9 @@ from environment import EnvironmentReinforcement
 if __name__ == "__main__":
     evolution = Evolution(n_net_inputs=4,
                           n_net_outputs=2,
-                          pop_size=256,
+                          pop_size=32,
                           environment=EnvironmentReinforcement,
                           gym_env_string="BipedalWalker-v2",  # CartPole-v0 BipedalWalker-v2
-                          processes=8)
+                          processes=64)
     evolution.begin_evolution()
     print("end")

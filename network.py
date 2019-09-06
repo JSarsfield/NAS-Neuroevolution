@@ -180,7 +180,8 @@ class Graph(tf.keras.Model):
         self.outputs = tf.Variable(initial_value=tf.zeros([self.n_net_inputs+sum(self.layer_sizes)]),
                                    trainable=False,
                                    validate_shape=True,
-                                   name="flattened_outputs_vector")
+                                   name="flattened_outputs_vector",
+                                   dtype=tf.float32)
 
     def call(self, inputs, training=False):
         x = tf.cast(inputs, tf.float32)

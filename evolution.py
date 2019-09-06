@@ -22,6 +22,8 @@ from activations import ActivationFunctionSet, NodeFunctionSet
 import keyboard
 import copy
 import operator
+from enum import Enum
+import ray
 
 # TODO !!! for supervised learning envs remove weights from evolution and optimise within the lifetime
 # TODO !!! kill off under-performing species after x (maybe 8) generations, investigate ways of introducing new random genomes
@@ -53,6 +55,11 @@ def parallel_reproduce_eval(parent_genomes, n_net_inputs, n_net_outputs, env, gy
         net.set_fitness(fitness)
         net.graph = None  # TF graph can't be pickled so delete it
     return (genome, net, new_structures)
+
+
+@ray.remote
+def hpc_execute(parent_genomes, n_net_inputs, n_net_outputs, env, gym_env_string):
+    return parallel_reproduce_eval(parent_genomes, n_net_inputs, n_net_outputs, env, gym_env_string)
 
 
 def crossover(g1, g2):
@@ -230,6 +237,12 @@ def mutate_structural(gene_nodes, gene_links):
     return new_structures
 
 
+class Exec(Enum):
+    SERIAL = 1
+    PARALLEL_LOCAL = 2
+    PARALLEL_HPC = 3
+
+
 class Evolution:
 
     def __init__(self, n_net_inputs,
@@ -238,7 +251,7 @@ class Evolution:
                  environment=None,
                  gym_env_string="BipedalWalker-v2",
                  yaml_config=None,
-                 parallel=True,
+                 execute=Exec.PARALLEL_HPC,
                  processes=64):
         self.gene_pool = GenePool(cppn_inputs=4)  # CPPN inputs x1 x2 y1 y2
         self.generation = 0
@@ -246,7 +259,7 @@ class Evolution:
         self.genomes = []  # Genomes in the current population
         self.neural_nets = []  # Neural networks (phenotype) in the current population
         self.species = []  # Group similar genomes into the same species
-        self.parallel = parallel
+        self.execute = execute
         self.best = []  # print best fitnesses for all generations TODO this is debug
         self.evolution_champs = []  # fittest genomes over all generations
         self.compatibility_dist = compatibility_dist_init
@@ -257,9 +270,13 @@ class Evolution:
             self.env = environment
             self.gym_env_string = gym_env_string
             self.n_net_inputs, self.n_net_outputs = get_env_spaces(gym_env_string)
-        if parallel:
+        if execute == Exec.PARALLEL_LOCAL:
             import multiprocessing
             self.pool = multiprocessing.Pool(processes=processes)
+        elif execute == Exec.PARALLEL_HPC:
+            global ray
+            import ray
+            ray.init(address="152.71.172.184:25711")
         self.act_set = ActivationFunctionSet()
         self.node_set = NodeFunctionSet()
         self._get_initial_population()
@@ -376,21 +393,23 @@ class Evolution:
 
     def _reproduce_and_eval_generation(self, parent_genomes):
         """ reproduce next generation given fitnesses of current generation """
-        if self.parallel:
+        if self.execute == Exec.SERIAL:
+            pass
+        elif self.execute == Exec.PARALLEL_LOCAL:
             res = self.pool.starmap(parallel_reproduce_eval, [(parent_genomes,
                                                                self.n_net_inputs,
                                                                self.n_net_outputs,
                                                                self.env,
                                                                self.gym_env_string) for parent_genomes in parent_genomes])
-            new_genomes = []
-            new_nets = []
-            new_structures = []
-            for r in res:
-                new_genomes.append(r[0])
-                new_nets.append(r[1])
-                new_structures.append(r[2])
-        else:
-            pass
+        else: # Exec.PARALLEL_HPC
+            res = ray.get([hpc_execute.remote(parent_genomes, self.n_net_inputs, self.n_net_outputs, self.env, self.gym_env_string) for parent_genomes in parent_genomes])
+        new_genomes = []
+        new_nets = []
+        new_structures = []
+        for r in res:
+            new_genomes.append(r[0])
+            new_nets.append(r[1])
+            new_structures.append(r[2])
         # Add new structures to gene pool
         self.gene_pool.add_new_structures(new_genomes, new_structures)
         # Overwrite current generation genomes/nets/species TODO pickle best performing
