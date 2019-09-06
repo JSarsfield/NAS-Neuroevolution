@@ -14,6 +14,6 @@ if __name__ == "__main__":
                           pop_size=32,
                           environment=EnvironmentReinforcement,
                           gym_env_string="BipedalWalker-v2",  # CartPole-v0 BipedalWalker-v2
-                          processes=64)
+                          processes=8)
     evolution.begin_evolution()
     print("end")

@@ -6,6 +6,7 @@ __email__ = "joe.sarsfield@gmail.com"
 """
 
 import random
+from enum import Enum
 
 
 # TODO allow loading params from yaml config
@@ -80,3 +81,9 @@ link_cost_coeff = 0.01  # coefficient cost for adjusting fitness based on number
 def event(x):
     """ determine whether an event occurred given probability coefficient """
     return False if random.random() > x else True
+
+
+class Exec(Enum):
+    SERIAL = 1
+    PARALLEL_LOCAL = 2
+    PARALLEL_HPC = 3
