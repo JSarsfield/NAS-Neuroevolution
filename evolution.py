@@ -16,7 +16,8 @@ from species import Species
 from config import *
 from activations import ActivationFunctionSet, NodeFunctionSet
 import keyboard
-from evolution_parallel import parallel_reproduce_eval
+from evolution_parallel import EvolutionProc
+import pickle
 
 # TODO !!! for supervised learning envs remove weights from evolution and optimise within the lifetime
 # TODO !!! kill off under-performing species after x (maybe 8) generations, investigate ways of introducing new random genomes
@@ -39,7 +40,7 @@ class Evolution:
                  environment=None,
                  gym_env_string="BipedalWalker-v2",
                  yaml_config=None,
-                 execute=Exec.PARALLEL_LOCAL,
+                 execute=Exec.PARALLEL_HPC,
                  processes=64):
         self.gene_pool = GenePool(cppn_inputs=4)  # CPPN inputs x1 x2 y1 y2
         self.generation = 0
@@ -64,8 +65,13 @@ class Evolution:
             self.pool = multiprocessing.Pool(processes=processes)
         elif execute == Exec.PARALLEL_HPC:
             global ray
+            global sys
             import ray
-            ray.init(address="152.71.172.184:25711")
+            import sys
+            sys.setrecursionlimit(100000)
+            ray.init(address="152.71.172.184:54504")
+            ray.register_custom_serializer(CPPNGenome, use_pickle=True)
+
         self.act_set = ActivationFunctionSet()
         self.node_set = NodeFunctionSet()
         self._get_initial_population()
@@ -185,19 +191,23 @@ class Evolution:
         if self.execute == Exec.SERIAL:
             pass
         elif self.execute == Exec.PARALLEL_LOCAL:
-            res = self.pool.starmap(parallel_reproduce_eval, [(parent_genomes,
+            res = self.pool.starmap(parallel_reproduce_eval, [(parent,
                                                                self.n_net_inputs,
                                                                self.n_net_outputs,
                                                                self.env,
-                                                               self.gym_env_string) for parent_genomes in parent_genomes])
+                                                               self.gym_env_string) for parent in parent_genomes])
         else: # Exec.PARALLEL_HPC
-            res = ray.get([hpc_execute.remote(parent_genomes, self.n_net_inputs, self.n_net_outputs, self.env, self.gym_env_string) for parent_genomes in parent_genomes])
+            remotes = [EvolutionProc.remote() for i in range(len(parent_genomes))]
+            res = list([ray.get(remotes[i].parallel_reproduce_eval.remote(parent, self.n_net_inputs, self.n_net_outputs, self.env, self.gym_env_string)) for i, parent in enumerate(parent_genomes)])
+        print("execute hpc returned")
         new_genomes = []
         new_nets = []
         new_structures = []
         for r in res:
+            new_net = Substrate().build_network_from_genome(r[0], self.n_net_inputs, self.n_net_outputs)  # TODO!! we only need to create net again if visualising, REWORK to just store fitnesses
+            new_net.fitness = r[1]
             new_genomes.append(r[0])
-            new_nets.append(r[1])
+            new_nets.append(new_net)
             new_structures.append(r[2])
         # Add new structures to gene pool
         self.gene_pool.add_new_structures(new_genomes, new_structures)
