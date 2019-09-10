@@ -16,7 +16,7 @@ from species import Species
 from config import *
 from activations import ActivationFunctionSet, NodeFunctionSet
 import keyboard
-from evolution_parallel import EvolutionProc
+from evolution_parallel import parallel_reproduce_eval
 import pickle
 
 # TODO !!! for supervised learning envs remove weights from evolution and optimise within the lifetime
@@ -46,7 +46,7 @@ class Evolution:
         self.generation = 0
         self.pop_size = pop_size
         self.genomes = []  # Genomes in the current population
-        self.neural_nets = []  # Neural networks (phenotype) in the current population
+        #self.neural_nets = []  # Neural networks (phenotype) in the current population
         self.species = []  # Group similar genomes into the same species
         self.execute = execute
         self.best = []  # print best fitnesses for all generations TODO this is debug
@@ -197,47 +197,48 @@ class Evolution:
                                                                self.env,
                                                                self.gym_env_string) for parent in parent_genomes])
         else: # Exec.PARALLEL_HPC
-            remotes = [EvolutionProc.remote() for i in range(len(parent_genomes))]
-            res = list([ray.get(remotes[i].parallel_reproduce_eval.remote(parent, self.n_net_inputs, self.n_net_outputs, self.env, self.gym_env_string)) for i, parent in enumerate(parent_genomes)])
+            res = ray.get([parallel_reproduce_eval.remote(parent, self.n_net_inputs, self.n_net_outputs, self.env, self.gym_env_string) for i, parent in enumerate(parent_genomes)])
         print("execute hpc returned")
         new_genomes = []
         new_nets = []
         new_structures = []
         for r in res:
-            new_net = Substrate().build_network_from_genome(r[0], self.n_net_inputs, self.n_net_outputs)  # TODO!! we only need to create net again if visualising, REWORK to just store fitnesses
-            new_net.fitness = r[1]
+            #new_net = Substrate().build_network_from_genome(r[0], self.n_net_inputs, self.n_net_outputs)
+            #new_net.fitness = r[1]
             new_genomes.append(r[0])
-            new_nets.append(new_net)
-            new_structures.append(r[2])
+            #new_nets.append(new_net)
+            new_structures.append(r[1])
         # Add new structures to gene pool
         self.gene_pool.add_new_structures(new_genomes, new_structures)
         # Overwrite current generation genomes/nets/species TODO pickle best performing
         self.genomes = new_genomes
-        self.neural_nets = new_nets
+        #self.neural_nets = new_nets
 
     def _generation_stats(self):
-        self.neural_nets.sort(key=lambda net: net.fitness,
+        self.genomes.sort(key=lambda genome: genome.fitness,
                               reverse=True)  # Sort nets by fitness - element 0 = fittest
-        self.best.append(self.neural_nets[0].fitness)
+        self.best.append(self.genomes[0].fitness)
         print("Best fitnesses ", self.best[-100:])
         if keyboard.is_pressed('v'):
-            self.neural_nets[0].visualise_neural_net()
-            self.neural_nets[0].genome.visualise_cppn()
-            self.neural_nets[0].init_graph()
-            self.env(self.gym_env_string, trials=1).evaluate(self.neural_nets[0], render=True)
-            self.neural_nets[0].graph = None
+            best_net = Substrate().build_network_from_genome(self.genomes[0], self.n_net_inputs, self.n_net_outputs)
+            best_net.init_graph()
+            best_net.visualise_neural_net()
+            best_net.genome.visualise_cppn()
+            self.env(self.gym_env_string, trials=1).evaluate(best_net, render=True)
+            best_net.graph = None
+            self.genomes[0].net = None
 
     def _get_initial_population(self):
-        while len(self.neural_nets) != self.pop_size:
+        while len(self.genomes) != self.pop_size:
             genome = CPPNGenome(self.gene_pool.gene_nodes_in,
                                 self.gene_pool.gene_nodes,
                                 self.gene_pool.gene_links,
                                 substrate_width=init_substrate_width,
                                 substrate_height=init_substrate_height)
             genome.create_initial_graph()
-            net = Substrate().build_network_from_genome(genome, self.n_net_inputs, self.n_net_outputs)  # Express the genome to produce a neural network
+            #net = Substrate().build_network_from_genome(genome, self.n_net_inputs, self.n_net_outputs)  # Express the genome to produce a neural network
             self.genomes.append(genome)
-            self.neural_nets.append(net)
+            #self.neural_nets.append(net)
             print("Added genome ", len(self.genomes), " of ", self.pop_size)
 
 
