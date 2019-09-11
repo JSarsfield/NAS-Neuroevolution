@@ -221,21 +221,23 @@ class Evolution:
         print("Best fitnesses ", self.best[-100:])
         if keyboard.is_pressed('v'):
             # Visualise generation best
-            gen_best_net = Substrate().build_network_from_genome(self.genomes[0], self.n_net_inputs, self.n_net_outputs)
-            gen_best_net.init_graph()
-            gen_best_net.visualise_neural_net()
-            gen_best_net.genome.visualise_cppn()
-            self.env(self.gym_env_string, trials=1).evaluate(gen_best_net, render=True)
-            gen_best_net.graph = None
-            self.genomes[0].net = None
+            if self.genomes[0].graph is not None:
+                gen_best_net = Substrate().build_network_from_genome(self.genomes[0], self.n_net_inputs, self.n_net_outputs)
+                gen_best_net.init_graph()
+                gen_best_net.visualise_neural_net()
+                gen_best_net.genome.visualise_cppn()
+                self.env(self.gym_env_string, trials=1).evaluate(gen_best_net, render=True)
+                gen_best_net.graph = None
+                self.genomes[0].net = None
             # Visualise overall best (champ)
-            champ_net = Substrate().build_network_from_genome(self.evolution_champs[0], self.n_net_inputs, self.n_net_outputs)
-            champ_net.init_graph()
-            champ_net.visualise_neural_net()
-            champ_net.genome.visualise_cppn()
-            self.env(self.gym_env_string, trials=1).evaluate(champ_net, render=True)
-            champ_net.graph = None
-            self.evolution_champs[0].net = None
+            if self.evolution_champs[0].graph is not None:
+                champ_net = Substrate().build_network_from_genome(self.evolution_champs[0], self.n_net_inputs, self.n_net_outputs)
+                champ_net.init_graph()
+                champ_net.visualise_neural_net()
+                champ_net.genome.visualise_cppn()
+                self.env(self.gym_env_string, trials=1).evaluate(champ_net, render=True)
+                champ_net.graph = None
+                self.evolution_champs[0].net = None
 
     def _get_initial_population(self):
         while len(self.genomes) != self.pop_size:
