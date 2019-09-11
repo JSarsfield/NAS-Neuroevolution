@@ -19,6 +19,8 @@ import keyboard
 from evolution_parallel import parallel_reproduce_eval
 import random
 import pickle
+import os
+import time
 
 # TODO !!! for supervised learning envs remove weights from evolution and optimise within the lifetime
 # TODO !!! kill off under-performing species after x (maybe 8) generations, investigate ways of introducing new random genomes
@@ -67,14 +69,17 @@ class Evolution:
             global ray
             global sys
             import ray
-            import sys
             import socket
             s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             s.connect(("8.8.8.8", 80))
             ip = s.getsockname()[0]
             s.close()
-            sys.setrecursionlimit(100000)
-            ray.init(address=ip+":54504")
+            try:
+                ray.init(address=ip+":54504")
+            except:
+                os.system("gnome-terminal -e 'bash -c \"ray start --head --redis-port=54504; exec bash\"'")
+                time.sleep(2)
+                ray.init(address=ip + ":54504")
             ray.register_custom_serializer(CPPNGenome, use_pickle=True)
 
         self.act_set = ActivationFunctionSet()
