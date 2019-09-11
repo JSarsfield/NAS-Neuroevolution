@@ -17,6 +17,7 @@ from config import *
 from activations import ActivationFunctionSet, NodeFunctionSet
 import keyboard
 from evolution_parallel import parallel_reproduce_eval
+import random
 import pickle
 
 # TODO !!! for supervised learning envs remove weights from evolution and optimise within the lifetime
@@ -219,21 +220,30 @@ class Evolution:
         self.best.append(self.genomes[0].fitness)
         print("Best fitnesses ", self.best[-100:])
         if keyboard.is_pressed('v'):
-            best_net = Substrate().build_network_from_genome(self.genomes[0], self.n_net_inputs, self.n_net_outputs)
-            best_net.init_graph()
-            best_net.visualise_neural_net()
-            best_net.genome.visualise_cppn()
-            self.env(self.gym_env_string, trials=1).evaluate(best_net, render=True)
-            best_net.graph = None
+            # Visualise generation best
+            gen_best_net = Substrate().build_network_from_genome(self.genomes[0], self.n_net_inputs, self.n_net_outputs)
+            gen_best_net.init_graph()
+            gen_best_net.visualise_neural_net()
+            gen_best_net.genome.visualise_cppn()
+            self.env(self.gym_env_string, trials=1).evaluate(gen_best_net, render=True)
+            gen_best_net.graph = None
             self.genomes[0].net = None
+            # Visualise overall best (champ)
+            champ_net = Substrate().build_network_from_genome(self.evolution_champs[0], self.n_net_inputs, self.n_net_outputs)
+            champ_net.init_graph()
+            champ_net.visualise_neural_net()
+            champ_net.genome.visualise_cppn()
+            self.env(self.gym_env_string, trials=1).evaluate(champ_net, render=True)
+            champ_net.graph = None
+            self.evolution_champs[0].net = None
 
     def _get_initial_population(self):
         while len(self.genomes) != self.pop_size:
             genome = CPPNGenome(self.gene_pool.gene_nodes_in,
                                 self.gene_pool.gene_nodes,
                                 self.gene_pool.gene_links,
-                                substrate_width=init_substrate_width,
-                                substrate_height=init_substrate_height)
+                                substrate_width=random.randint(1, init_substrate_width_max),
+                                substrate_height=random.randint(1, init_substrate_height_max))
             genome.create_initial_graph()
             self.genomes.append(genome)
             print("Added genome ", len(self.genomes), " of ", self.pop_size)

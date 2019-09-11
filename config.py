@@ -54,8 +54,8 @@ band_mutate_prob = 0.05
 quad_tree_max_depth = 10  # The max depth the quadtree will split if variance is still above variance threshold
 substrate_search_max_time = 10  # max num of seconds to search for hid nodes on substrate before giving up and marking net as void
 # substrate params
-init_substrate_width = 8
-init_substrate_height = 4
+init_substrate_width_max = 16
+init_substrate_height_max = 8
 width_mutate_prob = 0.05
 height_mutate_prob = 0.05
 # reproduce params
