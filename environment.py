@@ -47,7 +47,7 @@ class EnvironmentReinforcement(Environment):
         self.net = net
         self.env = gym.make(self.gym_env_string)
         fitness = np.array([])
-        for trial in range(self.trials):
+        for trial in range(self.trials if render is False else 999):
             observation = self.env.reset()
             action = self.net.graph(observation.astype(np.float32)).numpy()  # self.net.graph.forward(observation).max(0)[1].item()
             trial_reward = 0
@@ -56,6 +56,8 @@ class EnvironmentReinforcement(Environment):
                     if keyboard.is_pressed('q'):
                         self.env.close()
                         return
+                    elif keyboard.is_pressed('r'):
+                        break
                     else:
                         self.env.render()
                 action = int(action[0]) if len(action) == 1 else action
@@ -69,7 +71,7 @@ class EnvironmentReinforcement(Environment):
             try:
                 self.env.close()
             except:
-                pass
+                print("FAILED to close env during render. Class EnvironmentReinforcement Def evaluate")
         self.net.set_fitness(fitness.max())
         print("fitness", self.net.fitness)
         return fitness.max()
