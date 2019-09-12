@@ -2,8 +2,21 @@ ray start --head --redis-port=54504
 ray stop
 ray start --address=152.71.172.184:54504 --load-code-from-local
 
-
+TODO add dependencies to package
+NAS dependencies
 pip install tensorflow
 pip install torch
 pip install gym
 pip install box2d-py
+
+(Do this on a new worker node)
+sudo apt install sshpass (only required on master)
+sudo apt-get install openssh-server openssh-client (install on workers)
+
+
+TODO add this code to automate build and install on worker
+python setup.py sdist
+sshpass -p "hpcisrg1" scp NAS-0.1.tar.gz hpc1@152.71.172.127:/tmp
+sshpass -p "hpcisrg1" ssh hpc1@152.71.172.127 -t "bash -l -c -i 'pip install /tmp/NAS-0.1.tar.gz'"
+sshpass -p "hpcisrg1" ssh hpc1@152.71.172.127 -t "bash -l -c -i 'ray stop'"
+sshpass -p "hpcisrg1" ssh hpc1@152.71.172.127 -t "bash -l -c -i 'ray start --address=152.71.172.184:54504 --load-code-from-local'"
