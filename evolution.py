@@ -54,6 +54,7 @@ class Evolution:
         self.best = []  # print best fitnesses for all generations TODO this is debug
         self.evolution_champs = []  # fittest genomes over all generations
         self.compatibility_dist = compatibility_dist_init
+        self.target_num_species = round(pop_size/organisms_to_species_ratio)
         if environment is None:
             self.n_net_inputs = n_net_inputs
             self.n_net_outputs = n_net_outputs
@@ -124,9 +125,9 @@ class Evolution:
             if not matched:
                 self.species.append(Species(genome))
         # Adjust compatibility_dist if number of species is less or more than target_num_species
-        if len(self.species) < target_num_species:
+        if len(self.species) < self.target_num_species:
             self.compatibility_dist -= compatibility_adjust
-        elif len(self.species) > target_num_species:
+        elif len(self.species) > self.target_num_species:
             self.compatibility_dist += compatibility_adjust
         print("compatibility_dist ", self.compatibility_dist)
         # Sort species and champs
