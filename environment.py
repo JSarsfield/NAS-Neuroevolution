@@ -11,12 +11,6 @@ def get_env_spaces(gym_env_string):
     temp_env = gym.make(gym_env_string)
     return temp_env.observation_space.shape[0], 1 if "Discrete" in str(type(temp_env.action_space)) else temp_env.action_space.shape[0]
 
-"""
-def parallel_evaluate_net(net, env, gym_env_string):
-   
-    return env(gym_env_string).evaluate(net)
-"""
-
 
 class Environment:
     """ base class for all environments """
@@ -79,6 +73,8 @@ class EnvironmentReinforcement(Environment):
 
 class EnvironmentClassification(Environment):
     """ Classification environments (supervised learning with labelled dataset (lifetime learning)) """
+    # TODO !!! be careful of overfitting during evolution consider creating a probability distribution of the dataset and sampling from that
+    # TODO also reset weights before training and evaluating on new test data
 
     def __init__(self, dataset):
         super().__init__()
