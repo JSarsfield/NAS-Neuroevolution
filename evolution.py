@@ -18,9 +18,7 @@ from activations import ActivationFunctionSet, NodeFunctionSet
 import keyboard
 from evolution_parallel import parallel_reproduce_eval
 import random
-import pickle
-import os
-import time
+import ray
 
 # TODO !!! for supervised learning envs remove weights from evolution and optimise within the lifetime
 # TODO !!! kill off under-performing species after x (maybe 8) generations, investigate ways of introducing new random genomes
@@ -44,6 +42,7 @@ class Evolution:
                  gym_env_string="BipedalWalker-v2",
                  yaml_config=None,
                  execute=Exec.PARALLEL_HPC,
+                 worker_list=None,
                  processes=64):
         self.gene_pool = GenePool(cppn_inputs=4)  # CPPN inputs x1 x2 y1 y2
         self.generation = 0
@@ -67,22 +66,9 @@ class Evolution:
             import multiprocessing
             self.pool = multiprocessing.Pool(processes=processes)
         elif execute == Exec.PARALLEL_HPC:
-            global ray
-            global sys
-            import ray
-            import socket
-            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            s.connect(("8.8.8.8", 80))
-            ip = s.getsockname()[0]
-            s.close()
-            try:
-                ray.init(address=ip+":54504")
-            except:
-                os.system("gnome-terminal -e 'bash -c \"ray start --head --redis-port=54504; exec bash\"'")
-                time.sleep(2)
-                ray.init(address=ip + ":54504")
-            ray.register_custom_serializer(CPPNGenome, use_pickle=True)
-
+            global hpc_initialisation
+            import hpc_initialisation
+            hpc_initialisation.initialise_hpc(worker_list)
         self.act_set = ActivationFunctionSet()
         self.node_set = NodeFunctionSet()
         self._get_initial_population()

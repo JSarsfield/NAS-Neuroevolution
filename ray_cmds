@@ -1,2 +1,9 @@
 ray start --head --redis-port=54504
 ray stop
+ray start --address=152.71.172.184:54504 --load-code-from-local
+
+
+pip install tensorflow
+pip install torch
+pip install gym
+pip install box2d-py
