@@ -34,7 +34,6 @@ class CPPNGenome:
                  substrate_width=int(init_substrate_width_max/2),
                  substrate_height=int(init_substrate_height_max/2),
                  fitness=-9999):  #, var_thresh=0.3, band_thresh=0):
-        """ Call on master thread then call a create graph function on the worker thread """
         self.weights = None  # Weight of links in graph. Sampled from parent/s genome/s or uniform distribution when no parent
         self.fitness = fitness  # Copy of fitness obtained from network
         self.gene_nodes = copy.deepcopy(gene_nodes)
