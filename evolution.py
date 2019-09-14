@@ -19,6 +19,7 @@ import keyboard
 from evolution_parallel import parallel_reproduce_eval
 import random
 import ray
+from collections import deque
 
 # TODO !!! for supervised learning envs remove weights from evolution and optimise within the lifetime
 # TODO !!! kill off under-performing species after x (maybe 8) generations, investigate ways of introducing new random genomes
@@ -194,7 +195,14 @@ class Evolution:
                                                                self.env,
                                                                self.gym_env_string) for parent in parent_genomes])
         else:  # Exec.PARALLEL_HPC
-            res = ray.get([parallel_reproduce_eval.remote(parent, self.n_net_inputs, self.n_net_outputs, self.env, self.gym_env_string) for i, parent in enumerate(parent_genomes)])
+            res = ray.get([parallel_reproduce_eval.remote(parent, self.n_net_inputs, self.n_net_outputs, self.env, self.gym_env_string) for parent in parent_genomes])
+            """
+            while True:
+                objects_ids = deque([])
+                for i, parent in enumerate(parent_genomes):
+                    objects_ids.append(parallel_reproduce_eval.remote(parent, self.n_net_inputs, self.n_net_outputs, self.env, self.gym_env_string))
+                res = ray.get([objects_ids.popleft() for _ in range(10)])
+            """
         print("execute hpc returned")
         new_genomes = []
         new_structures = []
