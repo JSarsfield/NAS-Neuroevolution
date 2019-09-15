@@ -1,5 +1,8 @@
 """
 Environment to evaluate a neural network during its lifetime
+
+__author__ = "Joe Sarsfield"
+__email__ = "joe.sarsfield@gmail.com"
 """
 
 import numpy as np
