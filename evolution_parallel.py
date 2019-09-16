@@ -27,7 +27,8 @@ def parallel_reproduce_eval(parent, n_net_inputs, n_net_outputs, env, gym_env_st
         net.set_fitness(fitness)  # Note this also sets fitness in genome
         net.graph = None  # TF graph can't be pickled so delete it
     genome.net = None
-    print("returned")
+    if __debug__:
+        print("returned")
     return (genome, new_structures)
 
 

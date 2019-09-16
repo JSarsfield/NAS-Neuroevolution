@@ -11,7 +11,6 @@ import numpy as np
 def get_env_spaces(gym_env_string):
     """ Get environment observation and action space for gym reinforcement environments """
     import gym
-    import roboschool
     temp_env = gym.make(gym_env_string)
     return temp_env.observation_space.shape[0], 1 if "Discrete" in str(type(temp_env.action_space)) else temp_env.action_space.shape[0]
 
@@ -42,7 +41,6 @@ class EnvironmentReinforcement(Environment):
         if render:
             import keyboard
         import gym
-        import roboschool
         self.net = net
         self.env = gym.make(self.gym_env_string)
         fitness = np.array([])
@@ -72,7 +70,8 @@ class EnvironmentReinforcement(Environment):
             except:
                 print("FAILED to close env during render. Class EnvironmentReinforcement Def evaluate")
         self.net.set_fitness(fitness.max())
-        print("fitness", self.net.fitness)
+        if __debug__:
+            print("fitness", self.net.fitness)
         return fitness.max()
 
 

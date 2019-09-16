@@ -20,6 +20,14 @@ from evolution_parallel import parallel_reproduce_eval
 import random
 import ray
 from collections import deque
+import pickle
+import datetime
+import os
+if __debug__:
+    import logging
+    import sys
+    logging.basicConfig(stream=sys.stdout, level=logging.INFO)
+
 
 # TODO !!! for supervised learning envs remove weights from evolution and optimise within the lifetime
 # TODO !!! kill off under-performing species after x (maybe 8) generations, investigate ways of introducing new random genomes
@@ -41,27 +49,22 @@ class Evolution:
                  pop_size=10,
                  environment=None,
                  gym_env_string="BipedalWalker-v2",
-                 yaml_config=None,
+                 session_name=None,
+                 gen=None,
                  execute=Exec.PARALLEL_HPC,
                  worker_list=None,
                  processes=64):
-        self.gene_pool = GenePool(cppn_inputs=4)  # CPPN inputs x1 x2 y1 y2
-        self.generation = 0
-        self.pop_size = pop_size
-        self.genomes = []  # Genomes in the current population
-        self.species = []  # Group similar genomes into the same species
+        self._setup_evolution(pop_size,
+                              environment,
+                              gym_env_string,
+                              n_net_inputs,
+                              n_net_outputs,
+                              session_name=session_name,
+                              gen=gen)
         self.execute = execute
-        self.best = []  # print best fitnesses for all generations TODO this is debug
-        self.evolution_champs = []  # fittest genomes over all generations
-        self.compatibility_dist = compatibility_dist_init
-        self.target_num_species = round(pop_size/organisms_to_species_ratio)
-        if environment is None:
-            self.n_net_inputs = n_net_inputs
-            self.n_net_outputs = n_net_outputs
-        else:
-            self.env = environment
-            self.gym_env_string = gym_env_string
-            self.n_net_inputs, self.n_net_outputs = get_env_spaces(gym_env_string)
+        if __debug__:
+            self.logger = logging.getLogger()
+            self.logger.setLevel(logging.INFO)
         if execute == Exec.PARALLEL_LOCAL:
             from evolution_parallel import parallel_reproduce_eval
             import multiprocessing
@@ -70,22 +73,71 @@ class Evolution:
             global hpc_initialisation
             import hpc_initialisation
             hpc_initialisation.initialise_hpc(worker_list)
-        self.act_set = ActivationFunctionSet()
-        self.node_set = NodeFunctionSet()
-        self._get_initial_population()
+        if session_name is None:  # new run
+            self._get_initial_population()
+        else:  # loaded from file
+            pass
+
+    def _setup_evolution(self,
+                         pop_size,
+                         environment,
+                         gym_env_string,
+                         n_net_inputs,
+                         n_net_outputs,
+                         session_name=None,
+                         gen=None):
+        """ initialise or load variables """
+        if session_name:
+            self.session_name = self.session_name
+            self.save_dir = "./saves/" + session_name + "/"
+        else:
+            self.gene_pool = GenePool(cppn_inputs=4)  # CPPN inputs x1 x2 y1 y2
+            self.species = []  # Group similar genomes into the same species
+            self.generation = 0
+            self.pop_size = pop_size
+            self.genomes = []  # Genomes in the current population
+            self.compatibility_dist = compatibility_dist_init
+            self.target_num_species = round(pop_size / organisms_to_species_ratio)
+            self.session_name = str(datetime.datetime.now()).replace(" ", "_")
+            self.save_dir = "./saves/" + self.session_name + "/"
+            os.mkdir(self.save_dir)
+            self.best = []  # print best fitnesses for all generations TODO this is debug
+            self.evolution_champs = []  # fittest genomes over all generations
+            self.act_set = ActivationFunctionSet()
+            self.node_set = NodeFunctionSet()
+            with open(self.save_dir + "config" + "--" + self.session_name, "wb") as f:
+                pickle.dump([self.generation], f)
+        if environment is None:
+            self.n_net_inputs = n_net_inputs
+            self.n_net_outputs = n_net_outputs
+        else:
+            self.env = environment
+            self.gym_env_string = gym_env_string
+            self.n_net_inputs, self.n_net_outputs = get_env_spaces(gym_env_string)
 
     def begin_evolution(self):
-        print("Starting evolution...")
+        if __debug__:
+            self.logger.info("Starting evolution...")
         while True:  # For infinite generations
-            print("Start of generation ", str(self.generation))
+            if __debug__:
+                self.logger.info('Start of generation ' + str(self.generation))
             self._speciate_genomes()
-            print("Num of species ", len(self.species))
+            if __debug__:
+                self.logger.info('Num of species ' + str(len(self.species)))
             parent_genomes = self._match_genomes()
             self._reproduce_and_eval_generation(parent_genomes)
-            print("New generation reproduced")
+            if __debug__:
+                self.logger.info("New generation reproduced")
             self._generation_stats()
-            print("End of generation ", str(self.generation))
+            if __debug__:
+                self.logger.info("End of generation " + str(self.generation))
             self.generation += 1
+            self._save_evolutionary_state()
+
+    def _save_evolutionary_state(self):
+        """ save the current state of the evolutionary search to disk """
+        with open(self.save_dir+"gen"+str(self.generation)+"--"+self.session_name, "wb") as f:
+            pickle.dump([self.generation], f)
 
     def _speciate_genomes(self):
         """ Put genomes into species """
@@ -116,7 +168,8 @@ class Evolution:
             self.compatibility_dist -= compatibility_adjust
         elif len(self.species) > self.target_num_species:
             self.compatibility_dist += compatibility_adjust
-        print("compatibility_dist ", self.compatibility_dist)
+        if __debug__:
+            self.logger.info("compatibility_dist " + str(self.compatibility_dist))
         # Sort species and champs
         for s in self.species:
             s.genomes.sort(key=lambda x: x.fitness, reverse=True)
@@ -154,7 +207,8 @@ class Evolution:
                                                         substrate_width=self.species[i].genomes[0].substrate_width,
                                                         substrate_height=self.species[i].genomes[0].substrate_height,
                                                         fitness=self.species[i].genomes[0].fitness)
-        print("champs ", [c.fitness for c in self.evolution_champs])
+        if __debug__:
+            self.logger.info("champs " + str([c.fitness for c in self.evolution_champs]))
 
     def _match_genomes(self):
         """ match suitable genomes ready for reproduction """
@@ -195,7 +249,8 @@ class Evolution:
                                                                self.env,
                                                                self.gym_env_string) for parent in parent_genomes])
         else:  # Exec.PARALLEL_HPC
-            res = ray.get([parallel_reproduce_eval.remote(parent, self.n_net_inputs, self.n_net_outputs, self.env, self.gym_env_string) for parent in parent_genomes])
+            object_ids = [parallel_reproduce_eval.remote(parent, self.n_net_inputs, self.n_net_outputs, self.env, self.gym_env_string) for parent in parent_genomes]
+            res = ray.get(object_ids)
             """
             while True:
                 objects_ids = deque([])
@@ -203,7 +258,8 @@ class Evolution:
                     objects_ids.append(parallel_reproduce_eval.remote(parent, self.n_net_inputs, self.n_net_outputs, self.env, self.gym_env_string))
                 res = ray.get([objects_ids.popleft() for _ in range(10)])
             """
-        print("execute hpc returned")
+        if __debug__:
+            self.logger.info("execute hpc returned")
         new_genomes = []
         new_structures = []
         for r in res:
@@ -218,7 +274,8 @@ class Evolution:
         self.genomes.sort(key=lambda genome: genome.fitness,
                               reverse=True)  # Sort nets by fitness - element 0 = fittest
         self.best.append(self.genomes[0].fitness)
-        print("Best fitnesses ", self.best[-100:])
+        if __debug__:
+            self.logger.info("Best fitnesses " + str(self.best[-100:]))
         if keyboard.is_pressed('v'):
             # Visualise generation best
             gen_best_net = Substrate().build_network_from_genome(self.genomes[0], self.n_net_inputs, self.n_net_outputs)
@@ -250,6 +307,7 @@ class Evolution:
                                 substrate_height=random.randint(1, init_substrate_height_max))
             genome.create_initial_graph()
             self.genomes.append(genome)
-            print("Added genome ", len(self.genomes), " of ", self.pop_size)
+            if __debug__:
+                self.logger.info("Added genome " + str(len(self.genomes)) + " of " + str(self.pop_size))
 
 
