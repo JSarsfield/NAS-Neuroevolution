@@ -276,13 +276,6 @@ class Evolution:
         else:  # Exec.PARALLEL_HPC
             object_ids = [parallel_reproduce_eval.remote(parent, self.n_net_inputs, self.n_net_outputs, self.env, self.env_name) for parent in parent_genomes]
             res = ray.get(object_ids)
-            """
-            while True:
-                objects_ids = deque([])
-                for i, parent in enumerate(parent_genomes):
-                    objects_ids.append(parallel_reproduce_eval.remote(parent, self.n_net_inputs, self.n_net_outputs, self.env, self.env_name))
-                res = ray.get([objects_ids.popleft() for _ in range(10)])
-            """
         if __debug__:
             self.logger.info("execute hpc returned")
         new_genomes = []
