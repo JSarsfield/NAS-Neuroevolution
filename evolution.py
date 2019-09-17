@@ -45,14 +45,15 @@ if __debug__:
 class Evolution:
 
     def __init__(self,
-                 pop_size=10,
-                 environment_type=None,
+                 pop_size=64,
+                 environment_type=EnvironmentReinforcement,
                  env_name="BipedalWalker-v2",
                  session_name=None,
                  gen=None,
                  execute=Exec.PARALLEL_HPC,
                  worker_list=None,
-                 persist_every_n_gens=10):
+                 persist_every_n_gens=10,
+                 evaluator_callback=None):
         """
         :param pop_size:  size of the population for each generation
         :param environment_type:  env type e.g. reinforcement or classification
@@ -62,14 +63,16 @@ class Evolution:
         :param execute:  how is the evolutionary search being executed e.g. serially, local_parallel, hpc
         :param worker_list:  if running on multiple nodes (hpc) then pass a list of the node ip addresses for communication
         :param persist_every_n_gens: how often to persist evolutionary state to disk, -1 = never persist
+        :param evaluator_callback: evaluator callback method for retrieving end of generation info. None = no evaluator
         """
+        self.persist_every_n_gens = persist_every_n_gens  # how often should the evolutionary state be saved to disk
+        self.persist_counter = 0
+        self.evaluator_callback = evaluator_callback
         self._setup_evolution(pop_size,
                               environment_type,
                               env_name,
                               session_name=session_name,
                               gen=gen)
-        self.persist_every_n_gens = persist_every_n_gens  # how often should the evolutionary state be saved to disk
-        self.persist_counter = 0
         self.execute = execute
         if __debug__:
             self.logger = logging.getLogger()
@@ -105,19 +108,20 @@ class Evolution:
             self.genomes = []  # Genomes in the current population
             self.compatibility_dist = compatibility_dist_init
             self.target_num_species = round(pop_size / organisms_to_species_ratio)
-            self.session_name = str(datetime.datetime.now()).replace(" ", "_")
-            self.save_dir = "./saves/" + self.session_name + "/"
-            os.mkdir(self.save_dir)
             self.best = []  # print best fitnesses for all generations TODO this is debug
             self.evolution_champs = []  # fittest genomes over all generations
             self.act_set = ActivationFunctionSet()
             self.node_set = NodeFunctionSet()
             self.env_name = env_name
-            # save evolutionary search config
-            with open(self.save_dir + "config" + "--" + self.session_name + ".pkl", "wb") as f:
-                pickle.dump([self.pop_size, self.target_num_species, self.act_set, self.node_set, self.env_name], f)
             self.env = environment_type
             self.n_net_inputs, self.n_net_outputs = get_env_spaces(self.env_name)
+            if self.persist_every_n_gens != -1:
+                self.session_name = str(datetime.datetime.now()).replace(" ", "_")
+                self.save_dir = "./saves/" + self.session_name + "/"
+                os.mkdir(self.save_dir)
+                # save evolutionary search config
+                with open(self.save_dir + "config" + "--" + self.session_name + ".pkl", "wb") as f:
+                    pickle.dump([self.pop_size, self.target_num_species, self.act_set, self.node_set, self.env_name], f)
 
     def _load_evolutionary_state(self):
         """ load the state of a saved evolutionary search """
@@ -150,10 +154,10 @@ class Evolution:
             self.logger.info("Starting evolution...")
         while True:  # For infinite generations
             if __debug__:
-                self.logger.info('Start of generation ' + str(self.generation))
+                self.logger.info("Start of generation " + str(self.generation))
             self._speciate_genomes()
             if __debug__:
-                self.logger.info('Num of species ' + str(len(self.species)))
+                self.logger.info("Num of species " + str(len(self.species)))
             parent_genomes = self._match_genomes()
             self._reproduce_and_eval_generation(parent_genomes)
             if __debug__:
@@ -163,6 +167,10 @@ class Evolution:
                 self.logger.info("End of generation " + str(self.generation))
             self.generation += 1
             self._check_persist()
+            if self.evaluator_callback is not None:
+                should_continue = self.evaluator_callback(self.generation)  # pass generation info to evaluator callback
+                if not should_continue:
+                    return
 
     def _speciate_genomes(self):
         """ Put genomes into species """
@@ -274,7 +282,11 @@ class Evolution:
                                                                self.env,
                                                                self.env_name) for parent in parent_genomes])
         else:  # Exec.PARALLEL_HPC
-            object_ids = [parallel_reproduce_eval.remote(parent, self.n_net_inputs, self.n_net_outputs, self.env, self.env_name) for parent in parent_genomes]
+            object_ids = [parallel_reproduce_eval.remote(parent,
+                                                         self.n_net_inputs,
+                                                         self.n_net_outputs,
+                                                         self.env,
+                                                         self.env_name) for parent in parent_genomes]
             res = ray.get(object_ids)
         if __debug__:
             self.logger.info("execute hpc returned")
