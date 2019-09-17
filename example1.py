@@ -9,12 +9,11 @@ from environment import EnvironmentReinforcement
 
 
 if __name__ == "__main__":
-    evolution = Evolution(n_net_inputs=4,
-                          n_net_outputs=2,
-                          pop_size=64,
-                          environment=EnvironmentReinforcement,
-                          gym_env_string="BipedalWalker-v2",  # CartPole-v0 BipedalWalker-v2 MountainCarContinuous-v0 HandManipulateBlock-v0
+    evolution = Evolution(pop_size=64,
+                          environment_type=EnvironmentReinforcement,
+                          env_name="BipedalWalker-v2",  # CartPole-v0 BipedalWalker-v2 MountainCarContinuous-v0 HandManipulateBlock-v0
                           worker_list=None,  # "hpc_worker_list" "hpc_worker_list_home"
-                          processes=64)
+                          session_name=None,  # if None new evolutionary search will be started
+                          gen=6)
     evolution.begin_evolution()
     print("end")

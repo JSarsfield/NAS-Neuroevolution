@@ -44,23 +44,32 @@ if __debug__:
 
 class Evolution:
 
-    def __init__(self, n_net_inputs,
-                 n_net_outputs,
+    def __init__(self,
                  pop_size=10,
-                 environment=None,
-                 gym_env_string="BipedalWalker-v2",
+                 environment_type=None,
+                 env_name="BipedalWalker-v2",
                  session_name=None,
                  gen=None,
                  execute=Exec.PARALLEL_HPC,
                  worker_list=None,
-                 processes=64):
+                 persist_every_n_gens=10):
+        """
+        :param pop_size:  size of the population for each generation
+        :param environment_type:  env type e.g. reinforcement or classification
+        :param env_name:  name of the environment to load e.g. gym env BipedalWalker-v2
+        :param session_name: if none start new evolutionary search otherwise load evolutionary state from disk
+        :param gen:  if loading then pass the generation of the session to load
+        :param execute:  how is the evolutionary search being executed e.g. serially, local_parallel, hpc
+        :param worker_list:  if running on multiple nodes (hpc) then pass a list of the node ip addresses for communication
+        :param persist_every_n_gens: how often to persist evolutionary state to disk, -1 = never persist
+        """
         self._setup_evolution(pop_size,
-                              environment,
-                              gym_env_string,
-                              n_net_inputs,
-                              n_net_outputs,
+                              environment_type,
+                              env_name,
                               session_name=session_name,
                               gen=gen)
+        self.persist_every_n_gens = persist_every_n_gens  # how often should the evolutionary state be saved to disk
+        self.persist_counter = 0
         self.execute = execute
         if __debug__:
             self.logger = logging.getLogger()
@@ -68,29 +77,27 @@ class Evolution:
         if execute == Exec.PARALLEL_LOCAL:
             from evolution_parallel import parallel_reproduce_eval
             import multiprocessing
-            self.pool = multiprocessing.Pool(processes=processes)
+            #self.pool = multiprocessing.Pool(processes=processes)
         elif execute == Exec.PARALLEL_HPC:
             global hpc_initialisation
             import hpc_initialisation
             hpc_initialisation.initialise_hpc(worker_list)
-        if session_name is None:  # new run
+        if session_name is None:  # create random genomes if new evolutionary search
             self._get_initial_population()
-        else:  # loaded from file
-            pass
 
     def _setup_evolution(self,
                          pop_size,
-                         environment,
-                         gym_env_string,
-                         n_net_inputs,
-                         n_net_outputs,
+                         environment_type,
+                         env_name,
                          session_name=None,
                          gen=None):
         """ initialise or load variables """
-        if session_name:
-            self.session_name = self.session_name
+        if session_name:  # load saved evolutionary state
+            self.session_name = session_name
             self.save_dir = "./saves/" + session_name + "/"
-        else:
+            self.generation = gen
+            self._load_evolutionary_state()
+        else:  # start new evolutionary search
             self.gene_pool = GenePool(cppn_inputs=4)  # CPPN inputs x1 x2 y1 y2
             self.species = []  # Group similar genomes into the same species
             self.generation = 0
@@ -105,15 +112,38 @@ class Evolution:
             self.evolution_champs = []  # fittest genomes over all generations
             self.act_set = ActivationFunctionSet()
             self.node_set = NodeFunctionSet()
-            with open(self.save_dir + "config" + "--" + self.session_name, "wb") as f:
-                pickle.dump([self.generation], f)
-        if environment is None:
-            self.n_net_inputs = n_net_inputs
-            self.n_net_outputs = n_net_outputs
-        else:
-            self.env = environment
-            self.gym_env_string = gym_env_string
-            self.n_net_inputs, self.n_net_outputs = get_env_spaces(gym_env_string)
+            self.env_name = env_name
+            # save evolutionary search config
+            with open(self.save_dir + "config" + "--" + self.session_name + ".pkl", "wb") as f:
+                pickle.dump([self.pop_size, self.target_num_species, self.act_set, self.node_set, self.env_name], f)
+            self.env = environment_type
+            self.n_net_inputs, self.n_net_outputs = get_env_spaces(self.env_name)
+
+    def _load_evolutionary_state(self):
+        """ load the state of a saved evolutionary search """
+        # load config
+        with open(self.save_dir + "config" + "--" + self.session_name + ".pkl", "rb") as f:
+            self.pop_size, self.target_num_species, self.act_set, self.node_set, self.env_name = pickle.load(f)
+        # load generation variables
+        with open(self.save_dir + "gen" + str(self.generation) + "--" + self.session_name + ".pkl", "rb") as f:
+            self.genomes, self.evolution_champs, self.best, self.gene_pool, self.compatibility_dist = pickle.load(f)
+
+    def _save_evolutionary_state(self):
+        """ save the current state of the evolutionary search to disk """
+        with open(self.save_dir + "gen" + str(self.generation) + "--" + self.session_name + ".pkl", "wb") as f:
+            pickle.dump([self.genomes, self.evolution_champs, self.best, self.gene_pool, self.compatibility_dist], f)
+
+    def _get_initial_population(self):
+        while len(self.genomes) != self.pop_size:
+            genome = CPPNGenome(self.gene_pool.gene_nodes_in,
+                                self.gene_pool.gene_nodes,
+                                self.gene_pool.gene_links,
+                                substrate_width=random.randint(1, init_substrate_width_max),
+                                substrate_height=random.randint(1, init_substrate_height_max))
+            genome.create_initial_graph()
+            self.genomes.append(genome)
+            if __debug__:
+                self.logger.info("Added genome " + str(len(self.genomes)) + " of " + str(self.pop_size))
 
     def begin_evolution(self):
         if __debug__:
@@ -132,12 +162,7 @@ class Evolution:
             if __debug__:
                 self.logger.info("End of generation " + str(self.generation))
             self.generation += 1
-            self._save_evolutionary_state()
-
-    def _save_evolutionary_state(self):
-        """ save the current state of the evolutionary search to disk """
-        with open(self.save_dir+"gen"+str(self.generation)+"--"+self.session_name, "wb") as f:
-            pickle.dump([self.generation], f)
+            self._check_persist()
 
     def _speciate_genomes(self):
         """ Put genomes into species """
@@ -247,15 +272,15 @@ class Evolution:
                                                                self.n_net_inputs,
                                                                self.n_net_outputs,
                                                                self.env,
-                                                               self.gym_env_string) for parent in parent_genomes])
+                                                               self.env_name) for parent in parent_genomes])
         else:  # Exec.PARALLEL_HPC
-            object_ids = [parallel_reproduce_eval.remote(parent, self.n_net_inputs, self.n_net_outputs, self.env, self.gym_env_string) for parent in parent_genomes]
+            object_ids = [parallel_reproduce_eval.remote(parent, self.n_net_inputs, self.n_net_outputs, self.env, self.env_name) for parent in parent_genomes]
             res = ray.get(object_ids)
             """
             while True:
                 objects_ids = deque([])
                 for i, parent in enumerate(parent_genomes):
-                    objects_ids.append(parallel_reproduce_eval.remote(parent, self.n_net_inputs, self.n_net_outputs, self.env, self.gym_env_string))
+                    objects_ids.append(parallel_reproduce_eval.remote(parent, self.n_net_inputs, self.n_net_outputs, self.env, self.env_name))
                 res = ray.get([objects_ids.popleft() for _ in range(10)])
             """
         if __debug__:
@@ -274,15 +299,16 @@ class Evolution:
         self.genomes.sort(key=lambda genome: genome.fitness,
                               reverse=True)  # Sort nets by fitness - element 0 = fittest
         self.best.append(self.genomes[0].fitness)
+        self.best = self.best[-100:]
         if __debug__:
-            self.logger.info("Best fitnesses " + str(self.best[-100:]))
+            self.logger.info("Best fitnesses " + str(self.best))
         if keyboard.is_pressed('v'):
             # Visualise generation best
             gen_best_net = Substrate().build_network_from_genome(self.genomes[0], self.n_net_inputs, self.n_net_outputs)
             gen_best_net.init_graph()
             gen_best_net.visualise_neural_net()
             gen_best_net.genome.visualise_cppn()
-            self.env(self.gym_env_string, trials=1).evaluate(gen_best_net, render=True)
+            self.env(self.env_name, trials=1).evaluate(gen_best_net, render=True)
             gen_best_net.graph = None
             self.genomes[0].net = None
             # Visualise overall best (champ)
@@ -293,21 +319,15 @@ class Evolution:
                 champ_net.init_graph()
                 champ_net.visualise_neural_net()
                 champ_net.genome.visualise_cppn()
-                self.env(self.gym_env_string, trials=1).evaluate(champ_net, render=True)
+                self.env(self.env_name, trials=1).evaluate(champ_net, render=True)
             champ_net.graph = None
             self.evolution_champs[0].net = None
             self.evolution_champs[0].graph = None
 
-    def _get_initial_population(self):
-        while len(self.genomes) != self.pop_size:
-            genome = CPPNGenome(self.gene_pool.gene_nodes_in,
-                                self.gene_pool.gene_nodes,
-                                self.gene_pool.gene_links,
-                                substrate_width=random.randint(1, init_substrate_width_max),
-                                substrate_height=random.randint(1, init_substrate_height_max))
-            genome.create_initial_graph()
-            self.genomes.append(genome)
-            if __debug__:
-                self.logger.info("Added genome " + str(len(self.genomes)) + " of " + str(self.pop_size))
-
-
+    def _check_persist(self):
+        """ check whether to persist evolutionary state to disk """
+        if self.persist_every_n_gens != -1:
+            self.persist_counter += 1
+            if self.persist_counter == self.persist_every_n_gens:
+                self.persist_counter = 0
+                self._save_evolutionary_state()
