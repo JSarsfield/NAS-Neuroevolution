@@ -281,12 +281,31 @@ class Evolution:
                                                                self.env_name) for parent in parent_genomes])
         else:  # Exec.PARALLEL_HPC
             # TODO loop this and get x samples at a time until genomes in pop have been evaluated
-            object_ids = [parallel_reproduce_eval.remote(parent,
-                                                         self.n_net_inputs,
-                                                         self.n_net_outputs,
-                                                         self.env,
-                                                         self.env_name) for parent in parent_genomes]
-            res = ray.get(object_ids)
+            i = 0
+            split = 128
+            total = 256
+            genome_batch = parent_genomes[i:total]
+            object_ids = []
+            res = []
+            add_more_genomes = True
+            while add_more_genomes:
+                object_ids.extend([parallel_reproduce_eval.remote(parent,
+                                                             self.n_net_inputs,
+                                                             self.n_net_outputs,
+                                                             self.env,
+                                                             self.env_name) for parent in genome_batch])
+                while True:
+                    object_ids_available, object_ids_not_ready = ray.wait(object_ids, timeout=1.0)
+                    res.extend(ray.get(object_ids_available))
+                    object_ids = list(set(object_ids) - set(object_ids_available))
+                    if not object_ids and genome_batch[-1] == parent_genomes[-1]:
+                        add_more_genomes = False
+                        break
+                    elif len(object_ids_not_ready) < 128 and genome_batch[-1] != parent_genomes[-1]:
+                        i = split
+                        split = min(i+total, len(parent_genomes))
+                        genome_batch = parent_genomes[i:split]
+                        break
             """
             res = []
             while True:

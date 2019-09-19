@@ -70,8 +70,6 @@ class EnvironmentReinforcement(Environment):
             except:
                 print("FAILED to close env during render. Class EnvironmentReinforcement Def evaluate")
         self.net.set_fitness(fitness.max())
-        if __debug__:
-            print("fitness", self.net.fitness)
         return fitness.max()
 
 

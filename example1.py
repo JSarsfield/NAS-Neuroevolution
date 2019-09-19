@@ -22,7 +22,7 @@ def single_run():
 
 
 def evaluation():
-    args = {"pop_size": 512,
+    args = {"pop_size": 2048,
             "environment_type": EnvironmentReinforcement,
             "env_name": "BipedalWalker-v2",
             "session_name": None,

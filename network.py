@@ -48,7 +48,7 @@ class Network:
         # cause huge slowdown with ray
         tf.config.intra_op_parallelism_threads = 1
         tf.config.inter_op_parallelism_threads = 1
-        #tf.isolate_session_state = True
+        tf.isolate_session_state = True
 
     def init_graph(self):
         """ We need to arrange the network inputs and weights for each layer into balanced matrices for calculating
