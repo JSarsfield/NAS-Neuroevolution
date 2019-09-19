@@ -22,18 +22,18 @@ def single_run():
 
 
 def evaluation():
-    args = {"pop_size": 64,
+    args = {"pop_size": 512,
             "environment_type": EnvironmentReinforcement,
             "env_name": "BipedalWalker-v2",
             "session_name": None,
             "gen": None,
             "execute": Exec.PARALLEL_HPC,
-            "worker_list": None,
+            "worker_list": "hpc_worker_list",
             "persist_every_n_gens": -1}
     evaluator = EvaluateES(es_algorithms=[Evolution],
                            es_init_args=[args],
-                           evaluation_end_criteria=None,
-                           num_of_runs=1)
+                           num_of_runs=1,
+                           stop_criterion=40)
     evaluator.run_evaluation()
 
 

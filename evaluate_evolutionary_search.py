@@ -22,17 +22,21 @@ import datetime
 class EvaluateES:
     """ evaluate evolutionary search algorithms """
 
-    def __init__(self, es_algorithms, es_init_args, evaluation_end_criteria, num_of_runs=1):
+    def __init__(self,
+                 es_algorithms,
+                 es_init_args,
+                 num_of_runs=1,
+                 stop_criterion=10):
         """
         :param es_algorithms: list of evolutionary search algorithms (ES) to evaluate
         :param es_init_args: list of initialisation arguments for each ES
-        :param evaluation_end_criteria: criteria to evaluate the ES against e.g. time, generation, global performance
         :param num_of_runs: number of evaluation runs for each ES
+        :param stop_criterion: criterion to stop evaluation of a single run e.g. time, generation, global performance
         """
         # TODO load previous version/s of our ES algorithm from git commit (tag each version)
         self.es_algorithms = es_algorithms
         self.es_init_args = es_init_args
-        self.evaluation_end_criteria = evaluation_end_criteria
+        self.stop_criterion = stop_criterion
         self.num_of_runs = num_of_runs
         self.metrics = []  # performance metrics for each ES
         self.evaluation_name = "evaluation_" + str(datetime.datetime.now()).replace(" ", "_")
@@ -59,16 +63,23 @@ class EvaluateES:
         """ save evaluation of the ES algorithm """
         pass
 
-    def generation_complete_callback(self, generation_best_fitness):
+    def generation_complete_callback(self, current_gen, generation_best_fitness):
         """ callback for when an ES algorithm finishes evaluating a generation of genomes """
         # get generation metrics
-        self.metrics[-1]["runs"][-1]["gens"].append(self._get_metrics())
-        # TODO check if evaluation end criteria is met
-        return True
+        self.metrics[-1]["runs"][-1]["gens"].append(self._get_metrics(generation_best_fitness))
+        self._get_metrics(generation_best_fitness)
+        return self._stop_criterion_gen_reached(current_gen)
 
-    def _get_metrics(self):
+    def _stop_criterion_gen_reached(self, current_gen):
+        """ generation reached evaluation stop criterion for a single run """
+        if current_gen == self.stop_criterion:
+            return True
+        return False
+
+    def _get_metrics(self, generation_best_fitness):
         """ get metrics of ES algorithm """
-        return {"glob_perf": 0, "glob_reli": 0, "precision": 0, "coverage": 0}
+        # TODO measure time between generations!!!
+        return {"gen_glob_perf": generation_best_fitness, "gen_glob_reli": 0, "precision": 0, "coverage": 0}
 
 
 class VisualiseEvaluation:

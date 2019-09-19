@@ -44,6 +44,11 @@ class Network:
         if void:
             return
         self.graph = None
+        # ensure tensorflow runs serially as each logical processor will be running its own process and this can
+        # cause huge slowdown with ray
+        tf.config.intra_op_parallelism_threads = 1
+        tf.config.inter_op_parallelism_threads = 1
+        #tf.isolate_session_state = True
 
     def init_graph(self):
         """ We need to arrange the network inputs and weights for each layer into balanced matrices for calculating

@@ -1,3 +1,4 @@
 # Add HPC worker node IP addresses here: ip,username,password
 152.71.172.127,hpc1,hpcisrg1
 152.71.172.87,hpc2,hpcisrg2
+172.22.20.109,joe,3089

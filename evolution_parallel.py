@@ -8,9 +8,8 @@ import ray
 import pickle
 
 
-@ray.remote(num_return_vals=1)
+@ray.remote(num_cpus=1, num_return_vals=1)
 def parallel_reproduce_eval(parent, n_net_inputs, n_net_outputs, env, gym_env_string):
-    #parent = pickle.loads(parent)
     # Reproduce from parent genomes
     if type(parent[-1]) is not bool:  # Two parent genomes so crossover
         genome, new_structures = crossover(parent[0], parent[1])

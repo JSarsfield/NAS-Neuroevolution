@@ -12,15 +12,17 @@ from genome import CPPNGenome
 import csv
 
 
-def initialise_hpc(worker_list):
+def initialise_hpc(worker_list, local_mode=False):
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     s.connect(("8.8.8.8", 80))
     ip = s.getsockname()[0]
     s.close()
     # Restart master node
     os.system("ray stop")
-    os.system("ray start --head --redis-port=54504")
-    ray.init(address=ip + ":54504")
+    import multiprocessing
+    logical_processors = multiprocessing.cpu_count()
+    os.system("ray start --head --redis-port=54504 --include-webui --num-cpus="+str(logical_processors))
+    ray.init(address=ip + ":54504", local_mode=local_mode)
     if worker_list is not None:
         host_address = str(ip)+":"+"54504"
         # Build modules for sending to worker nodes
@@ -39,7 +41,8 @@ def initialise_hpc(worker_list):
                 break
         for w in worker_ips:
             setup_worker(w["ip"], w["user"], w["pw"], path, pkg_name, host_address)
-    ray.register_custom_serializer(CPPNGenome, use_pickle=True)
+    if not local_mode:
+        ray.register_custom_serializer(CPPNGenome, use_pickle=True)
 
 
 def setup_worker(ip, user, pw, path_to_pkg, pkg_name, host_address):

@@ -167,10 +167,8 @@ class Evolution:
                 self.logger.info("End of generation " + str(self.generation))
             self.generation += 1
             self._check_persist()
-            if self.evaluator_callback is not None:
-                should_continue = self.evaluator_callback(self.generation)  # pass generation info to evaluator callback
-                if not should_continue:
-                    return
+            if self._process_callbacks_and_stop():
+                return
 
     def _speciate_genomes(self):
         """ Put genomes into species """
@@ -282,12 +280,21 @@ class Evolution:
                                                                self.env,
                                                                self.env_name) for parent in parent_genomes])
         else:  # Exec.PARALLEL_HPC
+            # TODO loop this and get x samples at a time until genomes in pop have been evaluated
             object_ids = [parallel_reproduce_eval.remote(parent,
                                                          self.n_net_inputs,
                                                          self.n_net_outputs,
                                                          self.env,
                                                          self.env_name) for parent in parent_genomes]
             res = ray.get(object_ids)
+            """
+            res = []
+            while True:
+                print("Waiting for objects to become available ***************************")
+                object_ids_available, object_ids_not_ready = ray.wait(object_ids, timeout=1.0)
+                print("Getting available objects !!!!!!!!!!!!!!!!!!!!!!!!!!!")
+                res.extend(ray.get(object_ids_available))
+            """
         if __debug__:
             self.logger.info("execute hpc returned")
         new_genomes = []
@@ -336,3 +343,10 @@ class Evolution:
             if self.persist_counter == self.persist_every_n_gens:
                 self.persist_counter = 0
                 self._save_evolutionary_state()
+
+    def _process_callbacks_and_stop(self):
+        """ process any callbacks and check if evaluator stopping condition is met, True = stop evaluating """
+        if self.evaluator_callback is not None:
+            return self.evaluator_callback(self.generation, self.genomes[0].fitness)  # pass generation info to evaluator callback
+        return False
+
