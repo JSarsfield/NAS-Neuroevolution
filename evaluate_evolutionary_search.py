@@ -66,7 +66,8 @@ class EvaluateES:
 
     def _save_evaluation(self):
         """ save evaluation of the ES algorithm """
-        pass
+        with open(self.save_dir + "eval.pkl", "wb") as f:
+            pickle.dump(self.metrics, f)
 
     def generation_complete_callback(self, current_gen, generation_best_fitness):
         """ callback for when an ES algorithm finishes evaluating a generation of genomes """
@@ -92,15 +93,27 @@ class VisualiseEvaluation:
 
     def __init__(self, eval_file):
         # TODO global visualisation imports here
-        self._load_evaluation()
+        global plt, np
+        import matplotlib.pyplot as plt
+        import numpy as np
+        self._load_evaluation(eval_file)
         self._visualise()
 
-    def _load_evaluation(self):
+    def _load_evaluation(self, eval_file):
         """ load evaluation from file """
-        pass
+        with open(eval_file, "rb") as f:
+            self.metrics = pickle.load(f)
 
     def _visualise(self):
         """ visualise the performance metrics of an evaluation """
-        pass
+        gen_glob_perfs = []
+        for i, run in enumerate(self.metrics[-1]["runs"]):
+            gen_glob_perfs.append([])
+            for gen in run["gens"]:
+                gen_glob_perfs[-1].append(gen["gen_glob_perf"])
+        gen_glob_perfs = np.array(gen_glob_perfs)
+        plt.errorbar(list(range(1, gen_glob_perfs.shape[-1]+1)), gen_glob_perfs.mean(axis=0), gen_glob_perfs.std(axis=0), linestyle='None', marker='^')
+        plt.show()
+        print("")
 
 

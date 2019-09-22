@@ -83,7 +83,8 @@ class Evolution:
             local_mode = True
         elif execute == Exec.PARALLEL_LOCAL:
             worker_list = None
-        hpc_initialisation.initialise_hpc(worker_list, local_mode=local_mode, log_to_driver=False)
+        if not ray.is_initialized():
+            hpc_initialisation.initialise_hpc(worker_list, local_mode=local_mode, log_to_driver=False)
         if session_name is None:  # create random genomes if new evolutionary search
             self._get_initial_population()
 
@@ -273,9 +274,9 @@ class Evolution:
 
     def _reproduce_and_eval_generation(self, parent_genomes):
         """ reproduce next generation given fitnesses of current generation """
-        cores = 16
+        cores = int(ray.cluster_resources()["CPU"])
         nets_per_core = 6
-        send_more_threshold = cores
+        send_more_threshold = cores*2
         gen_counter_start = 0
         gen_counter_end = nets_per_core
         all_genomes_sent = False
@@ -302,6 +303,8 @@ class Evolution:
                 if not object_ids and all_genomes_sent:
                     break
                 elif all_genomes_sent is False and len(object_ids_not_ready) < send_more_threshold:
+                    if self.pop_size-len(res) < send_more_threshold:
+                        nets_per_core = 1
                     break
             if all_genomes_sent:
                 break
