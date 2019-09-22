@@ -61,12 +61,14 @@ class EvaluateES:
         """ setup algorithm: checkout branch, compile """
         global evolution
         if "master" in self.es_algorithms[i]:
-            os.system("git stash --all")
+            os.system("git -c user.name=Joe -c user.email=joe.sarsfield@gmail.com stash --all")
             os.system("git checkout "+self.es_algorithms[i])
             import evolution
         else:
             os.system("git checkout tags/" + self.es_algorithms[i])
-            importlib.reload(evolution)
+            import imp, sys
+            for module in sys.modules.values():
+                imp.reload(module)
         #os.system("python setup.py sdist")
         print("")
 
