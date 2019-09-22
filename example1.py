@@ -28,7 +28,7 @@ def evaluation():
             "env_args": [Game],
             "session_name": None,
             "gen": None,
-            "execute": Exec.PARALLEL_HPC,
+            "execute": Exec.PARALLEL_LOCAL,
             "worker_list": "hpc_worker_list_home",
             "persist_every_n_gens": -1}
     evaluator = EvaluateES(es_algorithms=[Evolution],

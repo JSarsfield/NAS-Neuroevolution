@@ -23,6 +23,8 @@ from collections import deque
 import pickle
 import datetime
 import os
+import hpc_initialisation
+
 if __debug__:
     import logging
     import sys
@@ -77,14 +79,12 @@ class Evolution:
         if __debug__:
             self.logger = logging.getLogger()
             self.logger.setLevel(logging.INFO)
-        if execute == Exec.PARALLEL_LOCAL:
-            from evolution_parallel import parallel_reproduce_eval
-            import multiprocessing
-            #self.pool = multiprocessing.Pool(processes=processes)
-        elif execute == Exec.PARALLEL_HPC:
-            global hpc_initialisation
-            import hpc_initialisation
-            hpc_initialisation.initialise_hpc(worker_list)
+        local_mode = False
+        if execute == Exec.SERIAL:
+            local_mode = True
+        elif execute == Exec.PARALLEL_LOCAL:
+            worker_list = None
+        hpc_initialisation.initialise_hpc(worker_list, local_mode=local_mode, log_to_driver=False)
         if session_name is None:  # create random genomes if new evolutionary search
             self._get_initial_population()
 
@@ -274,47 +274,38 @@ class Evolution:
 
     def _reproduce_and_eval_generation(self, parent_genomes):
         """ reproduce next generation given fitnesses of current generation """
-        if self.execute == Exec.SERIAL:
-            pass
-        elif self.execute == Exec.PARALLEL_LOCAL:
-            res = self.pool.starmap(parallel_reproduce_eval, [(parent,
-                                                               self.n_net_inputs,
-                                                               self.n_net_outputs,
-                                                               self.env,
-                                                               self.env_args) for parent in parent_genomes])
-        else:  # Exec.PARALLEL_HPC
-            cores = 16
-            nets_per_core = 3
-            send_more_threshold = cores
-            gen_counter_start = 0
-            gen_counter_end = nets_per_core
-            all_genomes_sent = False
-            object_ids = []
-            res = []
-            while True:
-                for core in range(cores*2):
-                    parents_batch = parent_genomes[gen_counter_start:gen_counter_end]
-                    gen_counter_start = gen_counter_end
-                    gen_counter_end += nets_per_core
-                    if len(parents_batch) == 0:
-                        all_genomes_sent = True
-                        break
-                    object_ids.extend([parallel_reproduce_eval.remote(parents_batch,
-                                                                      self.n_net_inputs,
-                                                                      self.n_net_outputs,
-                                                                      self.env,
-                                                                      self.env_args)])
-                while True:
-                    object_ids_available, object_ids_not_ready = ray.wait(object_ids, timeout=1.0)
-                    for worker_results in ray.get(object_ids_available):
-                        res.extend(worker_results)
-                    object_ids = list(set(object_ids) - set(object_ids_available))
-                    if not object_ids and all_genomes_sent:
-                        break
-                    elif all_genomes_sent is False and len(object_ids_not_ready) < send_more_threshold:
-                        break
-                if all_genomes_sent:
+        cores = 16
+        nets_per_core = 3
+        send_more_threshold = cores
+        gen_counter_start = 0
+        gen_counter_end = nets_per_core
+        all_genomes_sent = False
+        object_ids = []
+        res = []
+        while True:
+            for core in range(cores*2):
+                parents_batch = parent_genomes[gen_counter_start:gen_counter_end]
+                gen_counter_start = gen_counter_end
+                gen_counter_end += nets_per_core
+                if len(parents_batch) == 0:
+                    all_genomes_sent = True
                     break
+                object_ids.extend([parallel_reproduce_eval.remote(parents_batch,
+                                                                  self.n_net_inputs,
+                                                                  self.n_net_outputs,
+                                                                  self.env,
+                                                                  self.env_args)])
+            while True:
+                object_ids_available, object_ids_not_ready = ray.wait(object_ids, timeout=1.0)
+                for worker_results in ray.get(object_ids_available):
+                    res.extend(worker_results)
+                object_ids = list(set(object_ids) - set(object_ids_available))
+                if not object_ids and all_genomes_sent:
+                    break
+                elif all_genomes_sent is False and len(object_ids_not_ready) < send_more_threshold:
+                    break
+            if all_genomes_sent:
+                break
         print("GENERATION FINISHED***************************************")
         if __debug__:
             self.logger.info("execute hpc returned")

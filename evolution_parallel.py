@@ -9,7 +9,7 @@ import ray
 
 @ray.remote(num_cpus=1)
 def parallel_reproduce_eval(parents, n_net_inputs, n_net_outputs, env, env_args):
-    if __debug__:
+    if __debug__:  # TODO delete
         print("running unoptimised, consider using -O flag")
     else:
         print("OPTIMISED")

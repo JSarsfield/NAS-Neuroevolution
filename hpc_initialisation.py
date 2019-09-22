@@ -12,7 +12,7 @@ from genome import CPPNGenome
 import csv
 
 
-def initialise_hpc(worker_list, local_mode=False):
+def initialise_hpc(worker_list, local_mode=False, log_to_driver=True):
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     s.connect(("8.8.8.8", 80))
     ip = s.getsockname()[0]
@@ -42,7 +42,7 @@ def initialise_hpc(worker_list, local_mode=False):
                 break
         for w in worker_ips:
             setup_worker(w["ip"], w["user"], w["pw"], path, pkg_name, host_address)
-    ray.init(address=address, local_mode=local_mode, log_to_driver=False)  # initialise cluster for calling remote on master node
+    ray.init(address=address, local_mode=local_mode, log_to_driver=log_to_driver)  # initialise cluster for calling remote on master node
     if not local_mode:
         ray.register_custom_serializer(CPPNGenome, use_pickle=True)
 
