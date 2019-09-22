@@ -61,6 +61,7 @@ class EvaluateES:
         """ setup algorithm: checkout branch, compile """
         global evolution
         if "master" in self.es_algorithms[i]:
+            os.system("git stash --all")
             os.system("git checkout "+self.es_algorithms[i])
             import evolution
         else:
