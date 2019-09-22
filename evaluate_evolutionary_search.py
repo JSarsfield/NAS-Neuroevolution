@@ -59,8 +59,12 @@ class EvaluateES:
     def _setup_algorithm(self, i):
         """ setup algorithm: checkout branch, compile """
         global evolution
-        os.system("git checkout "+self.es_algorithms[i])
-        import evolution
+        if "master" in self.es_algorithms[i]:
+            os.system("git checkout "+self.es_algorithms[i])
+            import evolution
+        else:
+            os.system("git checkout tags/" + self.es_algorithms[i])
+            importlib.reload(evolution)
         #os.system("python setup.py sdist")
         print("")
 
