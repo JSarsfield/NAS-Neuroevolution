@@ -42,7 +42,11 @@ class EvaluateES:
         self.metrics = []  # performance metrics for each ES
         self.evaluation_name = "evaluation_" + str(datetime.datetime.now()).replace(" ", "_")
         self.save_dir = "./evaluations/" + self.evaluation_name + "/"
-        os.mkdir(self.save_dir)
+        try:
+            os.mkdir(self.save_dir)
+        except:
+            os.mkdir("./evaluations/")
+            os.mkdir(self.save_dir)
 
     def run_evaluation(self):
         """ start evaluating the ES algorithms """
@@ -67,7 +71,7 @@ class EvaluateES:
         else:
             os.system("git checkout tags/" + self.es_algorithms[i])
             import imp, sys
-            for module in sys.modules.values():
+            for module in [v for v in sys.modules.values() if "example1" not in str(v) and "evaluate_evolutionary_search" not in str(v)]:
                 imp.reload(module)
         #os.system("python setup.py sdist")
         print("")
