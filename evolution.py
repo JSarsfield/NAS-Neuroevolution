@@ -66,7 +66,7 @@ class Evolution:
         :param persist_every_n_gens: how often to persist evolutionary state to disk, -1 = never persist
         :param evaluator_callback: evaluator callback method for retrieving end of generation info. None = no evaluator
         """
-        print("master")
+        print("v0.3 branch")
         self.persist_every_n_gens = persist_every_n_gens  # how often should the evolutionary state be saved to disk
         self.persist_counter = 0
         self.evaluator_callback = evaluator_callback

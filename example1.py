@@ -31,8 +31,8 @@ def evaluation():
             "execute": Exec.PARALLEL_LOCAL,
             "worker_list": "hpc_worker_list_home",
             "persist_every_n_gens": -1}
-    evaluator = EvaluateES(es_algorithms=["master", "v0.2"],
-                           es_init_args=[args],
+    evaluator = EvaluateES(es_algorithms=["master", "v0.3"],
+                           es_init_args=args,
                            num_of_runs=1,
                            stop_criterion=2)
     evaluator.run_evaluation()

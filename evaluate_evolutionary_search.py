@@ -52,7 +52,7 @@ class EvaluateES:
             self.metrics.append({"index": i, "runs": []})
             for run in range(self.num_of_runs):
                 self.metrics[-1]["runs"].append({"gens": []})
-                self._evaluate_es_algorithm(self.es_init_args[i])
+                self._evaluate_es_algorithm(self.es_init_args)
                 self._save_evaluation()
         os.system("git checkout master")
         print("end of evaluation")
