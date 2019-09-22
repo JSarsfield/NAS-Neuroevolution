@@ -22,6 +22,8 @@ from activations import ActivationFunctionSet
 from config import *
 import functools
 
+torch.set_num_threads(1)
+
 
 class CPPNGenome:
     """ CPPN genome - can express/decode to produce an ANN """

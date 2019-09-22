@@ -9,9 +9,14 @@ __email__ = "joe.sarsfield@gmail.com"
 """
 
 import tensorflow as tf
+import os
 import random
 import numpy as np
 from config import link_cost_coeff
+
+os.environ["OMP_NUM_THREADS"] = "1"
+tf.config.threading.set_intra_op_parallelism_threads(1)
+tf.config.threading.set_inter_op_parallelism_threads(1)
 
 
 def relu(x):
@@ -46,9 +51,6 @@ class Network:
         self.graph = None
         # ensure tensorflow runs serially as each logical processor will be running its own process and this can
         # cause huge slowdown with ray
-        tf.config.intra_op_parallelism_threads = 1
-        tf.config.inter_op_parallelism_threads = 1
-        tf.isolate_session_state = True
 
     def init_graph(self):
         """ We need to arrange the network inputs and weights for each layer into balanced matrices for calculating

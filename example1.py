@@ -5,9 +5,10 @@ __author__ = "Joe Sarsfield"
 __email__ = "joe.sarsfield@gmail.com"
 """
 from evolution import Evolution
-from environment import EnvironmentReinforcement
+from environment import EnvironmentReinforcement, EnvironmentReinforcementCustom
 from evaluate_evolutionary_search import EvaluateES
 from config import Exec
+from game import Game
 
 
 def single_run():
@@ -22,13 +23,13 @@ def single_run():
 
 
 def evaluation():
-    args = {"pop_size": 2048,
-            "environment_type": EnvironmentReinforcement,
-            "env_name": "BipedalWalker-v2",
+    args = {"pop_size": 256,
+            "environment_type": EnvironmentReinforcementCustom,
+            "env_args": [Game],
             "session_name": None,
             "gen": None,
             "execute": Exec.PARALLEL_HPC,
-            "worker_list": "hpc_worker_list",
+            "worker_list": "hpc_worker_list_home",
             "persist_every_n_gens": -1}
     evaluator = EvaluateES(es_algorithms=[Evolution],
                            es_init_args=[args],
@@ -39,6 +40,10 @@ def evaluation():
 
 if __name__ == "__main__":
     print("begin")
+    if __debug__:
+        print("running unoptimised, consider using -O flag")
+    else:
+        print("OPTIMISED")
     #single_run()
     evaluation()
     print("end")

@@ -5,33 +5,39 @@ from config import *
 import numpy as np
 from activations import ActivationFunctionSet, NodeFunctionSet
 import ray
-import pickle
 
 
-@ray.remote(num_cpus=1, num_return_vals=1)
-def parallel_reproduce_eval(parent, n_net_inputs, n_net_outputs, env, gym_env_string):
-    # Reproduce from parent genomes
-    if type(parent[-1]) is not bool:  # Two parent genomes so crossover
-        genome, new_structures = crossover(parent[0], parent[1])
-    else:  # One parent genome so mutate
-        genome, new_structures = copy_with_mutation(parent[0], mutate=parent[1])
-    # Create genome graph
-    genome.create_graph()
-    # Create net from genome
-    net = Substrate().build_network_from_genome(genome, n_net_inputs, n_net_outputs)
-    if not net.is_void:
-        net.init_graph()  # init TF graph
-        # Evaluate
-        fitness = env(gym_env_string).evaluate(net)
-        net.set_fitness(fitness)  # Note this also sets fitness in genome
-        net.graph = None  # TF graph can't be pickled so delete it
+@ray.remote(num_cpus=1)
+def parallel_reproduce_eval(parents, n_net_inputs, n_net_outputs, env, env_args):
     if __debug__:
-        if net.is_void:
-            print("void net returned")
-        else:
-            print(str(fitness) + " returned")
-    genome.net = None
-    return (genome, new_structures)
+        print("running unoptimised, consider using -O flag")
+    else:
+        print("OPTIMISED")
+    results = []
+    for parent in parents:
+        # Reproduce from parent genomes
+        if type(parent[-1]) is not bool:  # Two parent genomes so crossover
+            genome, new_structures = crossover(parent[0], parent[1])
+        else:  # One parent genome so mutate
+            genome, new_structures = copy_with_mutation(parent[0], mutate=parent[1])
+        # Create genome graph
+        genome.create_graph()
+        # Create net from genome
+        net = Substrate().build_network_from_genome(genome, n_net_inputs, n_net_outputs)
+        if not net.is_void:
+            net.init_graph()  # init TF graph
+            # Evaluate
+            fitness = env(*env_args).evaluate(net)
+            net.set_fitness(fitness)  # Note this also sets fitness in genome
+            net.graph = None  # TF graph can't be pickled so delete it
+        if __debug__:
+            if net.is_void:
+                print("void net returned")
+            else:
+                print(str(fitness) + " returned")
+        genome.net = None
+        results.append((genome, new_structures))
+    return results
 
 
 def crossover(g1, g2):

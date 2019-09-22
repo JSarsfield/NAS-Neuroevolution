@@ -6,6 +6,8 @@ __email__ = "joe.sarsfield@gmail.com"
 """
 
 import numpy as np
+from random import randrange
+from time import sleep
 
 
 def get_env_spaces(gym_env_string):
@@ -71,6 +73,42 @@ class EnvironmentReinforcement(Environment):
                 print("FAILED to close env during render. Class EnvironmentReinforcement Def evaluate")
         self.net.set_fitness(fitness.max())
         return fitness.max()
+
+
+class EnvironmentReinforcementCustom(Environment):
+    """ Reinforcement environments custom (non gym env) """
+
+    def __init__(self, env_class, trials=10000):
+        super().__init__()
+        self.net = None  # Neural network to evaluate
+        self.opponents = []  # List of opponent nets
+        self.trials = trials  # Fitness = average of all trials
+        self.env = env_class(trials)
+        self.num_eval_rounds = trials
+
+    def evaluate(self, nets, render=False):
+        """ evaluate the neural net and return the final fitness """
+        from game import Game
+        game = Game(10000)
+        game.start_game(1, [2,3,4,5,6])
+        while game.total_rounds_so_far < self.num_eval_rounds:
+            for action in game.game_loop():
+                action = int(np.random.choice([0, 1, 2], 1, p=[0.5, 0.15, 0.35])[0])
+                if action == 0:  # check/call
+                    game._bot_check_call()
+                elif action == 1:  # bet/raise/all-in  TODO the neural net should know the raise_min, output 0 to 1 where 0 = raise_min and 1 = all-in
+                    bet_max = game.bots[game.bot_to_act].stack + game.bots[game.bot_to_act].bet
+                    bet_min = game.current_bet + game.raise_min
+                    if bet_max <= bet_min:  # all-in
+                        game._bot_bet(bet_max)
+                    else:
+                        game._bot_bet(randrange(bet_min, bet_max))
+                else:
+                    game._bot_fold()
+            game.new_game()
+            print("new game")
+        print("all rounds evaluated")
+        return 0
 
 
 class EnvironmentClassification(Environment):
