@@ -54,6 +54,7 @@ class EvaluateES:
                 self.metrics[-1]["runs"].append({"gens": []})
                 self._evaluate_es_algorithm(self.es_init_args[i])
                 self._save_evaluation()
+        os.system("git checkout master")
         print("end of evaluation")
 
     def _setup_algorithm(self, i):
