@@ -12,6 +12,7 @@ import pickle
 import os
 import datetime
 import importlib
+from evolution import Evolution
 
 # TODO consider coverage over global performance - how well is it chooses new areas to explore
 #  (genome crossover/mutate logic)
@@ -51,34 +52,16 @@ class EvaluateES:
     def run_evaluation(self):
         """ start evaluating the ES algorithms """
         print("start of evaluation")
-        for i, _ in enumerate(self.es_algorithms):
-            self._setup_algorithm(i)
-            self.metrics.append({"index": i, "runs": []})
-            for run in range(self.num_of_runs):
-                self.metrics[-1]["runs"].append({"gens": []})
-                self._evaluate_es_algorithm(self.es_init_args)
-                self._save_evaluation()
-        os.system("git checkout master")
+        self.metrics.append({"index": 0, "runs": []})
+        for run in range(self.num_of_runs):
+            self.metrics[-1]["runs"].append({"gens": []})
+            self._evaluate_es_algorithm(self.es_init_args)
+            self._save_evaluation()
         print("end of evaluation")
-
-    def _setup_algorithm(self, i):
-        """ setup algorithm: checkout branch, compile """
-        global evolution
-        if "master" in self.es_algorithms[i]:
-            os.system("git -c user.name=Joe -c user.email=joe.sarsfield@gmail.com stash --all")
-            os.system("git checkout "+self.es_algorithms[i])
-            import evolution
-        else:
-            os.system("git checkout tags/" + self.es_algorithms[i])
-            import imp, sys
-            for module in [v for v in sys.modules.values() if "example1" not in str(v) and "evaluate_evolutionary_search" not in str(v)]:
-                imp.reload(module)
-        #os.system("python setup.py sdist")
-        print("")
 
     def _evaluate_es_algorithm(self, args):
         """ evaluate a single ES algorithm for one run """
-        es = evolution.Evolution(**args, evaluator_callback=self.generation_complete_callback)
+        es = Evolution(**args, evaluator_callback=self.generation_complete_callback)
         es.begin_evolution()
 
     def _save_evaluation(self):
