@@ -11,6 +11,7 @@ __email__ = "joe.sarsfield@gmail.com"
 import pickle
 import os
 import datetime
+import importlib
 
 # TODO consider coverage over global performance - how well is it chooses new areas to explore
 #  (genome crossover/mutate logic)
@@ -46,17 +47,26 @@ class EvaluateES:
     def run_evaluation(self):
         """ start evaluating the ES algorithms """
         print("start of evaluation")
-        for i, alg in enumerate(self.es_algorithms):
+        for i, _ in enumerate(self.es_algorithms):
+            self._setup_algorithm(i)
             self.metrics.append({"index": i, "runs": []})
             for run in range(self.num_of_runs):
                 self.metrics[-1]["runs"].append({"gens": []})
-                self._evaluate_es_algorithm(alg, self.es_init_args[i])
+                self._evaluate_es_algorithm(self.es_init_args[i])
                 self._save_evaluation()
         print("end of evaluation")
 
-    def _evaluate_es_algorithm(self, alg, args):
+    def _setup_algorithm(self, i):
+        """ setup algorithm: checkout branch, compile """
+        global evolution
+        os.system("git checkout "+self.es_algorithms[i])
+        import evolution
+        #os.system("python setup.py sdist")
+        print("")
+
+    def _evaluate_es_algorithm(self, args):
         """ evaluate a single ES algorithm for one run """
-        es = alg(**args, evaluator_callback=self.generation_complete_callback)
+        es = evolution.Evolution(**args, evaluator_callback=self.generation_complete_callback)
         es.begin_evolution()
 
     def _save_evaluation(self):

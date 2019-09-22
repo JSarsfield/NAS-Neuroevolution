@@ -13,14 +13,11 @@ __email__ = "joe.sarsfield@gmail.com"
 import numpy as np
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 import copy  # deep copy genes
 import operator # sort node genes by depth
-import random  # random uniform weight
 from genes import GeneLink
 from activations import ActivationFunctionSet
 from config import *
-import functools
 
 torch.set_num_threads(1)
 

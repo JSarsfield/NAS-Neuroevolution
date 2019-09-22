@@ -7,7 +7,6 @@ __email__ = "joe.sarsfield@gmail.com"
 import numpy as np
 from genes import GenePool
 from genome import CPPNGenome
-from collections import deque
 import math
 #from time import perf_counter  # Accurate timing
 from substrate import Substrate
@@ -67,6 +66,7 @@ class Evolution:
         :param persist_every_n_gens: how often to persist evolutionary state to disk, -1 = never persist
         :param evaluator_callback: evaluator callback method for retrieving end of generation info. None = no evaluator
         """
+        print("BEFFFFFORE COMPILE")
         self.persist_every_n_gens = persist_every_n_gens  # how often should the evolutionary state be saved to disk
         self.persist_counter = 0
         self.evaluator_callback = evaluator_callback
@@ -275,7 +275,7 @@ class Evolution:
     def _reproduce_and_eval_generation(self, parent_genomes):
         """ reproduce next generation given fitnesses of current generation """
         cores = 16
-        nets_per_core = 3
+        nets_per_core = 6
         send_more_threshold = cores
         gen_counter_start = 0
         gen_counter_end = nets_per_core

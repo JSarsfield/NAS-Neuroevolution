@@ -14,7 +14,6 @@ import numpy as np
 from collections import deque  # Faster than using list
 from network import Network, Link, Node
 from time import perf_counter
-from itertools import chain
 from config import *
 
 # TODO !!! this is still slow when init_substrate_width and init_substrate_height are large

@@ -5,6 +5,7 @@ from config import *
 import numpy as np
 from activations import ActivationFunctionSet, NodeFunctionSet
 import ray
+import os
 
 
 @ray.remote(num_cpus=1)
@@ -13,6 +14,8 @@ def parallel_reproduce_eval(parents, n_net_inputs, n_net_outputs, env, env_args)
         print("running unoptimised, consider using -O flag")
     else:
         print("OPTIMISED")
+    os.environ["OMP_NUM_THREADS"] = "1"
+    os.environ["MKL_NUM_THREADS"] = "1"
     results = []
     for parent in parents:
         # Reproduce from parent genomes
@@ -29,13 +32,16 @@ def parallel_reproduce_eval(parents, n_net_inputs, n_net_outputs, env, env_args)
             # Evaluate
             fitness = env(*env_args).evaluate(net)
             net.set_fitness(fitness)  # Note this also sets fitness in genome
-            net.graph = None  # TF graph can't be pickled so delete it
+            net.clear_sessions()  # cleanup
+            net.graph = None  # delete TF graph
         if __debug__:
             if net.is_void:
                 print("void net returned")
             else:
                 print(str(fitness) + " returned")
         genome.net = None
+        net = None
+        genome.graph = None  # delete pytorch graph
         results.append((genome, new_structures))
     return results
 

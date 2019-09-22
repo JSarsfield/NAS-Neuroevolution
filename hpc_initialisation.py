@@ -7,7 +7,6 @@ __email__ = "joe.sarsfield@gmail.com"
 import ray
 import socket
 import os
-import time
 from genome import CPPNGenome
 import csv
 
@@ -28,7 +27,7 @@ def initialise_hpc(worker_list, local_mode=False, log_to_driver=True):
         host_address = address
         # Build modules for sending to worker nodes
         path = os.path.dirname(os.path.realpath(__file__))
-        os.system("cd "+path+" | python setup.py sdist")
+        os.system("cd "+path+" | python setup_worker.py sdist")
         worker_ips = []
         with open(worker_list+".csv") as csvfile:
             rows = csv.reader(csvfile, delimiter=",")
@@ -37,7 +36,7 @@ def initialise_hpc(worker_list, local_mode=False, log_to_driver=True):
                 worker_ips.append({"ip": row[0], "user": row[1], "pw": row[2]})
         path += "/dist/"
         for file in os.listdir(path):
-            if "NAS" in file:
+            if "NE-worker" in file:
                 pkg_name = file
                 break
         for w in worker_ips:
@@ -53,7 +52,7 @@ def setup_worker(ip, user, pw, path_to_pkg, pkg_name, host_address):
     # connect worker to redis server
     host = user+"@"+ip
     os.system("sshpass -p \""+pw+"\" scp -o StrictHostKeyChecking=no "+path_to_pkg+pkg_name+" "+host+":/tmp")
-    os.system("sshpass -p \""+pw+"\" ssh -o StrictHostKeyChecking=no "+host+" -t \"bash -l -c -i 'pip install /tmp/NAS-0.1.tar.gz'\"")
+    os.system("sshpass -p \""+pw+"\" ssh -o StrictHostKeyChecking=no "+host+" -t \"bash -l -c -i 'pip install /tmp/"+pkg_name+"'\"")
     os.system("sshpass -p \""+pw+"\" ssh -o StrictHostKeyChecking=no "+host+" -t \"bash -l -c -i 'ray stop'\"")
     #py_cmds = "bash -l -c -i \"python -O -c 'import ray;ray.init(address=\""+host_address+"\",load_code_from_local=True);'\""
     os.system("sshpass -p \""+pw+"\" ssh -o StrictHostKeyChecking=no "+host+" -t \"bash -l -c -i 'ray start --address="+host_address+" --load-code-from-local'\"")

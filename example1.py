@@ -4,7 +4,6 @@ Example for running neuroevolution code
 __author__ = "Joe Sarsfield"
 __email__ = "joe.sarsfield@gmail.com"
 """
-from evolution import Evolution
 from environment import EnvironmentReinforcement, EnvironmentReinforcementCustom
 from evaluate_evolutionary_search import EvaluateES
 from config import Exec
@@ -12,6 +11,7 @@ from game import Game
 
 
 def single_run():
+    from evolution import Evolution
     evolution = Evolution(pop_size=64,
                           environment_type=EnvironmentReinforcement,
                           env_name="BipedalWalker-v2",
@@ -24,14 +24,14 @@ def single_run():
 
 def evaluation():
     args = {"pop_size": 256,
-            "environment_type": EnvironmentReinforcementCustom,
-            "env_args": [Game],
+            "environment_type": EnvironmentReinforcement,
+            "env_args": ["BipedalWalker-v2"],
             "session_name": None,
             "gen": None,
-            "execute": Exec.PARALLEL_LOCAL,
+            "execute": Exec.PARALLEL_HPC,
             "worker_list": "hpc_worker_list_home",
             "persist_every_n_gens": -1}
-    evaluator = EvaluateES(es_algorithms=[Evolution],
+    evaluator = EvaluateES(es_algorithms=["master", "v0.2"],
                            es_init_args=[args],
                            num_of_runs=1,
                            stop_criterion=40)

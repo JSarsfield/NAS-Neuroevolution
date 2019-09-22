@@ -9,12 +9,10 @@ __email__ = "joe.sarsfield@gmail.com"
 """
 
 import tensorflow as tf
-import os
-import random
 import numpy as np
 from config import link_cost_coeff
 
-os.environ["OMP_NUM_THREADS"] = "1"
+
 tf.config.threading.set_intra_op_parallelism_threads(1)
 tf.config.threading.set_inter_op_parallelism_threads(1)
 
@@ -141,6 +139,10 @@ class Network:
     def set_fitness(self, fitness):
         self.fitness = fitness-(len(self.links)*link_cost_coeff)  # fitness reward minus link/connection cost
         self.genome.fitness = self.fitness
+
+    def clear_sessions(self):
+        """ clear tf graph """
+        tf.keras.backend.clear_session()
 
     """
     def set_fitness(self, fitness):
