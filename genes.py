@@ -9,7 +9,7 @@ import activations
 import random
 from copy import deepcopy
 from config import gauss_freq_range, func_amp_range, gauss_vshift_range, sin_freq_range, sin_vshift_range
-import torch
+import tensorflow as tf
 
 
 class GenePool:
@@ -42,8 +42,8 @@ class GenePool:
                                            "node_func": None})
         # Create random output node
         self.create_initial_gene_node({"depth": 1,
-                                       "activation_func": torch.tanh,  # TODO is the genome going to encode the activation func?
-                                       "node_func": self.node_functions.get("dot"),
+                                       "activation_func": tf.tanh,  # TODO is the genome going to encode the activation func?
+                                       "node_func": "dot",
                                        "can_modify": False}, is_input=False)
         # Add a single initial link for each input node
         for i in range(self.num_inputs):
@@ -54,13 +54,13 @@ class GenePool:
         # Create initial LEO gaussian hidden nodes with bias towards locality
         for i in range(self.n_dims):
             self.create_initial_gene_node({"depth": 0.5,
-                                           "activation_func": self.activation_functions.get("gauss"),
-                                           "node_func": self.node_functions.get("diff"),
+                                           "activation_func": activations.gaussian,
+                                           "node_func": "diff",
                                            "can_modify": False}, is_input=False)
         # Create LEO output node
         self.create_initial_gene_node({"depth": 1,
                                        "activation_func": activations.step,
-                                       "node_func": self.node_functions.get("dot"),
+                                       "node_func": "dot",
                                        "can_modify": False}, is_input=False)
         # Create LEO input to gaussian links
         offset = 1

@@ -11,15 +11,22 @@ __email__ = "joe.sarsfield@gmail.com"
 """
 
 import numpy as np
+import tensorflow as tf
+from tensorflow.keras import layers
+"""
 import torch
 import torch.nn as nn
+"""
 import copy  # deep copy genes
 import operator # sort node genes by depth
 from genes import GeneLink
-from activations import ActivationFunctionSet
+import activations
 from config import *
+import functools
 
-torch.set_num_threads(1)
+#torch.set_num_threads(1)
+tf.config.threading.set_intra_op_parallelism_threads(1)
+tf.config.threading.set_inter_op_parallelism_threads(1)
 
 
 class CPPNGenome:
@@ -43,7 +50,7 @@ class CPPNGenome:
         #self.var_thresh = var_thresh  # ES-hyperneat parameter determining variance threshold for further splitting
         #self.band_thresh = band_thresh  # ES-hyperneat parameter
         self.species = None  # Species this genome belongs to
-        self.act_set = ActivationFunctionSet()
+        self.act_set = activations.ActivationFunctionSet()
         # Deepcopy links
         if type(gene_links[0]) is tuple:
             for link in gene_links:
@@ -92,12 +99,12 @@ class CPPNGenome:
             node.bias = random.uniform(bias_init_min, bias_init_max)
             if node.can_modify:
                 node.act_func = self.act_set.get_random_activation_func()
-        self.graph = CPPNGenome.Graph(self)
+        self.graph = Graph(self)
         #self.visualise_cppn()
 
     def create_graph(self):
         """ Create graph """
-        self.graph = CPPNGenome.Graph(self)
+        self.graph = Graph(self)
         #self.visualise_cppn()
 
     def mutate_nonstructural(self):
@@ -240,8 +247,48 @@ class CPPNGenome:
         imshow(data, cmap='Greys', vmin=-1, vmax=1)
         plt.show()
 
+
+class Graph(tf.keras.Model):
+    """ computational graph TensorFlow """
+
+    def __init__(self, genome):
+        super(Graph, self).__init__()
+        self.lyrs = []
+        self.lyrs_meta = []
+        # Create separate input layer for each input node
+        for node in genome.gene_nodes_in:
+            self.lyrs.append(layers.Input(shape=(1,)))
+            self.lyrs_meta.append([node, self.lyrs[-1]])
+            self.lyr_weights = []  # weights and bias
+            # Create keras layers
+        for node in genome.gene_nodes:
+            self.lyr_weights.append([])
+            concat = []
+            for link in node.ingoing_links:
+                self.lyr_weights[-1].append(link.weight)
+                concat.append(list(filter(lambda x: x[0] is link.out_node, self.lyrs_meta))[0][-1])
+            if node.act_func is any([activations.gaussian, activations.sin]):
+                act_func = functools.partial(0, node.act_func, node.freq, node.amp, node.vshift)
+            else:
+                act_func = node.act_func
+            if "diff" in node.node_func:
+                self.lyrs.append(act_func(tf.reduce_sum([tf.multiply(concat[i], self.lyr_weights[i]) for i in range(len(self.lyr_weights))]))+node.bias)
+            else:,1
+                self.lyrs.append(layers.Dense(units=len(concat), activation=act_func, use_bias=False)(tf.stack(concat, axis=-1)))
+            self.lyrs_meta.append([node, self.lyrs[-1]])
+            # TODO set lyr weights and bias
+
+    def build(self, input_shape):
+        for i, l in enumerate(self.lyrs):
+            l.build(tf.TensorShape(len(self.lyr_node_inds[i]), ))
+            l.set_weights([np.transpose(self.lyr_weights[i]), l.get_weights()[1]])
+
+    def call(self, inputs, training=False):
+        pass
+
+    """
     class Graph(nn.Module):
-        """ computational graph """
+        # computational graph PyTorch
 
         def __init__(self, genome):
             super().__init__()
@@ -281,7 +328,7 @@ class CPPNGenome:
             self.node_biases = torch.tensor(self.node_biases, dtype=torch.float32)
 
         def forward(self, x):
-            """ Query the CPPN """
+            # Query the CPPN
             n_inputs = len(x)
             # Update outputs vector with inputs
             self.outputs[torch.arange(n_inputs)] = torch.tensor(x, dtype=torch.float32)
@@ -294,3 +341,4 @@ class CPPNGenome:
                     print("")
                 self.outputs[i + n_inputs] = y
             return self.outputs[-self.genome.cppn_outputs:]
+    """

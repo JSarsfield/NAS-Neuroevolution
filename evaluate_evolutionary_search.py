@@ -92,7 +92,6 @@ class VisualiseEvaluation:
     """ visualise the evaluation of ES algorithms """
 
     def __init__(self, eval_file):
-        # TODO global visualisation imports here
         global plt, np
         import matplotlib.pyplot as plt
         import numpy as np

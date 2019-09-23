@@ -27,7 +27,7 @@ class Environment:
 class EnvironmentReinforcement(Environment):
     """ Reinforcement environments """
 
-    def __init__(self, gym_env_string, parallel=True, trials=2, steps=10000):
+    def __init__(self, gym_env_string, parallel=True, trials=1, steps=10):
         super().__init__()
         self.net = None  # Neural network to evaluate
         self.trials = trials  # Fitness = average of all trials
@@ -96,7 +96,7 @@ class EnvironmentReinforcementCustom(Environment):
                 action = int(np.random.choice([0, 1, 2], 1, p=[0.5, 0.15, 0.35])[0])
                 if action == 0:  # check/call
                     game._bot_check_call()
-                elif action == 1:  # bet/raise/all-in  TODO the neural net should know the raise_min, output 0 to 1 where 0 = raise_min and 1 = all-in
+                elif action == 1:  # bet/raise/all-in
                     bet_max = game.bots[game.bot_to_act].stack + game.bots[game.bot_to_act].bet
                     bet_min = game.current_bet + game.raise_min
                     if bet_max <= bet_min:  # all-in

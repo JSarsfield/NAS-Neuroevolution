@@ -7,10 +7,10 @@ Modified by:
 __author__ = "Joe Sarsfield"
 __email__ = "joe.sarsfield@gmail.com"
 """
-import torch
 import random
 import math
 import numpy as np
+import tensorflow as tf
 
 """
 def sigmoid_activation(z):
@@ -131,15 +131,15 @@ def exp(x, freq=1, amp=0):
 
 
 def step(x):
-    return torch.tensor(1, dtype=torch.float32) if x > 2 else torch.tensor(0, dtype=torch.float32)
+    return tf.Tensor(1) if x > 0 else tf.Tensor(0)
 
 
 def gaussian(x=None, freq=0.314, amp=2, vshift=-1):
-    return (np.sign(freq)*(amp*(math.e**(-(0.5*(x/freq)**2)))))+vshift
+    return (tf.sign(freq)*(amp*(2.718281**(-(0.5*(x/freq)**2)))))+vshift
 
 
 def sin(x=None, freq=3.14, amp=1, vshift=0):
-    return (amp*np.sin(freq*x))+vshift
+    return (amp*tf.sin(freq*x))+vshift
 
 
 class ActivationFunctionSet(object):
@@ -184,22 +184,22 @@ class ActivationFunctionSet(object):
     def is_valid(self, name):
         return name in self.functions
 
-
+"""
 def dot(inputs, weights, bias):
-    return torch.dot(inputs, weights) + bias
+    return np.dot(inputs, weights) + bias
 
 
-def diff(inputs, weights, bias):
-    return (inputs[0]-inputs[1]) + bias
-
+def diff(inputs):
+    return (inputs[0]-inputs[1])
+"""
 
 class NodeFunctionSet(object):
     """ function to apply to data going into node before going through activation function """
 
     def __init__(self):
         self.functions = {}
-        self.add('dot', dot)
-        self.add('diff', diff)
+        #self.add('dot', dot)
+        #self.add('diff', diff)
 
     def add(self, name, function):
         self.functions[name] = function

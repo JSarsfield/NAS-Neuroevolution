@@ -23,6 +23,7 @@ def initialise_hpc(worker_list, local_mode=False, log_to_driver=True):
     redis_port = "15357"
     address = ip + ":" + redis_port
     os.system("ray start --head --redis-port="+redis_port+" --include-webui --load-code-from-local")  # start server
+    ray.init(address=address, local_mode=local_mode, log_to_driver=log_to_driver)  # initialise cluster for calling remote on master node
     if worker_list is not None:
         host_address = address
         # Build modules for sending to worker nodes
@@ -41,7 +42,6 @@ def initialise_hpc(worker_list, local_mode=False, log_to_driver=True):
                 break
         for w in worker_ips:
             setup_worker(w["ip"], w["user"], w["pw"], path, pkg_name, host_address)
-    ray.init(address=address, local_mode=local_mode, log_to_driver=log_to_driver)  # initialise cluster for calling remote on master node
     if not local_mode:
         ray.register_custom_serializer(CPPNGenome, use_pickle=True)
 

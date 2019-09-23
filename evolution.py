@@ -30,14 +30,13 @@ if __debug__:
     logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
 
-# TODO !!! for supervised learning envs remove weights from evolution and optimise within the lifetime
-# TODO !!! kill off under-performing species after x (maybe 8) generations, investigate ways of introducing new random genomes
+# TODO !!! for supervised learning envs - evolution selects initial weights and gradient-based methods optimise weights within the lifetime
+# TODO !!! kill off under-performing (define under-performing) species after x (maybe 8) generations, investigate ways of introducing new random genomes
 
 # TODO analysis of algorithms. Implement an analysis module that can determine the performance of two algorithms
 #  e.g. plot the accuracy/score of algorithm a & b over x generations. Required for determining if algorithmic changes
 #  are improving performance
 
-# TODO pickle top performing genomes after each/x generations
 # TODO review connection cost
 # TODO investigate changing and dynamic environments
 # TODO select for novelty/diversity
@@ -54,6 +53,7 @@ class Evolution:
                  execute=Exec.PARALLEL_HPC,
                  worker_list=None,
                  persist_every_n_gens=10,
+                 log_to_driver=False,
                  evaluator_callback=None):
         """
         :param pop_size:  size of the population for each generation
@@ -81,10 +81,11 @@ class Evolution:
         local_mode = False
         if execute == Exec.SERIAL:
             local_mode = True
+            worker_list = None
         elif execute == Exec.PARALLEL_LOCAL:
             worker_list = None
         if not ray.is_initialized():
-            hpc_initialisation.initialise_hpc(worker_list, local_mode=local_mode, log_to_driver=False)
+            hpc_initialisation.initialise_hpc(worker_list, local_mode=local_mode, log_to_driver=log_to_driver)
         if session_name is None:  # create random genomes if new evolutionary search
             self._get_initial_population()
 
@@ -274,8 +275,8 @@ class Evolution:
 
     def _reproduce_and_eval_generation(self, parent_genomes):
         """ reproduce next generation given fitnesses of current generation """
-        cores = int(ray.cluster_resources()["CPU"])
-        nets_per_core = 6
+        cores = int(ray.cluster_resources()["CPU"]) if self.execute is not Exec.SERIAL else 64
+        nets_per_core = 3
         send_more_threshold = cores*2
         gen_counter_start = 0
         gen_counter_end = nets_per_core
@@ -318,7 +319,7 @@ class Evolution:
             new_structures.append(r[1])
         # Add new structures to gene pool
         self.gene_pool.add_new_structures(new_genomes, new_structures)
-        # Overwrite current generation genomes TODO pickle best performing
+        # Overwrite current generation genomes
         self.genomes = new_genomes
 
     def _generation_stats(self):
