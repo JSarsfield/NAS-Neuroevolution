@@ -11,8 +11,6 @@ __email__ = "joe.sarsfield@gmail.com"
 """
 
 import numpy as np
-import tensorflow as tf
-from tensorflow.keras import layers
 """
 import torch
 import torch.nn as nn
@@ -23,10 +21,6 @@ from genes import GeneLink
 import activations
 from config import *
 import functools
-
-#torch.set_num_threads(1)
-tf.config.threading.set_intra_op_parallelism_threads(1)
-tf.config.threading.set_inter_op_parallelism_threads(1)
 
 
 class CPPNGenome:
@@ -277,11 +271,10 @@ class CPPNGenome:
         plt.show()
 
 
-class Graph(tf.keras.Model):
-    """ computational graph TensorFlow """
+class Graph():
+    """ computational graph """
 
     def __init__(self, n_inputs, n_layers, layer_infos, layer_in_node_inds, layer_weights):
-        super(Graph, self).__init__()
         self.n_inputs = n_inputs
         self.n_layers = n_layers
         self.lyr_node_inds = [tf.constant(l, dtype=tf.int32) for l in layer_in_node_inds]
