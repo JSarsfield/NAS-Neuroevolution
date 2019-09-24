@@ -99,18 +99,40 @@ class CPPNGenome:
             node.bias = random.uniform(bias_init_min, bias_init_max)
             if node.can_modify:
                 node.act_func = self.act_set.get_random_activation_func()
-            if node.act_func is any([activations.gaussian, activations.sin]):
+            if node.act_func in [activations.gaussian, activations.sin]:
                 if node.act_func.__name__[0] == "g":
                     node.freq += random.uniform(-guass_freq_adjust, guass_freq_adjust)
                 elif node.act_func.__name__[0] == "s":
                     node.freq += random.uniform(-sin_freq_adjust, sin_freq_adjust)
                 node.amp += random.uniform(-func_amp_adjust, func_amp_adjust)
                 node.vshift += random.uniform(-func_vshift_adjust, func_vshift_adjust)
-        self.graph = Graph(self)
 
     def create_graph(self):
         """ Create graph """
-        self.graph = Graph(self)
+        layer_infos = []  # each layer has [node_ind, node.bias, act_func, freq, amp, vshift, is_diff] (some args optional)
+        layer_in_node_inds = []  # node indices of nodes going into this layer
+        layer_weights = []
+        for node in self.gene_nodes:
+            layer_infos.append([node.node_ind, node.bias])
+            layer_in_node_inds.append([])
+            layer_weights.append([])
+            if node.act_func in [activations.gaussian, activations.sin]:
+                layer_infos[-1].append(functools.partial(node.act_func, **{"freq": node.freq, "amp": node.amp, "vshift": node.vshift}))
+                layer_infos[-1].extend([node.freq, node.amp, node.vshift])
+            else:
+                layer_infos[-1].append(node.act_func)
+            if node.node_func is not None and "diff" in node.node_func:
+                layer_infos[-1].append(True)
+            else:
+                layer_infos[-1].append(False)
+            for link in node.ingoing_links:
+                layer_in_node_inds[-1].append(link.out_node.node_ind)
+                layer_weights[-1].append(link.weight)
+        self.graph = Graph(self.cppn_inputs,
+                           len(self.gene_nodes),
+                           layer_infos,
+                           layer_in_node_inds,
+                           layer_weights)
 
     def mutate_nonstructural(self):
         """ perform nonstructural mutations to existing gene nodes & links """
@@ -154,9 +176,11 @@ class CPPNGenome:
                 elif node.act_func.__name__[0] == "s":
                     node.freq += random.uniform(-sin_freq_adjust, sin_freq_adjust)
             if event(func_adjust_prob):
-                node.amp += random.uniform(-func_amp_adjust, func_amp_adjust)
+                if node.act_func.__name__[0] == "g" or node.act_func.__name__[0] == "s":
+                    node.amp += random.uniform(-func_amp_adjust, func_amp_adjust)
             if event(func_adjust_prob):
-                node.vshift += random.uniform(-func_vshift_adjust, func_vshift_adjust)
+                if node.act_func.__name__[0] == "g" or node.act_func.__name__[0] == "s":
+                    node.vshift += random.uniform(-func_vshift_adjust, func_vshift_adjust)
         # Mutate substrate width/height rectangles
         if event(width_mutate_prob):
             if event(0.5):
@@ -246,7 +270,7 @@ class CPPNGenome:
         y_linspace = np.linspace(-1, 1, resolution[1])
         for row, x in enumerate(x_linspace):
             for col, y in enumerate(y_linspace):
-                data[row, col] = self.graph.forward([x, y, 0, 0])[0].item()
+                data[row, col] = self.graph(np.array([x, y, 0, 0], dtype=np.float32))[0]
         #plt.axis([-1, 1, -1, 1])
         print(data.min(), " ", data.max())
         imshow(data, cmap='Greys', vmin=-1, vmax=1)
@@ -256,67 +280,46 @@ class CPPNGenome:
 class Graph(tf.keras.Model):
     """ computational graph TensorFlow """
 
-    def __init__(self):
+    def __init__(self, n_inputs, n_layers, layer_infos, layer_in_node_inds, layer_weights):
         super(Graph, self).__init__()
-        self.lyrs = []
-        self.lyrs_meta = []
-        # Create separate input layer for each input node
-        for node in genome.gene_nodes_in:
-            self.lyrs.append(layers.Input(shape=(1,)))
-            self.lyrs_meta.append([node, self.lyrs[-1]])
-            self.lyr_weights = []  # weights and bias
-            self.lyr_inputs = []
-        # Create keras layers
-        for node in genome.gene_nodes:
-            self.lyr_weights.append([])
-            concat = []
-            for link in node.ingoing_links:
-                self.lyr_weights[-1].append(link.weight)
-                concat.append(list(filter(lambda x: x[0] is link.out_node, self.lyrs_meta))[0][-1])
-            if node.act_func is any([activations.gaussian, activations.sin]):
-                act_func = functools.partial(0, node.act_func, node.freq, node.amp, node.vshift)
-            else:
-                act_func = node.act_func
-            if "diff" in node.node_func:
-                kwargs = {"w": self.lyr_weights[-1], "b": node.bias, "freq": node.freq, "amp": node.amp,
-                          "vshift": node.vshift}
-                #self.lyrs.append(layers.concatenate(concat))
-                self.lyrs.append(Diff(**kwargs)(self.lyrs[-1]))
-            else:
-                #self.lyrs.append(layers.concatenate(concat))
-                self.lyrs.append(layers.Dense(units=len(concat), activation=act_func, use_bias=False))
-            self.lyr_inputs.append(tf.stack(concat, axis=-1))
-            self.lyrs_meta.append([node, self.lyrs[-1]])
-
-        n_inputs, layer_sizes, layer, layer_meta, lyr_node_inds, lyr_weights
-
-
         self.n_inputs = n_inputs
-        self.layer_sizes = layer_sizes
-        self.lyr_node_inds = [tf.constant(l, dtype=tf.int32) for l in lyr_node_inds]
-        self.lyr_weights = lyr_weights
+        self.n_layers = n_layers
+        self.lyr_node_inds = [tf.constant(l, dtype=tf.int32) for l in layer_in_node_inds]
+        self.lyr_weights = layer_weights
+        self.lyr_bias = [lyr_info[1] for lyr_info in layer_infos]
         self.lyrs = []
+        self.dense_lyr_inds = []
         self.outputs = None
         self.out_update_inds = [tf.constant(tf.expand_dims(tf.range(0, n_inputs, dtype=tf.int32), axis=1))]
         start_ind = n_inputs
-        for i, size in enumerate(layer_sizes[:-1]):
-            finish_ind = start_ind+size
+        for i in range(n_layers):
+            finish_ind = start_ind+1
             self.out_update_inds.append(tf.constant(tf.expand_dims(tf.range(start_ind, finish_ind, dtype=tf.int32), axis=1)))
             start_ind = finish_ind
-        for size in layer_sizes:
-            self.lyrs.append(tf.keras.layers.Dense(units=size,
-                                                   activation=tf.nn.tanh,
-                                                   use_bias=True,
-                                                   kernel_initializer='zeros',
-                                                   bias_initializer='zeros',
-                                                   input_shape=(n_inputs,)))
+        # Add layers
+        for i, lyr_info in enumerate(layer_infos):
+            if lyr_info[-1] is True:
+                self.lyrs.append(Diff(w=self.lyr_weights[i],
+                                      b=lyr_info[1],
+                                      freq=lyr_info[3],
+                                      amp=lyr_info[4],
+                                      vshift=lyr_info[5]))
+            else:
+                self.dense_lyr_inds.append(i)
+                self.lyrs.append(layers.Dense(units=1,
+                                              activation=lyr_info[2],
+                                              use_bias=True,
+                                              kernel_initializer='zeros',
+                                              bias_initializer='zeros',
+                                              input_shape=(n_inputs,)))
 
     def build(self, input_shape):
         # init layer weights and biases
         for i, l in enumerate(self.lyrs):
             l.build(tf.TensorShape(len(self.lyr_node_inds[i]), ))
-            l.set_weights([np.transpose(self.lyr_weights[i]), l.get_weights()[1]])
-        self.outputs = tf.Variable(initial_value=tf.zeros([self.n_inputs + sum(self.layer_sizes)]),
+            if i in self.dense_lyr_inds:
+                l.set_weights([np.expand_dims(self.lyr_weights[i], axis=-1), np.expand_dims(self.lyr_bias[i], axis=-1)])
+        self.outputs = tf.Variable(initial_value=tf.zeros([self.n_inputs + self.n_layers]),
                                    trainable=False,
                                    validate_shape=True,
                                    name="flattened_outputs_vector",
@@ -331,14 +334,14 @@ class Graph(tf.keras.Model):
             x = l(tf.expand_dims(x, axis=0))[-1]
         tf.compat.v1.scatter_nd_update(self.outputs, self.out_update_inds[-1], x)
         x = tf.gather(self.outputs, self.lyr_node_inds[-1])
-        return self.lyrs[-1](tf.expand_dims(x, axis=0))[-1]  # call output layer and return result
+        return np.array([self.outputs[-1], self.lyrs[-1](tf.expand_dims(x, axis=0))], dtype=np.float32)  # Note each node is a layer and we have 2 output layers, weight = second to last layer &LEO = last layer
 
 
 class Diff(layers.Layer):
 
     def __init__(self, w=None, b=None, freq=None, amp=None, vshift=None):
-        self.output_dim = 1
-        super(Diff, self).__init__(dynamic=True)
+        #self.output_dim = 1
+        super(Diff, self).__init__()
         self.w = tf.constant(w)
         self.b = tf.constant(b)
         self.freq = tf.constant(freq)
@@ -347,17 +350,20 @@ class Diff(layers.Layer):
 
     def call(self, inputs):
         r = tf.math.multiply(inputs, self.w)
-        return tf.add(tf.subtract(r[0][0], r[1][0]), self.b)
+        o = tf.add(tf.subtract(r[0][0], r[0][1]), self.b)
+        return tf.expand_dims(tf.expand_dims((tf.sign(self.freq)*(self.amp*(2.718281**(-(0.5*(o/self.freq)**2)))))+self.vshift, axis=-1), axis=-1)
 
-    def compute_output_shape(self, input_shape):
-        return (input_shape[0], self.output_dim)
+    #def compute_output_shape(self, input_shape):
+    #    return (2, )
 
 
+"""
 def diff(x, w=None, b=None, freq=None, amp=None, vshift=None):
     r = (x*w)
     o = (r[0][0]-r[1][0])+b
     return tf.expand_dims(tf.expand_dims(o, axis=-1), axis=-1)  # (tf.sign(freq)*(amp*(2.718281**(-(0.5*(o/freq)**2)))))+vshift
-    """
+"""
+"""
     class Graph(nn.Module):
         # computational graph PyTorch
 
@@ -412,4 +418,4 @@ def diff(x, w=None, b=None, freq=None, amp=None, vshift=None):
                     print("")
                 self.outputs[i + n_inputs] = y
             return self.outputs[-self.genome.cppn_outputs:]
-    """
+"""

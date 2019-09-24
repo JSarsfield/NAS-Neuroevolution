@@ -131,14 +131,14 @@ def exp(x, freq=1, amp=0):
 
 
 def step(x):
-    return tf.Tensor(1) if x > 0 else tf.Tensor(0)
+    return 1 if x > 0 else 0
 
 
-def gaussian(x=None, freq=0.314, amp=2, vshift=-1):
+def gaussian(x, freq=0.314, amp=2, vshift=-1):
     return (tf.sign(freq)*(amp*(2.718281**(-(0.5*(x/freq)**2)))))+vshift
 
 
-def sin(x=None, freq=3.14, amp=1, vshift=0):
+def sin(x, freq=3.14, amp=1, vshift=0):
     return (amp*tf.sin(freq*x))+vshift
 
 

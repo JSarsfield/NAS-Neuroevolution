@@ -19,38 +19,32 @@ def parallel_reproduce_eval(parents, n_net_inputs, n_net_outputs, env, env_args)
     os.environ["MKL_NUM_THREADS"] = "1"
     results = []
     for parent in parents:
-        try:
-            # Reproduce from parent genomes
-            if type(parent[-1]) is not bool:  # Two parent genomes so crossover
-                genome, new_structures = crossover(parent[0], parent[1])
-            else:  # One parent genome so mutate
-                genome, new_structures = copy_with_mutation(parent[0], mutate=parent[1])
-            # Create genome graph
-            genome.create_graph()  # TODO very slow (often) - can be slow even when build_network_from_genome completes quickly
-            # Create net from genome
-            s = Substrate()  # TODO sometimes slow
-            net = s.build_network_from_genome(genome, n_net_inputs, n_net_outputs)  # TODO very slow (not often) - can be slow even when genome.create_graph completes quickly
-            if not net.is_void:
-                net.init_graph()  # init TF graph
-                # Evaluate
-                fitness = env(*env_args).evaluate(net)
-                net.set_fitness(fitness)  # Note this also sets fitness in genome
-                net.clear_sessions()  # cleanup
-                net.graph = None  # delete TF graph
-            if __debug__:
-                if net.is_void:
-                    print("void net returned")
-                else:
-                    print(str(fitness) + " returned")
-            genome.net = None
-            net = None
-            genome.graph = None  # delete pytorch graph
-            results.append((genome, new_structures))
-        except:
-            import sys
-            print("error on worker" + sys.exc_info()[0])
-            genome.fitness = -9999
-            results.append((genome, new_structures))
+        # Reproduce from parent genomes
+        if type(parent[-1]) is not bool:  # Two parent genomes so crossover
+            genome, new_structures = crossover(parent[0], parent[1])
+        else:  # One parent genome so mutate
+            genome, new_structures = copy_with_mutation(parent[0], mutate=parent[1])
+        # Create genome graph
+        genome.create_graph()  # TODO very slow (often) - can be slow even when build_network_from_genome completes quickly
+        # Create net from genome
+        s = Substrate()  # TODO sometimes slow
+        net = s.build_network_from_genome(genome, n_net_inputs, n_net_outputs)  # TODO very slow (not often) - can be slow even when genome.create_graph completes quickly
+        if not net.is_void:
+            net.init_graph()  # init TF graph
+            # Evaluate
+            fitness = env(*env_args).evaluate(net)
+            net.set_fitness(fitness)  # Note this also sets fitness in genome
+            net.clear_sessions()  # cleanup
+            net.graph = None  # delete TF graph
+        if __debug__:
+            if net.is_void:
+                print("void net returned")
+            else:
+                print(str(fitness) + " returned")
+        genome.net = None
+        net = None
+        genome.graph = None  # delete pytorch graph
+        results.append((genome, new_structures))
     return results
 
 

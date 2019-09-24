@@ -331,6 +331,7 @@ class Evolution:
             self.logger.info("Best fitnesses " + str(self.best))
         if keyboard.is_pressed('v'):
             # Visualise generation best
+            self.genomes[0].create_graph()
             gen_best_net = Substrate().build_network_from_genome(self.genomes[0], self.n_net_inputs, self.n_net_outputs)
             gen_best_net.init_graph()
             gen_best_net.visualise_neural_net()
@@ -341,6 +342,7 @@ class Evolution:
             # Visualise overall best (champ)
             if self.evolution_champs[0].graph is None:
                 self.evolution_champs[0].create_graph()
+            self.evolution_champs[0].create_graph()
             champ_net = Substrate().build_network_from_genome(self.evolution_champs[0], self.n_net_inputs, self.n_net_outputs)
             if champ_net.is_void is False:
                 champ_net.init_graph()

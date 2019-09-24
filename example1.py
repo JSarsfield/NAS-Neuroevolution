@@ -23,12 +23,12 @@ def single_run():
 
 # TODO RESET STEPS IN REINFORCEMENT ENVIRONMENT TO 100/300 STEPS
 def evaluation():
-    args = {"pop_size": 64,
+    args = {"pop_size": 32,
             "environment_type": EnvironmentReinforcement,
             "env_args": ["BipedalWalker-v2"],
             "session_name": None,
             "gen": None,
-            "execute": Exec.SERIAL,
+            "execute": Exec.PARALLEL_LOCAL,
             "worker_list": "hpc_worker_list",
             "persist_every_n_gens": -1,
             "log_to_driver": True}

@@ -45,9 +45,9 @@ class Substrate:
             for node in hidden_x_locs:
                 # TODO currently unused, revisit this
                 """
-                node_weight = genome.graph.forward([node, layer, node, layer])[0].item()
-                diff_left = abs(node_weight-genome.graph.forward([node, layer, node - neighbour_width, layer])[0].item())
-                diff_right = abs(node_weight-genome.graph.forward([node, layer, node + neighbour_width, layer])[0].item())
+                node_weight = genome.graph([node, layer, node, layer])[0]
+                diff_left = abs(node_weight-genome.graph([node, layer, node - neighbour_width, layer])[0])
+                diff_right = abs(node_weight-genome.graph([node, layer, node + neighbour_width, layer])[0])
                 # If min diff is above variance threshold then express
                 if max(diff_left, diff_right) > 0.05:
                 """
@@ -61,9 +61,9 @@ class Substrate:
             for out_node in nodes[out_layer]:
                 for in_layer in range(out_layer+1, len(nodes)):
                     for in_node in nodes[in_layer]:
-                        link_out = genome.graph.forward([out_node.x, out_node.y, in_node.x, in_node.y])
-                        weight = link_out[0].item()
-                        leo = link_out[1].item()
+                        link_out = genome.graph([out_node.x, out_node.y, in_node.x, in_node.y])
+                        weight = link_out[0]
+                        leo = link_out[1]
                         # if express node
                         if leo == 1:
                             link = Link(out_node.x, out_node.y, in_node.x, in_node.y, weight)
