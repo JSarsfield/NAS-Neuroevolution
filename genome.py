@@ -99,13 +99,18 @@ class CPPNGenome:
             node.bias = random.uniform(bias_init_min, bias_init_max)
             if node.can_modify:
                 node.act_func = self.act_set.get_random_activation_func()
+            if node.act_func is any([activations.gaussian, activations.sin]):
+                if node.act_func.__name__[0] == "g":
+                    node.freq += random.uniform(-guass_freq_adjust, guass_freq_adjust)
+                elif node.act_func.__name__[0] == "s":
+                    node.freq += random.uniform(-sin_freq_adjust, sin_freq_adjust)
+                node.amp += random.uniform(-func_amp_adjust, func_amp_adjust)
+                node.vshift += random.uniform(-func_vshift_adjust, func_vshift_adjust)
         self.graph = Graph(self)
-        #self.visualise_cppn()
 
     def create_graph(self):
         """ Create graph """
         self.graph = Graph(self)
-        #self.visualise_cppn()
 
     def mutate_nonstructural(self):
         """ perform nonstructural mutations to existing gene nodes & links """
@@ -142,16 +147,16 @@ class CPPNGenome:
                         node.freq = random.uniform(-sin_freq_range, sin_freq_range)
                         node.amp = random.uniform(-func_amp_range, func_amp_range)
                         node.vshift = random.uniform(-sin_vshift_range, sin_vshift_range)
-                # Adjust freq amp and vshift of activation function
-                if event(func_adjust_prob):
-                    if node.act_func.__name__[0] == "g":
-                        node.freq += random.uniform(-guass_freq_adjust, guass_freq_adjust)
-                    elif node.act_func.__name__[0] == "s":
-                        node.freq += random.uniform(-sin_freq_adjust, sin_freq_adjust)
-                if event(func_adjust_prob):
-                    node.amp += random.uniform(-func_amp_adjust, func_amp_adjust)
-                if event(func_adjust_prob):
-                    node.vshift += random.uniform(-func_vshift_adjust, func_vshift_adjust)
+            # Adjust freq amp and vshift of activation function
+            if event(func_adjust_prob):
+                if node.act_func.__name__[0] == "g":
+                    node.freq += random.uniform(-guass_freq_adjust, guass_freq_adjust)
+                elif node.act_func.__name__[0] == "s":
+                    node.freq += random.uniform(-sin_freq_adjust, sin_freq_adjust)
+            if event(func_adjust_prob):
+                node.amp += random.uniform(-func_amp_adjust, func_amp_adjust)
+            if event(func_adjust_prob):
+                node.vshift += random.uniform(-func_vshift_adjust, func_vshift_adjust)
         # Mutate substrate width/height rectangles
         if event(width_mutate_prob):
             if event(0.5):
@@ -251,7 +256,7 @@ class CPPNGenome:
 class Graph(tf.keras.Model):
     """ computational graph TensorFlow """
 
-    def __init__(self, genome):
+    def __init__(self):
         super(Graph, self).__init__()
         self.lyrs = []
         self.lyrs_meta = []
@@ -260,7 +265,8 @@ class Graph(tf.keras.Model):
             self.lyrs.append(layers.Input(shape=(1,)))
             self.lyrs_meta.append([node, self.lyrs[-1]])
             self.lyr_weights = []  # weights and bias
-            # Create keras layers
+            self.lyr_inputs = []
+        # Create keras layers
         for node in genome.gene_nodes:
             self.lyr_weights.append([])
             concat = []
@@ -272,20 +278,85 @@ class Graph(tf.keras.Model):
             else:
                 act_func = node.act_func
             if "diff" in node.node_func:
-                self.lyrs.append(act_func(tf.reduce_sum([tf.multiply(concat[i], self.lyr_weights[i]) for i in range(len(self.lyr_weights))]))+node.bias)
-            else:,1
-                self.lyrs.append(layers.Dense(units=len(concat), activation=act_func, use_bias=False)(tf.stack(concat, axis=-1)))
+                kwargs = {"w": self.lyr_weights[-1], "b": node.bias, "freq": node.freq, "amp": node.amp,
+                          "vshift": node.vshift}
+                #self.lyrs.append(layers.concatenate(concat))
+                self.lyrs.append(Diff(**kwargs)(self.lyrs[-1]))
+            else:
+                #self.lyrs.append(layers.concatenate(concat))
+                self.lyrs.append(layers.Dense(units=len(concat), activation=act_func, use_bias=False))
+            self.lyr_inputs.append(tf.stack(concat, axis=-1))
             self.lyrs_meta.append([node, self.lyrs[-1]])
-            # TODO set lyr weights and bias
+
+        n_inputs, layer_sizes, layer, layer_meta, lyr_node_inds, lyr_weights
+
+
+        self.n_inputs = n_inputs
+        self.layer_sizes = layer_sizes
+        self.lyr_node_inds = [tf.constant(l, dtype=tf.int32) for l in lyr_node_inds]
+        self.lyr_weights = lyr_weights
+        self.lyrs = []
+        self.outputs = None
+        self.out_update_inds = [tf.constant(tf.expand_dims(tf.range(0, n_inputs, dtype=tf.int32), axis=1))]
+        start_ind = n_inputs
+        for i, size in enumerate(layer_sizes[:-1]):
+            finish_ind = start_ind+size
+            self.out_update_inds.append(tf.constant(tf.expand_dims(tf.range(start_ind, finish_ind, dtype=tf.int32), axis=1)))
+            start_ind = finish_ind
+        for size in layer_sizes:
+            self.lyrs.append(tf.keras.layers.Dense(units=size,
+                                                   activation=tf.nn.tanh,
+                                                   use_bias=True,
+                                                   kernel_initializer='zeros',
+                                                   bias_initializer='zeros',
+                                                   input_shape=(n_inputs,)))
 
     def build(self, input_shape):
+        # init layer weights and biases
         for i, l in enumerate(self.lyrs):
             l.build(tf.TensorShape(len(self.lyr_node_inds[i]), ))
             l.set_weights([np.transpose(self.lyr_weights[i]), l.get_weights()[1]])
+        self.outputs = tf.Variable(initial_value=tf.zeros([self.n_inputs + sum(self.layer_sizes)]),
+                                   trainable=False,
+                                   validate_shape=True,
+                                   name="flattened_outputs_vector",
+                                   dtype=tf.float32)
 
     def call(self, inputs, training=False):
-        pass
+        x = tf.cast(inputs, tf.float32)
+        # Call hidden layers
+        for i, l in enumerate(self.lyrs[:-1]):
+            tf.compat.v1.scatter_nd_update(self.outputs, self.out_update_inds[i], x)
+            x = tf.gather(self.outputs, self.lyr_node_inds[i])
+            x = l(tf.expand_dims(x, axis=0))[-1]
+        tf.compat.v1.scatter_nd_update(self.outputs, self.out_update_inds[-1], x)
+        x = tf.gather(self.outputs, self.lyr_node_inds[-1])
+        return self.lyrs[-1](tf.expand_dims(x, axis=0))[-1]  # call output layer and return result
 
+
+class Diff(layers.Layer):
+
+    def __init__(self, w=None, b=None, freq=None, amp=None, vshift=None):
+        self.output_dim = 1
+        super(Diff, self).__init__(dynamic=True)
+        self.w = tf.constant(w)
+        self.b = tf.constant(b)
+        self.freq = tf.constant(freq)
+        self.amp = tf.constant(amp)
+        self.vshift = tf.constant(vshift)
+
+    def call(self, inputs):
+        r = tf.math.multiply(inputs, self.w)
+        return tf.add(tf.subtract(r[0][0], r[1][0]), self.b)
+
+    def compute_output_shape(self, input_shape):
+        return (input_shape[0], self.output_dim)
+
+
+def diff(x, w=None, b=None, freq=None, amp=None, vshift=None):
+    r = (x*w)
+    o = (r[0][0]-r[1][0])+b
+    return tf.expand_dims(tf.expand_dims(o, axis=-1), axis=-1)  # (tf.sign(freq)*(amp*(2.718281**(-(0.5*(o/freq)**2)))))+vshift
     """
     class Graph(nn.Module):
         # computational graph PyTorch

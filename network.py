@@ -55,7 +55,7 @@ class Network:
         layer outputs efficiently with TensorFlow
         """
         layer_sizes = []  # Number of nodes in layer
-        layer_link_size = []  # Determined by node in layer with most ingoing links, for efficient TF layer calculations
+        #layer_link_size = []  # Determined by node in layer with most ingoing links, for efficient TF layer calculations
         layer_info = []  # ingoing link weights for each node in each layer as a vector
         lyr_node_inds = []  # node_inds for layer, used to gather indices for input into layer
         most_links = 0
@@ -72,7 +72,7 @@ class Network:
                 if last_y != -1:
                     lyr_node_inds[-1] = list(lyr_node_inds[-1])
                     layer_sizes.append(unit)
-                    layer_link_size.append(most_links)
+                    #layer_link_size.append(most_links)
                 layer_info.append({})  # Add layer
                 lyr_node_inds.append(set())  # unique node_inds in the layer
                 layer_info[-1]["node_inds"] = []  # 2D array whereby each row is a node in the layer
@@ -94,7 +94,7 @@ class Network:
         if last_y != -1:
             lyr_node_inds[-1] = list(lyr_node_inds[-1])
             layer_sizes.append(unit)
-            layer_link_size.append(most_links)
+            #layer_link_size.append(most_links)
         lyr_weights = []
         for i, lyr in enumerate(layer_info):
             lyr_weights.append(np.empty([len(lyr["node_inds"]), len(lyr_node_inds[i])], dtype=np.float32))

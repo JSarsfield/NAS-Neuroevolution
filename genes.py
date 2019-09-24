@@ -39,7 +39,8 @@ class GenePool:
         for i in range(self.num_inputs):
             self.create_initial_gene_node({"depth": 0,
                                            "activation_func": None,
-                                           "node_func": None})
+                                           "node_func": None,
+                                           "can_modify": False})
         # Create random output node
         self.create_initial_gene_node({"depth": 1,
                                        "activation_func": tf.tanh,  # TODO is the genome going to encode the activation func?
