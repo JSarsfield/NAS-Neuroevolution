@@ -9,7 +9,7 @@ import activations
 import random
 from copy import deepcopy
 from config import gauss_freq_range, func_amp_range, gauss_vshift_range, sin_freq_range, sin_vshift_range
-import tensorflow as tf
+import numpy as np
 
 
 class GenePool:
@@ -43,7 +43,7 @@ class GenePool:
                                            "can_modify": False})
         # Create random output node
         self.create_initial_gene_node({"depth": 1,
-                                       "activation_func": tf.tanh,  # TODO is the genome going to encode the activation func?
+                                       "activation_func": activations.tanh,  # TODO is the genome going to encode the activation func?
                                        "node_func": "dot",
                                        "can_modify": False}, is_input=False)
         # Add a single initial link for each input node

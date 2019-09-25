@@ -103,30 +103,16 @@ class CPPNGenome:
 
     def create_graph(self):
         """ Create graph """
-        layer_infos = []  # each layer has [node_ind, node.bias, act_func, freq, amp, vshift, is_diff] (some args optional)
-        layer_in_node_inds = []  # node indices of nodes going into this layer
-        layer_weights = []
-        for node in self.gene_nodes:
-            layer_infos.append([node.node_ind, node.bias])
-            layer_in_node_inds.append([])
-            layer_weights.append([])
-            if node.act_func in [activations.gaussian, activations.sin]:
-                layer_infos[-1].append(functools.partial(node.act_func, **{"freq": node.freq, "amp": node.amp, "vshift": node.vshift}))
-                layer_infos[-1].extend([node.freq, node.amp, node.vshift])
-            else:
-                layer_infos[-1].append(node.act_func)
-            if node.node_func is not None and "diff" in node.node_func:
-                layer_infos[-1].append(True)
-            else:
-                layer_infos[-1].append(False)
-            for link in node.ingoing_links:
-                layer_in_node_inds[-1].append(link.out_node.node_ind)
-                layer_weights[-1].append(link.weight)
-        self.graph = Graph(self.cppn_inputs,
-                           len(self.gene_nodes),
-                           layer_infos,
-                           layer_in_node_inds,
-                           layer_weights)
+        global np
+        import os
+        from importlib import reload
+        os.environ["MKL_NUM_THREADS"] = "1"
+        os.environ["NUMEXPR_NUM_THREADS"] = "1"
+        os.environ["OMP_NUM_THREADS"] = "1"
+        os.environ["OPENBLAS_NUM_THREADS"] = "1"
+        os.environ["OPENBLAS_CORETYPE"] = "ZEN"
+        np = reload(np)
+        self.graph = Graph(self, self.cppn_inputs+len(self.gene_nodes), self.cppn_inputs, self.cppn_outputs)
 
     def mutate_nonstructural(self):
         """ perform nonstructural mutations to existing gene nodes & links """
@@ -271,65 +257,38 @@ class CPPNGenome:
         plt.show()
 
 
-class Graph():
+class Graph:
     """ computational graph """
 
-    def __init__(self, n_inputs, n_layers, layer_infos, layer_in_node_inds, layer_weights):
-        self.n_inputs = n_inputs
-        self.n_layers = n_layers
-        self.lyr_node_inds = [tf.constant(l, dtype=tf.int32) for l in layer_in_node_inds]
-        self.lyr_weights = layer_weights
-        self.lyr_bias = [lyr_info[1] for lyr_info in layer_infos]
-        self.lyrs = []
-        self.dense_lyr_inds = []
-        self.outputs = None
-        self.out_update_inds = [tf.constant(tf.expand_dims(tf.range(0, n_inputs, dtype=tf.int32), axis=1))]
-        start_ind = n_inputs
-        for i in range(n_layers):
-            finish_ind = start_ind+1
-            self.out_update_inds.append(tf.constant(tf.expand_dims(tf.range(start_ind, finish_ind, dtype=tf.int32), axis=1)))
-            start_ind = finish_ind
-        # Add layers
-        for i, lyr_info in enumerate(layer_infos):
-            if lyr_info[-1] is True:
-                self.lyrs.append(Diff(w=self.lyr_weights[i],
-                                      b=lyr_info[1],
-                                      freq=lyr_info[3],
-                                      amp=lyr_info[4],
-                                      vshift=lyr_info[5]))
+    def __init__(self, genome, n_activs, n_inputs, n_outputs):
+        self.n_activs = n_activs
+        self.n_outputs = n_outputs
+        self.layer_funcs = []  # node functions with partial arguments (constants) filled in
+        self.layer_in_node_inds = []  # node indices of nodes going into this layer
+        self.activ_update_inds = [np.arange(n_inputs)]
+        for i, node in enumerate(genome.gene_nodes):
+            self.layer_in_node_inds.append([])
+            layer_weights = []
+            for link in node.ingoing_links:
+                self.layer_in_node_inds[-1].append(link.out_node.node_ind)
+                layer_weights.append(link.weight)
+            if node.act_func in [activations.gaussian, activations.sin, activations.diff]:
+                self.layer_funcs.append(functools.partial(node.act_func, **{"w": layer_weights, "b": node.bias, "freq": node.freq, "amp": node.amp, "vshift": node.vshift}))
             else:
-                self.dense_lyr_inds.append(i)
-                self.lyrs.append(layers.Dense(units=1,
-                                              activation=lyr_info[2],
-                                              use_bias=True,
-                                              kernel_initializer='zeros',
-                                              bias_initializer='zeros',
-                                              input_shape=(n_inputs,)))
+                self.layer_funcs.append(functools.partial(node.act_func, **{"w": layer_weights, "b": node.bias}))
+            self.activ_update_inds.append(np.arange(self.activ_update_inds[-1][-1]+1, self.activ_update_inds[-1][-1]+2))
 
-    def build(self, input_shape):
-        # init layer weights and biases
-        for i, l in enumerate(self.lyrs):
-            l.build(tf.TensorShape(len(self.lyr_node_inds[i]), ))
-            if i in self.dense_lyr_inds:
-                l.set_weights([np.expand_dims(self.lyr_weights[i], axis=-1), np.expand_dims(self.lyr_bias[i], axis=-1)])
-        self.outputs = tf.Variable(initial_value=tf.zeros([self.n_inputs + self.n_layers]),
-                                   trainable=False,
-                                   validate_shape=True,
-                                   name="flattened_outputs_vector",
-                                   dtype=tf.float32)
-
-    def call(self, inputs, training=False):
-        x = tf.cast(inputs, tf.float32)
+    def __call__(self, x):
+        self.activs = np.zeros((self.n_activs,), dtype=np.float32)
         # Call hidden layers
-        for i, l in enumerate(self.lyrs[:-1]):
-            tf.compat.v1.scatter_nd_update(self.outputs, self.out_update_inds[i], x)
-            x = tf.gather(self.outputs, self.lyr_node_inds[i])
-            x = l(tf.expand_dims(x, axis=0))[-1]
-        tf.compat.v1.scatter_nd_update(self.outputs, self.out_update_inds[-1], x)
-        x = tf.gather(self.outputs, self.lyr_node_inds[-1])
-        return np.array([self.outputs[-1], self.lyrs[-1](tf.expand_dims(x, axis=0))], dtype=np.float32)  # Note each node is a layer and we have 2 output layers, weight = second to last layer &LEO = last layer
+        for i, l in enumerate(self.layer_funcs):
+            np.put(self.activs, self.activ_update_inds[i], x)
+            x = self.activs[self.layer_in_node_inds[i]]
+            x = l(x)
+        np.put(self.activs, self.activ_update_inds[-1], x)
+        return self.activs[-self.n_outputs:]
 
-
+"""
 class Diff(layers.Layer):
 
     def __init__(self, w=None, b=None, freq=None, amp=None, vshift=None):
@@ -348,7 +307,7 @@ class Diff(layers.Layer):
 
     #def compute_output_shape(self, input_shape):
     #    return (2, )
-
+"""
 
 """
 def diff(x, w=None, b=None, freq=None, amp=None, vshift=None):

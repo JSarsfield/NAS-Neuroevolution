@@ -129,17 +129,29 @@ def exp(x, freq=1, amp=0):
     return torch.tensor((freq*x**2)+amp, dtype=torch.float32)
 """
 
+def tanh(x, w=None, b=None):
+    x = np.dot(x, w)+b
+    return np.tanh(x)
 
-def step(x):
+
+def step(x, w=None, b=None):
+    x = np.dot(x, w)+b
     return 1 if x > 0 else 0
 
 
-def gaussian(x, freq=0.314, amp=2, vshift=-1):
-    return (tf.sign(freq)*(amp*(2.718281**(-(0.5*(x/freq)**2)))))+vshift
+def gaussian(x, w=None, b=None, freq=0.314, amp=2, vshift=-1):
+    x = np.dot(x, w)+b
+    return (np.sign(freq)*(amp*(2.718281**(-(0.5*(x/freq)**2)))))+vshift
 
 
-def sin(x, freq=3.14, amp=1, vshift=0):
+def sin(x, w=None, b=None, freq=3.14, amp=1, vshift=0):
+    x = np.dot(x, w)+b
     return (amp*tf.sin(freq*x))+vshift
+
+
+def diff(x, w=None, b=None, freq=None, amp=None, vshift=None):
+    o = ((x[0]*w[0])-(x[1]*w[1]))+b
+    return (np.sign(freq)*(amp*(2.718281**(-(0.5*(o/freq)**2)))))+vshift
 
 
 class ActivationFunctionSet(object):
