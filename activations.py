@@ -10,7 +10,7 @@ __email__ = "joe.sarsfield@gmail.com"
 import random
 import math
 import numpy as np
-import tensorflow as tf
+#import tensorflow as tf
 
 """
 def sigmoid_activation(z):
@@ -129,7 +129,7 @@ def exp(x, freq=1, amp=0):
     return torch.tensor((freq*x**2)+amp, dtype=torch.float32)
 """
 
-def tanh(x, w=None, b=None):
+def tanh(x, w=None, b=0):
     x = np.dot(x, w)+b
     return np.tanh(x)
 
@@ -146,7 +146,7 @@ def gaussian(x, w=None, b=None, freq=0.314, amp=2, vshift=-1):
 
 def sin(x, w=None, b=None, freq=3.14, amp=1, vshift=0):
     x = np.dot(x, w)+b
-    return (amp*tf.sin(freq*x))+vshift
+    return (amp*np.sin(freq*x))+vshift
 
 
 def diff(x, w=None, b=None, freq=None, amp=None, vshift=None):

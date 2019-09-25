@@ -17,6 +17,7 @@ def parallel_reproduce_eval(parents, n_net_inputs, n_net_outputs, env, env_args)
         print("OPTIMISED")
     os.environ["OMP_NUM_THREADS"] = "1"
     os.environ["MKL_NUM_THREADS"] = "1"
+    os.environ["NUMEXPR_NUM_THREADS"] = "1"
     results = []
     for parent in parents:
         # Reproduce from parent genomes

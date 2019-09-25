@@ -27,7 +27,7 @@ class Environment:
 class EnvironmentReinforcement(Environment):
     """ Reinforcement environments """
 
-    def __init__(self, gym_env_string, parallel=True, trials=1, steps=10):
+    def __init__(self, gym_env_string, parallel=True, trials=1, steps=900):
         super().__init__()
         self.net = None  # Neural network to evaluate
         self.trials = trials  # Fitness = average of all trials
@@ -48,7 +48,7 @@ class EnvironmentReinforcement(Environment):
         fitness = np.array([])
         for trial in range(self.trials if render is False else 999):
             observation = self.env.reset()
-            action = self.net.graph(observation.astype(np.float32)).numpy()  # self.net.graph.forward(observation).max(0)[1].item()
+            action = self.net.graph(observation.astype(np.float32))  # self.net.graph.forward(observation).max(0)[1].item()
             trial_reward = 0
             for step in range(self.steps):
                 if render:
@@ -64,7 +64,7 @@ class EnvironmentReinforcement(Environment):
                 trial_reward += reward
                 if done:
                     break
-                action = self.net.graph(observation.astype(np.float32)).numpy()  # self.net.graph.forward(observation).max(0)[1].item()
+                action = self.net.graph(observation.astype(np.float32)) # self.net.graph.forward(observation).max(0)[1].item()
             fitness = np.append(fitness, trial_reward)
         if render:
             try:

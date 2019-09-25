@@ -20,7 +20,7 @@ import operator # sort node genes by depth
 from genes import GeneLink
 import activations
 from config import *
-import functools
+from functools import partial
 
 
 class CPPNGenome:
@@ -109,8 +109,8 @@ class CPPNGenome:
         os.environ["MKL_NUM_THREADS"] = "1"
         os.environ["NUMEXPR_NUM_THREADS"] = "1"
         os.environ["OMP_NUM_THREADS"] = "1"
-        os.environ["OPENBLAS_NUM_THREADS"] = "1"
-        os.environ["OPENBLAS_CORETYPE"] = "ZEN"
+        #os.environ["OPENBLAS_NUM_THREADS"] = "1"
+        #os.environ["OPENBLAS_CORETYPE"] = "ZEN"
         np = reload(np)
         self.graph = Graph(self, self.cppn_inputs+len(self.gene_nodes), self.cppn_inputs, self.cppn_outputs)
 
@@ -273,9 +273,9 @@ class Graph:
                 self.layer_in_node_inds[-1].append(link.out_node.node_ind)
                 layer_weights.append(link.weight)
             if node.act_func in [activations.gaussian, activations.sin, activations.diff]:
-                self.layer_funcs.append(functools.partial(node.act_func, **{"w": layer_weights, "b": node.bias, "freq": node.freq, "amp": node.amp, "vshift": node.vshift}))
+                self.layer_funcs.append(partial(node.act_func, **{"w": layer_weights, "b": node.bias, "freq": node.freq, "amp": node.amp, "vshift": node.vshift}))
             else:
-                self.layer_funcs.append(functools.partial(node.act_func, **{"w": layer_weights, "b": node.bias}))
+                self.layer_funcs.append(partial(node.act_func, **{"w": layer_weights, "b": node.bias}))
             self.activ_update_inds.append(np.arange(self.activ_update_inds[-1][-1]+1, self.activ_update_inds[-1][-1]+2))
 
     def __call__(self, x):

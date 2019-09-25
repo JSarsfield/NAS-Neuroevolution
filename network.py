@@ -8,21 +8,10 @@ __author__ = "Joe Sarsfield"
 __email__ = "joe.sarsfield@gmail.com"
 """
 
-import tensorflow as tf
+
 import numpy as np
 from config import link_cost_coeff
-
-
-tf.config.threading.set_intra_op_parallelism_threads(1)
-tf.config.threading.set_inter_op_parallelism_threads(1)
-
-
-def relu(x):
-    return max(0, x)
-
-
-def step_zero(x):
-    return 1 if x > 0 else 0
+from functools import partial
 
 
 class Network:
@@ -51,9 +40,17 @@ class Network:
         # cause huge slowdown with ray
 
     def init_graph(self):
+        """ DAG Feedforward computational graph """
+        self.graph = Graph(self, len(self.input_nodes)+len(self.nodes), self.n_net_inputs,  self.n_net_outputs)
+
+    def init_graph_tf(self):
         """ We need to arrange the network inputs and weights for each layer into balanced matrices for calculating
         layer outputs efficiently with TensorFlow
         """
+        global tf
+        import tensorflow as tf
+        tf.config.threading.set_intra_op_parallelism_threads(1)
+        tf.config.threading.set_inter_op_parallelism_threads(1)
         layer_sizes = []  # Number of nodes in layer
         #layer_link_size = []  # Determined by node in layer with most ingoing links, for efficient TF layer calculations
         layer_info = []  # ingoing link weights for each node in each layer as a vector
@@ -142,7 +139,8 @@ class Network:
 
     def clear_sessions(self):
         """ clear tf graph """
-        tf.keras.backend.clear_session()
+        pass
+        #tf.keras.backend.clear_session()
 
     """
     def set_fitness(self, fitness):
@@ -151,15 +149,60 @@ class Network:
     """
 
 
+def relu(x, w=None):
+    x = np.dot(x, w)
+    return max(0, x)
+
+
+def step_zero(x, w=None):
+    x = np.dot(x, w)
+    return 1 if x > 0 else 0
+
+
+def tanh(x, w=None):
+    x = np.dot(x, w)
+    return np.tanh(x)
+
+
+class Graph:
+    """ computational graph """
+
+    def __init__(self, network, n_activs, n_inputs, n_outputs):
+        self.n_activs = n_activs
+        self.n_outputs = n_outputs
+        self.layer_funcs = []  # node functions with partial arguments (constants) filled in
+        self.layer_in_node_inds = []  # node indices of nodes going into this layer
+        self.activ_update_inds = [np.arange(n_inputs)]
+        for i, node in enumerate(network.nodes):
+            self.layer_in_node_inds.append([])
+            layer_weights = []
+            for link in node.ingoing_links:
+                self.layer_in_node_inds[-1].append(link.out_node.node_ind)
+                layer_weights.append(link.weight)
+            self.layer_funcs.append(partial(tanh, **{"w": np.array(layer_weights, dtype=np.float32)}))
+            self.activ_update_inds.append(np.arange(self.activ_update_inds[-1][-1] + 1, self.activ_update_inds[-1][-1] + 2))
+
+    def __call__(self, x):
+        self.activs = np.zeros((self.n_activs,), dtype=np.float32)
+        # Call hidden layers
+        for i, l in enumerate(self.layer_funcs):
+            np.put(self.activs, self.activ_update_inds[i], x)
+            x = self.activs[self.layer_in_node_inds[i]]
+            x = l(x)
+        np.put(self.activs, self.activ_update_inds[-1], x)
+        return self.activs[-self.n_outputs:]
+
+
+"""
 class Graph(tf.keras.Model):
-    """ computational graph of neural network """
+    # computational graph of neural network
 
     def __init__(self, n_net_inputs, layer_sizes, lyr_node_inds, lyr_weights):
-        """
+        
         layer_sizes = list of num of nodes in each layer (excl. input layer)
         lyr_node_inds = list of max num of ingoing links for a node within the layer (excl. input layer)
         lyr_weights = list of each layer's initialisation values for weights and biases Note bias currently unused
-        """
+        
         super(Graph, self).__init__()
         self.n_net_inputs = n_net_inputs
         self.layer_sizes = layer_sizes
@@ -202,49 +245,7 @@ class Graph(tf.keras.Model):
         tf.compat.v1.scatter_nd_update(self.outputs, self.out_update_inds[-1], x)
         x = tf.gather(self.outputs, self.lyr_node_inds[-1])
         return self.lyrs[-1](tf.expand_dims(x, axis=0))[-1]  # call output layer and return result
-
-    """
-    class GraphOld(nn.Module):
-        
-
-        def __init__(self, net):
-            super().__init__()
-            self.net = net
-            self.weights = []  # torch tensor weights for each node
-            self.activs = []  # torch activation funcs for each node
-            self.outputs = torch.tensor((), dtype=torch.float32).new_empty((len(net.nodes) + net.n_net_inputs))
-            self.output_inds = []  # Store node indices to get output of nodes going into this node
-            # Setup torch tensors
-            for node in net.nodes:
-                # TODO!!!! we need to determine the activation function for each node from the genome
-                node_weights = []
-                in_node_inds = []
-                for link in node.ingoing_links:
-                    node_weights.append(link.weight)
-                    in_node_inds.append(link.out_node.node_ind)
-                    if link.out_node.node_ind is None:
-                        print("")
-                if len(in_node_inds) == 0 or in_node_inds is None:
-                    print("")
-                self.output_inds.append(torch.tensor(in_node_inds))
-                self.weights.append(torch.tensor(node_weights, dtype=torch.float32))  # TODO requires_grad=True when adding gradient based lifetime learning
-                self.activs.append(node.act_func)
-            if net.discrete:
-                from activations import step
-                self.activs[-1] = step
-
-        def forward(self, x):
-            
-            n_inputs = len(x)
-            # Update outputs vector with inputs
-            self.outputs[torch.arange(n_inputs)] = torch.tensor(x, dtype=torch.float32)
-            # loop each node and calculate output
-            for i in range(len(self.activs)):
-                y_unactiv = torch.dot(self.outputs[self.output_inds[i]], self.weights[i])
-                y = self.activs[i](y_unactiv)
-                self.outputs[i+n_inputs] = y
-            return self.outputs[-self.net.n_net_outputs:]
-    """
+"""
 
 
 class Link:
