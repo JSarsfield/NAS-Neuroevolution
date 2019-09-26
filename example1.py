@@ -21,7 +21,7 @@ def single_run():
                           gen=6)
     evolution.begin_evolution()
 
-# TODO RESET STEPS IN REINFORCEMENT ENVIRONMENT TO 100/300 STEPS
+
 def evaluation():
     args = {"pop_size": 128,
             "environment_type": EnvironmentReinforcement,
@@ -37,6 +37,18 @@ def evaluation():
                            num_of_runs=4,
                            stop_criterion=10)
     evaluator.run_evaluation()
+
+
+def start():
+    print("begin")
+    if __debug__:
+        print("running unoptimised, consider using -O flag")
+    else:
+        print("OPTIMISED")
+    # single_run()
+    evaluation()
+    # VisualiseEvaluation("./evaluations/evaluation_2019-09-22_22:48:46.407820/eval.pkl")
+    print("end")
 
 
 if __name__ == "__main__":

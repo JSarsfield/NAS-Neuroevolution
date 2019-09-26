@@ -121,7 +121,7 @@ class Evolution:
                 self.n_net_inputs, self.n_net_outputs = 1, 1  # TODO this is debug
             if self.persist_every_n_gens != -1:
                 self.session_name = str(datetime.datetime.now()).replace(" ", "_")
-                self.save_dir = "./saves/" + self.session_name + "/"
+                self.save_dir = "~/Projects/joe/NAS-Neuroevolution//saves/" + self.session_name + "/"
                 os.mkdir(self.save_dir)
                 # save evolutionary search config
                 with open(self.save_dir + "config" + "--" + self.session_name + ".pkl", "wb") as f:
@@ -291,11 +291,11 @@ class Evolution:
                 if len(parents_batch) == 0:
                     all_genomes_sent = True
                     break
-                object_ids.extend([parallel_reproduce_eval.remote(parents_batch,
-                                                                  self.n_net_inputs,
-                                                                  self.n_net_outputs,
-                                                                  self.env,
-                                                                  self.env_args)])
+                object_ids.extend([ray.method(parallel_reproduce_eval, parents_batch,
+                                                                             self.n_net_inputs,
+                                                                             self.n_net_outputs,
+                                                                             self.env,
+                                                                             self.env_args, num_return_vals=1)])
             while True:
                 object_ids_available, object_ids_not_ready = ray.wait(object_ids, timeout=1.0)
                 for worker_results in ray.get(object_ids_available):

@@ -6,10 +6,10 @@ import numpy as np
 from activations import ActivationFunctionSet, NodeFunctionSet
 import ray
 import os
-from time import perf_counter  # Accurate timing
+import cython
+#from time import perf_counter  # Accurate timing
 
 
-@ray.remote(num_cpus=1)
 def parallel_reproduce_eval(parents, n_net_inputs, n_net_outputs, env, env_args):
     if __debug__:  # TODO delete
         print("running unoptimised, consider using -O flag")

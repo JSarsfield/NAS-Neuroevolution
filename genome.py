@@ -10,17 +10,13 @@ __author__ = "Joe Sarsfield"
 __email__ = "joe.sarsfield@gmail.com"
 """
 
-import numpy as np
-"""
-import torch
-import torch.nn as nn
-"""
 import copy  # deep copy genes
 import operator # sort node genes by depth
 from genes import GeneLink
 import activations
 from config import *
 from functools import partial
+import numpy as np
 
 
 class CPPNGenome:

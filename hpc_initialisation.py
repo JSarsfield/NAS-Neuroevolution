@@ -28,7 +28,7 @@ def initialise_hpc(worker_list, local_mode=False, log_to_driver=True):
         host_address = address
         # Build modules for sending to worker nodes
         path = os.path.dirname(os.path.realpath(__file__))
-        os.system("cd "+path+" | python setup_worker.py sdist")
+        os.system("cd "+path+" | python setup.py sdist")
         worker_ips = []
         with open(worker_list+".csv") as csvfile:
             rows = csv.reader(csvfile, delimiter=",")
@@ -37,7 +37,7 @@ def initialise_hpc(worker_list, local_mode=False, log_to_driver=True):
                 worker_ips.append({"ip": row[0], "user": row[1], "pw": row[2]})
         path += "/dist/"
         for file in os.listdir(path):
-            if "NE-worker" in file:
+            if "NAS" in file:
                 pkg_name = file
                 break
         for w in worker_ips:
