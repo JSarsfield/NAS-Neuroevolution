@@ -73,3 +73,8 @@ fabric.properties
 saves/*
 evaluations/*
 algorithms_temp/*
+
+*.so
+*.c
+build/
+*.whl
