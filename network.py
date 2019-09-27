@@ -299,10 +299,12 @@ class Node:
     def add_out_link(self, link):
         self.outgoing_links.append(link)
 
-    def copy(self, link, is_in_node=True):
+    def copy(self, link=None, is_in_node=True):
         """ Create a copy of the node without any links """
         node_copy = Node(self.x, self.y, act_func=self.act_func)
-        if is_in_node:
+        if link is None:
+            pass
+        elif is_in_node:
             node_copy.add_in_link(link)
             link.in_node = node_copy
         else:

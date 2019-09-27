@@ -22,7 +22,6 @@ ext_modules = [
 
 ext_modules = cythonize(ext_modules, compiler_directives={"language_level": "3"})
 py_modules = ['example1', 'evaluate_evolutionary_search', 'hpc_initialisation', 'evolution',  'evolution_parallel']
-
 setup(
       name = 'NAS',
       version='0.1',

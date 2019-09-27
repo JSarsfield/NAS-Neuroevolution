@@ -28,10 +28,10 @@ def evaluation():
             "env_args": ['BipedalWalker-v2'],
             "session_name": None,
             "gen": None,
-            "execute": Exec.SERIAL,
+            "execute": Exec.PARALLEL_LOCAL,
             "worker_list": "hpc_worker_list_home",
             "persist_every_n_gens": -1,
-            "log_to_driver": True}
+            "log_to_driver": False}
     evaluator = EvaluateES(es_algorithms=[],
                            es_init_args=args,
                            num_of_runs=4,

@@ -73,9 +73,9 @@ class Substrate:
                             link.out_node = out_node
                             link.in_node = in_node
         # Depth first search to find all links on all paths from input to output
-        keep_links, keep_nodes = depth_first_search(nodes[-1])
+        keep_links, keep_nodes = depth_first_search(nodes[0], nodes[-1])
         # Determine if each input and output node is in keep_nodes and thus on path
-        if keep_links is None:
+        if not keep_links:
             # An input/output node didn't have any outgoing/ingoing links thus neural net is void
             is_void = True
         else:
@@ -83,32 +83,31 @@ class Substrate:
         return Network(genome, keep_links, keep_nodes, n_net_inputs, n_net_outputs, void=is_void)
 
 
-def depth_first_search(output_nodes):
+def depth_first_search(input_nodes, output_nodes):
     """ find links and nodes on paths from input to output nodes, searching backwards from each output.
     If an output node is not on a path to an input then network is void.
     If an input node is not on a path to an output the network can still be valid (not void)
     thus input features that have no meaningful affect on the performance will be filtered out by evolutionary search"""
     keep_links = set()  # links to keep as they are on a path from output to input
-    keep_nodes = set()  # nodes to keep as they are on on valid path
+    explored_nodes_on_path = set()  # nodes that have been explored and are on a valid path i.e. input -> output path
     explored_nodes_not_path = set()  # nodes that have been explored and are not on valid path
     generators = []  # list of iterators pointing to a list of ingoing_links to a node
-
     for node_ind, output_node in enumerate(output_nodes):
         generators.append(get_next_link(output_node))
         links_cur_path = []  # links on current path
         nodes_cur_path = [output_node]  # nodes on current path
-        output_is_valid_path = False
+        output_is_valid_path = False  # Is this output node connected to an input node i.e. valid path
         while len(generators) > 0:
             link, cur_out_node, cur_in_node = next(generators[-1])
             if link is None:  # no more links to explore on node, go back
                 if cur_in_node.y == -1:  # input node
-                    keep_nodes.update(nodes_cur_path)
+                    explored_nodes_on_path.update(nodes_cur_path)
                     keep_links.update(links_cur_path)
                     nodes_cur_path = []
                     links_cur_path = []
                     output_is_valid_path = True
                 else:  # dangling hidden node
-                    if cur_in_node not in keep_nodes:
+                    if cur_in_node not in explored_nodes_on_path:
                         explored_nodes_not_path.add(cur_in_node)
                     if len(links_cur_path) > 0:
                         links_cur_path.pop()
@@ -117,11 +116,12 @@ def depth_first_search(output_nodes):
                 generators.pop()
                 continue
             links_cur_path.append(link)
-            if cur_out_node in keep_nodes:  # out_node has already been explored, move to next link
-                keep_nodes.update(nodes_cur_path)
+            if cur_out_node in explored_nodes_on_path:  # out_node has already been explored, move to next link
+                explored_nodes_on_path.update(nodes_cur_path)
                 keep_links.update(links_cur_path)
                 nodes_cur_path = []
                 links_cur_path = []
+                output_is_valid_path = True
                 continue
             elif cur_out_node in explored_nodes_not_path:  # out node has already been explored and is not on valid path
                 links_cur_path.pop()
@@ -130,7 +130,26 @@ def depth_first_search(output_nodes):
             generators.append(get_next_link(cur_out_node))
             nodes_cur_path.append(cur_out_node)
         if output_is_valid_path is False:
-            return None, None  # output has no links connecting to a input node, return void network
+            return [], []  # output has no links connecting to a input node, return void network
+    dangling_input_nodes = set(input_nodes).difference(explored_nodes_on_path)
+    keep_links = list(keep_links)
+    # Get unique nodes in keep_links
+    keep_nodes = set()
+    for link in keep_links:
+        in_node = next(iter(node for node in keep_nodes if node == link.in_node), None)
+        if in_node:
+            in_node.update_in_node(link)
+        else:
+            keep_nodes.add(link.in_node.copy(link, is_in_node=True))
+        out_node = next(iter(node for node in keep_nodes if node == link.out_node), None)
+        if out_node:
+            out_node.update_out_node(link)
+        else:
+            keep_nodes.add(link.out_node.copy(link, is_in_node=False))
+    for node in dangling_input_nodes:
+        keep_nodes.add(Node(node.x, node.y, act_func=None, node_ind=None))
+    keep_nodes = list(keep_nodes)
+    keep_nodes.sort(key=lambda node: (node.y, node.x))  # Sort nodes by y (layer) then x (pos in layer)
     return keep_links, keep_nodes
 
 
