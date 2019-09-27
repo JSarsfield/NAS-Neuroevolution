@@ -2,15 +2,16 @@ from genes import GeneNode
 from genome import CPPNGenome
 from substrate import Substrate
 from config import *
-import numpy as np
 from activations import ActivationFunctionSet, NodeFunctionSet
 import ray
 import os
 import cython
-#from time import perf_counter  # Accurate timing
+from time import perf_counter  # Accurate timing
 
 
+@ray.remote(num_cpus=1, num_return_vals=1)
 def parallel_reproduce_eval(parents, n_net_inputs, n_net_outputs, env, env_args):
+    global np
     if __debug__:  # TODO delete
         print("running unoptimised, consider using -O flag")
     else:
@@ -18,25 +19,55 @@ def parallel_reproduce_eval(parents, n_net_inputs, n_net_outputs, env, env_args)
     os.environ["OMP_NUM_THREADS"] = "1"
     os.environ["MKL_NUM_THREADS"] = "1"
     os.environ["NUMEXPR_NUM_THREADS"] = "1"
+    import numpy as np
     results = []
+    print_thresh = 0  # TODO delete!!!!
     for parent in parents:
+        start = perf_counter()
         # Reproduce from parent genomes
         if type(parent[-1]) is not bool:  # Two parent genomes so crossover
             genome, new_structures = crossover(parent[0], parent[1])
         else:  # One parent genome so mutate
             genome, new_structures = copy_with_mutation(parent[0], mutate=parent[1])
+        end = perf_counter()-start
+        if end > print_thresh:
+            print("crossover: ", end)
+        start = perf_counter()
         # Create genome graph
         genome.create_graph()  # TODO very slow (often) - can be slow even when build_network_from_genome completes quickly
+        end = perf_counter() - start
+        if end > print_thresh:
+            print("create_graph(): ", end)
         # Create net from genome
+        start = perf_counter()
         s = Substrate()  # TODO sometimes slow
+        end = perf_counter() - start
+        if end > print_thresh:
+            print("Substrate(): ", end)
+        start = perf_counter()
         net = s.build_network_from_genome(genome, n_net_inputs, n_net_outputs)  # TODO very slow (not often) - can be slow even when genome.create_graph completes quickly
+        end = perf_counter() - start
+        if end > print_thresh:
+            print("build_network_from_genome(): ", end)
         if not net.is_void:
+            start = perf_counter()
+            print("start of init_graph")
             net.init_graph()  # init TF graph
+            end = perf_counter() - start
+            if end > print_thresh:
+                print("net.init_graph(): ", end)
             # Evaluate
+            start = perf_counter()
             fitness = env(*env_args).evaluate(net)
+            end = perf_counter() - start
+            if end > print_thresh:
+                print("env(*env_args).evaluate(net): ", end)
+            print("fitness: ", fitness)
             net.set_fitness(fitness)  # Note this also sets fitness in genome
             net.clear_sessions()  # cleanup
             net.graph = None  # delete TF graph
+        else:
+            print("void net")  # todo delete
         if __debug__:
             if net.is_void:
                 print("void net returned")

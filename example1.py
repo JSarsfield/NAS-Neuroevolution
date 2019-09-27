@@ -7,7 +7,7 @@ __email__ = "joe.sarsfield@gmail.com"
 from environment import EnvironmentReinforcement, EnvironmentReinforcementCustom
 from evaluate_evolutionary_search import EvaluateES, VisualiseEvaluation
 from config import Exec
-from game import Game
+#from game import Game
 
 
 def single_run():
@@ -23,15 +23,15 @@ def single_run():
 
 
 def evaluation():
-    args = {"pop_size": 128,
+    args = {"pop_size": 1024,
             "environment_type": EnvironmentReinforcement,
             "env_args": ['BipedalWalker-v2'],
             "session_name": None,
             "gen": None,
-            "execute": Exec.PARALLEL_LOCAL,
+            "execute": Exec.SERIAL,
             "worker_list": "hpc_worker_list_home",
             "persist_every_n_gens": -1,
-            "log_to_driver": False}
+            "log_to_driver": True}
     evaluator = EvaluateES(es_algorithms=[],
                            es_init_args=args,
                            num_of_runs=4,

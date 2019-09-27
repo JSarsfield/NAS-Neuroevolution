@@ -73,100 +73,155 @@ class Substrate:
                             link.out_node = out_node
                             link.in_node = in_node
         # Depth first search to find all links on all paths from input to output
-        keep_links, keep_nodes = self.depth_first_search(nodes[0])
+        keep_links, keep_nodes = depth_first_search(nodes[-1])
         # Determine if each input and output node is in keep_nodes and thus on path
-        if len(keep_nodes) < (n_net_inputs + n_net_outputs) or keep_nodes[n_net_inputs - 1].y != -1 or \
-                keep_nodes[-n_net_outputs].y != 1:
+        if keep_links is None:
             # An input/output node didn't have any outgoing/ingoing links thus neural net is void
             is_void = True
         else:
             is_void = False
         return Network(genome, keep_links, keep_nodes, n_net_inputs, n_net_outputs, void=is_void)
 
-    @staticmethod
-    def depth_first_search(input_nodes):
-        """ find links and nodes on paths from input to output nodes """
-        # TODO rework this to only ensure all output nodes are on a path i.e. dangling input nodes are fine (filtered by evolution)
-        path = deque()  # lifo buffer storing currently explored path
-        links_2add = deque()  # life buffer storing new links to add if we reach output node
-        keep_links = []  # Set of links to keep because they are on a path from input to output
-        for input_ind, input in enumerate(input_nodes):
-            # Each element is a dict with link reference and local index of outgoing node's
-            if len(input.outgoing_links) == 0:
-                return [], []  # An input neuron has no links and thus this neural network is void
-            path.append({"link": input.outgoing_links[0], "ind": 0})
-            links_2add.append(path[-1])
-            is_forward = True  # False when link to dangling node
-            # while unexplored links on from this input node exist
-            while path:
-                new_link = {}
-                if is_forward:
-                    if len(path[-1]["link"].in_node.outgoing_links) > 0:  # if ingoing node of link also has link then add and keep going forward
-                        new_link["link"] = path[-1]["link"].in_node.outgoing_links[0]
-                        new_link["ind"] = 0
-                        if new_link["link"] in keep_links:  # If we reach a link on the keep_links path then add links_2add and go back
-                            keep_links.extend([d["link"] for d in links_2add])
-                            links_2add.clear()
-                            is_forward = False
-                            continue
-                        path.append(new_link)
-                        links_2add.append(new_link)
-                    else:  # No new links to explore
-                        # Check if node is output
-                        if path[-1]["link"].in_node.y == 1:
-                            keep_links.extend([d["link"] for d in links_2add])
-                            links_2add.clear()
-                        # Node is dangling or output node hit so go back through path
+
+def depth_first_search(output_nodes):
+    """ find links and nodes on paths from input to output nodes, searching backwards from each output.
+    If an output node is not on a path to an input then network is void.
+    If an input node is not on a path to an output the network can still be valid (not void)
+    thus input features that have no meaningful affect on the performance will be filtered out by evolutionary search"""
+    keep_links = set()  # links to keep as they are on a path from output to input
+    keep_nodes = set()  # nodes to keep as they are on on valid path
+    explored_nodes_not_path = set()  # nodes that have been explored and are not on valid path
+    generators = []  # list of iterators pointing to a list of ingoing_links to a node
+
+    for node_ind, output_node in enumerate(output_nodes):
+        generators.append(get_next_link(output_node))
+        links_cur_path = []  # links on current path
+        nodes_cur_path = [output_node]  # nodes on current path
+        output_is_valid_path = False
+        while len(generators) > 0:
+            link, cur_out_node, cur_in_node = next(generators[-1])
+            if link is None:  # no more links to explore on node, go back
+                if cur_in_node.y == -1:  # input node
+                    keep_nodes.update(nodes_cur_path)
+                    keep_links.update(links_cur_path)
+                    nodes_cur_path = []
+                    links_cur_path = []
+                    output_is_valid_path = True
+                else:  # dangling hidden node
+                    if cur_in_node not in keep_nodes:
+                        explored_nodes_not_path.add(cur_in_node)
+                    if len(links_cur_path) > 0:
+                        links_cur_path.pop()
+                    if len(nodes_cur_path) > 0:
+                        nodes_cur_path.pop()
+                generators.pop()
+                continue
+            links_cur_path.append(link)
+            if cur_out_node in keep_nodes:  # out_node has already been explored, move to next link
+                keep_nodes.update(nodes_cur_path)
+                keep_links.update(links_cur_path)
+                nodes_cur_path = []
+                links_cur_path = []
+                continue
+            elif cur_out_node in explored_nodes_not_path:  # out node has already been explored and is not on valid path
+                links_cur_path.pop()
+                continue
+            # unexplored node, add generator
+            generators.append(get_next_link(cur_out_node))
+            nodes_cur_path.append(cur_out_node)
+        if output_is_valid_path is False:
+            return None, None  # output has no links connecting to a input node, return void network
+    return keep_links, keep_nodes
+
+
+def get_next_link(node):
+    for ingoing_link in node.ingoing_links:
+        yield ingoing_link, ingoing_link.out_node, node
+    yield None, None, node
+
+
+"""
+    # TODO rework this to only ensure all output nodes are on a path i.e. dangling input nodes are fine (filtered by evolution)
+    path = deque()  # lifo buffer storing currently explored path
+    links_2add = deque()  # life buffer storing new links to add if we reach output node
+    keep_links = []  # Set of links to keep because they are on a path from input to output
+    for input_ind, input in enumerate(output_nodes):
+        # Each element is a dict with link reference and local index of outgoing node's
+        if len(input.outgoing_links) == 0:
+            return [], []  # An input neuron has no links and thus this neural network is void
+        path.append({"link": input.outgoing_links[0], "ind": 0})
+        links_2add.append(path[-1])
+        is_forward = True  # False when link to dangling node
+        # while unexplored links on from this input node exist
+        while path:
+            new_link = {}
+            if is_forward:
+                if len(path[-1]["link"].in_node.outgoing_links) > 0:  # if ingoing node of link also has link then add and keep going forward
+                    new_link["link"] = path[-1]["link"].in_node.outgoing_links[0]
+                    new_link["ind"] = 0
+                    if new_link["link"] in keep_links:  # If we reach a link on the keep_links path then add links_2add and go back
+                        keep_links.extend([d["link"] for d in links_2add])
+                        links_2add.clear()
                         is_forward = False
                         continue
-                else:
-                    # Go back through path until new link then go forward
-                    new_ind = path[-1]["ind"]+1
-                    if new_ind < len(path[-1]["link"].out_node.outgoing_links):  # If outgoing node of link has more links to explore
-                        new_link["link"] = path[-1]["link"].out_node.outgoing_links[new_ind]
-                        new_link["ind"] = new_ind
-                        if new_link["link"] in keep_links:
-                            if len(links_2add) > 0 and links_2add[-1]["link"] == path[-1]["link"]:
-                                links_2add.pop()
-                            path.pop()
-                            continue
-                        if len(links_2add) > 0 and links_2add[-1]["link"] == path[-1]["link"]:
-                            links_2add.pop()
-                        links_2add.append(new_link)
-                        path.pop()
-                        path.append(new_link)
-                        is_forward = True  # new link to explore
-                        continue
-                    else:  # No unexplored links at this node so keep going back through path
+                    path.append(new_link)
+                    links_2add.append(new_link)
+                else:  # No new links to explore
+                    # Check if node is output
+                    if path[-1]["link"].in_node.y == 1:
+                        keep_links.extend([d["link"] for d in links_2add])
+                        links_2add.clear()
+                    # Node is dangling or output node hit so go back through path
+                    is_forward = False
+                    continue
+            else:
+                # Go back through path until new link then go forward
+                new_ind = path[-1]["ind"]+1
+                if new_ind < len(path[-1]["link"].out_node.outgoing_links):  # If outgoing node of link has more links to explore
+                    new_link["link"] = path[-1]["link"].out_node.outgoing_links[new_ind]
+                    new_link["ind"] = new_ind
+                    if new_link["link"] in keep_links:
                         if len(links_2add) > 0 and links_2add[-1]["link"] == path[-1]["link"]:
                             links_2add.pop()
                         path.pop()
                         continue
-        # Get unique nodes in keep_links
-        keep_nodes = []
-        for link in keep_links:
-            in_node = next((x for x in keep_nodes if x == link.in_node), None)
-            if in_node is None:
-                keep_nodes.append(link.in_node.copy(link, is_in_node=True))
-            else:
-                in_node.update_in_node(link)
-            out_node = next((x for x in keep_nodes if x == link.out_node), None)
-            if out_node is None:
-                keep_nodes.append(link.out_node.copy(link, is_in_node=False))
-            else:
-                out_node.update_out_node(link)
-        keep_nodes.sort(key=lambda node: (node.y, node.x))  # Sort nodes by y (layer) then x (pos in layer)
-        return keep_links, keep_nodes
-
-
+                    if len(links_2add) > 0 and links_2add[-1]["link"] == path[-1]["link"]:
+                        links_2add.pop()
+                    links_2add.append(new_link)
+                    path.pop()
+                    path.append(new_link)
+                    is_forward = True  # new link to explore
+                    continue
+                else:  # No unexplored links at this node so keep going back through path
+                    if len(links_2add) > 0 and links_2add[-1]["link"] == path[-1]["link"]:
+                        links_2add.pop()
+                    path.pop()
+                    continue
+    # Get unique nodes in keep_links
+    keep_nodes = []
+    for link in keep_links:
+        in_node = next((x for x in keep_nodes if x == link.in_node), None)
+        if in_node is None:
+            keep_nodes.append(link.in_node.copy(link, is_in_node=True))
+        else:
+            in_node.update_in_node(link)
+        out_node = next((x for x in keep_nodes if x == link.out_node), None)
+        if out_node is None:
+            keep_nodes.append(link.out_node.copy(link, is_in_node=False))
+        else:
+            out_node.update_out_node(link)
+    keep_nodes.sort(key=lambda node: (node.y, node.x))  # Sort nodes by y (layer) then x (pos in layer)
+    return keep_links, keep_nodes
+"""
+"""
 class SubstrateESHyperNeat:
-    """ neural network architecture space for finding nodes when expressing a genome to a neural network """
+    # neural network architecture space for finding nodes when expressing a genome to a neural network
 
     def __init__(self):
         pass
 
     def build_network_from_genome(self, genome, n_net_inputs, n_net_outputs):
-        """" Algorithm 3. express the genome to produce a phenotype (ANN). Return network class. """
+        # Algorithm 3. express the genome to produce a phenotype (ANN). Return network class.
         links = []
         nodes = []
         input_nodes = []
@@ -259,7 +314,7 @@ class SubstrateESHyperNeat:
 
     @staticmethod
     def depth_first_search(self, input_nodes):
-        """ find links and nodes on paths from input to output nodes """
+        # find links and nodes on paths from input to output nodes
         # TODO rework this to only ensure all output nodes are on a path i.e. dangling input nodes are fine (filtered by evolution)
         path = deque()  # lifo buffer storing currently explored path
         links_2add = deque()  # life buffer storing new links to add if we reach output node
@@ -334,7 +389,7 @@ class SubstrateESHyperNeat:
 
 
 class QuadTree:
-    """ Determines hidden node placement within an ANN """
+    # Determines hidden node placement within an ANN
 
     # TODO evolve/mutate var_thresh and band_threshold - these values passed to children genomes
     def __init__(self, cppn, var_thresh=0.001, band_thresh=0.001):
@@ -344,7 +399,7 @@ class QuadTree:
         self.band_thresh = band_thresh  # Band threshold for expressing a link if var of neighbours is above this thresh
 
     def division_and_initialisation(self, a, b, outgoing=True):
-        """ Algorithm 1 - a, b represent x1, y1 when outgoing and x2, y2 when ingoing """
+        # Algorithm 1 - a, b represent x1, y1 when outgoing and x2, y2 when ingoing
         quads_que = deque()  # Contains quads to split x,y,width,level - Add root quad, centre is 0,0
         quads_que.append(QuadPoint(0, 0, 1, 1))
         out = self.cppn.forward([0, 1, 0, 1])
@@ -381,7 +436,7 @@ class QuadTree:
                     self.quad_leafs.append(q)
 
     def pruning_and_extraction(self, a, b, outgoing=True):
-        """ Algorithm 2 - a, b represent x1, y1 when outgoing and x2, y2 when ingoing """
+        # Algorithm 2 - a, b represent x1, y1 when outgoing and x2, y2 when ingoing
         links = []  # Store expressed links
         # For each quad leaf
         for q_leaf in self.quad_leafs:
@@ -407,7 +462,7 @@ class QuadTree:
 
 
 class QuadPoint:
-    """ quad point in the quadtree x, y, width, level """
+    # quad point in the quadtree x, y, width, level
 
     def __init__(self, x, y, width, level):
         self.is_leaf = False
@@ -420,3 +475,4 @@ class QuadPoint:
         self.child_var = None  # Variance of the four child quads
         self.weight = None
         self.leo = None  # Express if greater than zero
+"""

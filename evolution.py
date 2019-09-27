@@ -277,7 +277,7 @@ class Evolution:
         """ reproduce next generation given fitnesses of current generation """
         cores = int(ray.cluster_resources()["CPU"]) if self.execute is not Exec.SERIAL else 64
         nets_per_core = 3
-        send_more_threshold = cores*2
+        send_more_threshold = cores*nets_per_core
         gen_counter_start = 0
         gen_counter_end = nets_per_core
         all_genomes_sent = False
@@ -291,11 +291,11 @@ class Evolution:
                 if len(parents_batch) == 0:
                     all_genomes_sent = True
                     break
-                object_ids.extend([ray.method(parallel_reproduce_eval, parents_batch,
-                                                                             self.n_net_inputs,
-                                                                             self.n_net_outputs,
-                                                                             self.env,
-                                                                             self.env_args, num_return_vals=1)])
+                object_ids.extend([parallel_reproduce_eval.remote(parents_batch,
+                                                                  self.n_net_inputs,
+                                                                  self.n_net_outputs,
+                                                                  self.env,
+                                                                  self.env_args)])
             while True:
                 object_ids_available, object_ids_not_ready = ray.wait(object_ids, timeout=1.0)
                 for worker_results in ray.get(object_ids_available):
