@@ -108,9 +108,27 @@ class Network:
         import matplotlib.pyplot as plt
         import networkx as nx
         G = nx.DiGraph()
+        layer_ind = 0
+        node_ind = 0
         for node in self.input_nodes:
+            node.layer = layer_ind
+            node.unit = node_ind
             G.add_node((node.layer, node.unit), pos=(node.y, node.x))
+            node_ind += 1
+        layer_ind = 1
+        cur_layer_depth = self.nodes[0].y
+        node_ind = 0
         for node in self.nodes:
+            if node.y == cur_layer_depth:
+                node.layer = layer_ind
+                node.unit = node_ind
+            else:
+                layer_ind += 1
+                node_ind = 0
+                cur_layer_depth = node.y
+                node.layer = layer_ind
+                node.unit = node_ind
+            node_ind += 1
             G.add_node((node.layer, node.unit), pos=(node.y, node.x))
             for link in node.ingoing_links:
                 G.add_edge((link.out_node.layer, link.out_node.unit),
