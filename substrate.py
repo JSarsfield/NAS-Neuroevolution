@@ -140,14 +140,14 @@ def depth_first_search(input_nodes, output_nodes):
         if in_node:
             in_node.update_in_node(link)
         else:
-            keep_nodes.add(link.in_node.copy(link, is_in_node=True))
+            keep_nodes.add(link.in_node.copy(link, True))
         out_node = next(iter(node for node in keep_nodes if node == link.out_node), None)
         if out_node:
             out_node.update_out_node(link)
         else:
-            keep_nodes.add(link.out_node.copy(link, is_in_node=False))
+            keep_nodes.add(link.out_node.copy(link, False))
     for node in dangling_input_nodes:
-        keep_nodes.add(Node(node.x, node.y, act_func=None, node_ind=None))
+        keep_nodes.add(Node(node.x, node.y))
     keep_nodes = list(keep_nodes)
     keep_nodes.sort(key=lambda node: (node.y, node.x))  # Sort nodes by y (layer) then x (pos in layer)
     return keep_links, keep_nodes
@@ -157,7 +157,6 @@ def get_next_link(node):
     for ingoing_link in node.ingoing_links:
         yield ingoing_link, ingoing_link.out_node, node
     yield None, None, node
-
 
 """
     # TODO rework this to only ensure all output nodes are on a path i.e. dangling input nodes are fine (filtered by evolution)

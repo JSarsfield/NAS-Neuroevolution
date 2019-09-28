@@ -166,22 +166,6 @@ class Network:
         self.fitness = self.fitness_unnorm/len(self.genome.species.genomes)
     """
 
-
-def relu(x, w=None):
-    x = np.dot(x, w)
-    return max(0, x)
-
-
-def step_zero(x, w=None):
-    x = np.dot(x, w)
-    return 1 if x > 0 else 0
-
-
-def tanh(x, w=None):
-    x = np.dot(x, w)
-    return np.tanh(x)
-
-
 class Graph:
     """ computational graph """
 
@@ -210,6 +194,89 @@ class Graph:
         np.put(self.activs, self.activ_update_inds[-1], x)
         return self.activs[-self.n_outputs:]
 
+
+class Link:
+    """ link/connection/synapse between two nodes """
+    def __init__(self, x1, y1, x2, y2, weight):
+        self.x1 = x1
+        self.y1 = y1
+        self.x2 = x2
+        self.y2 = y2
+        self.weight = weight
+        self.out_node = None  # out node
+        self.in_node = None  # in node
+
+    def __eq__(self, other):
+        return True if self.x1 == other.x1 and self.x2 == other.x2 and self.y1 == other.y1 and self.y2 == other.y2 else False
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def __hash__(self):
+        """ optimised hashing for finding unique Links """
+        return hash((self.x1, self.y1, self.x2, self.y2))
+
+
+class Node:
+    """ node/neuron/unit """
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+        self.ingoing_links = []  # links going into the node
+        self.outgoing_links = []  # links going out of the node
+        self.node_ind = None  # node index, including input nodes
+        self.layer = None  # Layer number. Only used in visualisation
+        self.unit = None  # Position in layer. Only used in visualisation
+
+    def __eq__(self, other):
+        return True if self.x == other.x and self.y == other.y else False
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def __hash__(self):
+        """ optimised hashing for finding unique Nodes """
+        return hash((self.x, self.y))
+
+    def add_in_link(self, link):
+        self.ingoing_links.append(link)
+
+    def add_out_link(self, link):
+        self.outgoing_links.append(link)
+
+    def copy(self, link, is_in_node):
+        # Create a copy of the node without any links
+        node_copy = Node(self.x, self.y)
+        if is_in_node:
+            node_copy.add_in_link(link)
+            link.in_node = node_copy
+        else:
+            node_copy.add_out_link(link)
+            link.out_node = node_copy
+        return node_copy
+
+    def update_in_node(self, link):
+        self.add_in_link(link)
+        link.in_node = self
+
+    def update_out_node(self, link):
+        self.add_out_link(link)
+        link.out_node = self
+
+
+def relu(x, w=None):
+    x = np.dot(x, w)
+    return max(0, x)
+
+
+def step_zero(x, w=None):
+    x = np.dot(x, w)
+    return 1 if x > 0 else 0
+
+
+def tanh(x, w=None):
+    x = np.dot(x, w)
+    return np.tanh(x)
 
 """
 class Graph(tf.keras.Model):
@@ -264,77 +331,3 @@ class Graph(tf.keras.Model):
         x = tf.gather(self.outputs, self.lyr_node_inds[-1])
         return self.lyrs[-1](tf.expand_dims(x, axis=0))[-1]  # call output layer and return result
 """
-
-
-class Link:
-    """ Connection between two nodes """
-
-    def __init__(self, x1, y1, x2, y2, weight):
-        self.x1 = x1
-        self.y1 = y1
-        self.x2 = x2
-        self.y2 = y2
-        self.weight = weight
-        self.out_node = None  # out node
-        self.in_node = None  # in node
-
-    def __eq__(self, other):
-        return True if self.x1 == other.x1 and self.x2 == other.x2 and self.y1 == other.y1 and self.y2 == other.y2 else False
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
-
-    def __hash__(self):
-        """ optimised hashing for finding unique Links """
-        return hash((self.x1, self.y1, self.x2, self.y2))
-
-
-class Node:
-
-    def __init__(self, x, y, act_func=step_zero, node_ind=None):
-        self.x = x
-        self.y = y
-        self.act_func = step_zero  # act_func if y != 1 else torch.tanh
-        self.ingoing_links = []  # links going into the node
-        self.outgoing_links = []  # links going out of the node
-        self.node_ind = node_ind  # node index, including input nodes
-        self.layer = None  # Layer number. Only used in visualisation
-        self.unit = None  # Position in layer. Only used in visualisation
-
-    def __eq__(self, other):
-        return True if self.x == other.x and self.y == other.y else False
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
-
-    def __hash__(self):
-        """ optimised hashing for finding unique Nodes """
-        return hash((self.x, self.y))
-
-    def add_in_link(self, link):
-        self.ingoing_links.append(link)
-
-    def add_out_link(self, link):
-        self.outgoing_links.append(link)
-
-    def copy(self, link=None, is_in_node=True):
-        """ Create a copy of the node without any links """
-        node_copy = Node(self.x, self.y, act_func=self.act_func)
-        if link is None:
-            pass
-        elif is_in_node:
-            node_copy.add_in_link(link)
-            link.in_node = node_copy
-        else:
-            node_copy.add_out_link(link)
-            link.out_node = node_copy
-        return node_copy
-
-    def update_in_node(self, link):
-        self.add_in_link(link)
-        link.in_node = self
-
-    def update_out_node(self, link):
-        self.add_out_link(link)
-        link.out_node = self
-
