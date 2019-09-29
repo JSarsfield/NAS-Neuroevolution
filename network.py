@@ -166,6 +166,7 @@ class Network:
         self.fitness = self.fitness_unnorm/len(self.genome.species.genomes)
     """
 
+
 class Graph:
     """ computational graph """
 
