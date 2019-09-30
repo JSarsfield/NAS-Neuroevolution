@@ -35,7 +35,7 @@ def evaluation():
     evaluator = EvaluateES(es_algorithms=[],
                            es_init_args=args,
                            num_of_runs=4,
-                           stop_criterion=10)
+                           stop_criterion=100)
     evaluator.run_evaluation()
 
 

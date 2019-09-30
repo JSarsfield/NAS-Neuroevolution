@@ -23,6 +23,7 @@ import pickle
 import datetime
 import os
 import hpc_initialisation
+import feature_map
 
 if __debug__:
     import logging
