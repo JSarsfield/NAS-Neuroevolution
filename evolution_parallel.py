@@ -21,7 +21,7 @@ def parallel_reproduce_eval(parents, n_net_inputs, n_net_outputs, env, env_args)
     os.environ["NUMEXPR_NUM_THREADS"] = "1"
     import numpy as np
     results = []
-    print_thresh = 0  # TODO delete!!!!
+    print_thresh = 10  # TODO delete!!!!
     for parent in parents:
         start = perf_counter()
         # Reproduce from parent genomes
@@ -45,7 +45,7 @@ def parallel_reproduce_eval(parents, n_net_inputs, n_net_outputs, env, env_args)
         if end > print_thresh:
             print("Substrate(): ", end)
         start = perf_counter()
-        net = s.build_network_from_genome(genome, n_net_inputs, n_net_outputs)  # TODO very slow (not often) - can be slow even when genome.create_graph completes quickly
+        net = s.build_network_from_genome(genome, n_net_inputs, n_net_outputs)  # TODO very slow - can be slow even when genome.create_graph completes quickly
         end = perf_counter() - start
         if end > print_thresh:
             print("build_network_from_genome(): ", end)
@@ -59,6 +59,7 @@ def parallel_reproduce_eval(parents, n_net_inputs, n_net_outputs, env, env_args)
             # Evaluate
             start = perf_counter()
             fitness = env(*env_args).evaluate(net)
+            # Calculate feature dimensions
             end = perf_counter() - start
             if end > print_thresh:
                 print("env(*env_args).evaluate(net): ", end)

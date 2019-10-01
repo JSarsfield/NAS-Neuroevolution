@@ -17,7 +17,7 @@ class FeatureMap:
         pass
 
     def performance_dimension(self):
-        """ every map has atleat one performance/fitness metric dimension """
+        """ every map has atleast one performance/fitness metric dimension """
         pass
 
     def update_feature_map(self, genomes):
