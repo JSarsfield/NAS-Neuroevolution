@@ -4,6 +4,13 @@
     A feature map needs to initially define the feature dimension functions for the environment in this module.
     The dimensions of interest funcs can then be saved to a feature_map file for the next time the environment is run.
 
+
+    Types of feature dimensions:
+    1. performance/fitness dimensions e.g. distance walked by biped, energy used by biped
+    2. action dimensions e.g. frequency of a type of action, quantity of the action
+    3. observation/behaviour dimensions e.g. symmetry in biped gait
+    4. phenotypic feature dimensions i.e. neural network features e.g. number of links, nodes and network modularity
+
     __author__ = "Joe Sarsfield"
     __email__ = "joe.sarsfield@gmail.com"
 """
