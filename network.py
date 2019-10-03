@@ -152,7 +152,7 @@ class Network:
         plt.show()
 
     def set_fitness(self, fitness):
-        self.fitness = fitness-(len(self.links)*link_cost_coeff)  # fitness reward minus link/connection cost
+        self.fitness = fitness  # -(len(self.links)*link_cost_coeff)  # fitness reward minus link/connection cost
         self.genome.fitness = self.fitness
 
     def clear_sessions(self):

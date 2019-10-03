@@ -10,7 +10,7 @@ from time import perf_counter  # Accurate timing
 
 
 @ray.remote(num_cpus=1, num_return_vals=1)
-def parallel_reproduce_eval(parents, n_net_inputs, n_net_outputs, env, env_args):
+def parallel_reproduce_eval(parents, n_net_inputs, n_net_outputs, env, env_args, feature_dims):
     global np
     if __debug__:  # TODO delete
         print("running unoptimised, consider using -O flag")
@@ -58,7 +58,7 @@ def parallel_reproduce_eval(parents, n_net_inputs, n_net_outputs, env, env_args)
                 print("net.init_graph(): ", end)
             # Evaluate
             start = perf_counter()
-            fitness = env(*env_args).evaluate(net)
+            fitness = env(*env_args, feature_dims=feature_dims).evaluate(net)
             # Calculate feature dimensions
             end = perf_counter() - start
             if end > print_thresh:

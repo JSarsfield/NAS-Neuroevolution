@@ -8,6 +8,7 @@ from environment import EnvironmentReinforcement, EnvironmentReinforcementCustom
 from evaluate_evolutionary_search import EvaluateES, VisualiseEvaluation
 from config import Exec
 #from game import Game
+import feature_dimensions
 
 
 def single_run():
@@ -28,7 +29,7 @@ def evaluation():
             "env_args": ['BipedalWalker-v2'],
             "session_name": None,
             "gen": None,
-            "execute": Exec.PARALLEL_LOCAL,
+            "execute": Exec.SERIAL,
             "worker_list": "hpc_worker_list_home",
             "persist_every_n_gens": -1,
             "log_to_driver": False}

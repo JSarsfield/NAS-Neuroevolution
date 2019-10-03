@@ -12,7 +12,7 @@ class FeatureMap:
     def __init__(self, load_map=None):
         self.map = []
 
-    def dimension_of_interest(self):
+    def dimensions_of_interest(self):
         """ feature/behaviour of interest, multiple dimensions can exist within the map """
         pass
 

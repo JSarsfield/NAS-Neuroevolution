@@ -8,6 +8,7 @@ __email__ = "joe.sarsfield@gmail.com"
 import numpy as np
 from random import randrange
 from time import sleep
+from feature_dimensions import PerformanceDimension, PhenotypicDimension
 
 
 def get_env_spaces(gym_env_string):
@@ -20,15 +21,33 @@ def get_env_spaces(gym_env_string):
 class Environment:
     """ base class for all environments """
 
-    def __init__(self):
-        pass
+    def __init__(self, feature_dims=None):
+        self.feature_dims = feature_dims
+        self.setup_feature_dimensions()
+
+    def setup_feature_dimensions(self):
+        self.performance_dims = []
+        self.phenotypic_dims = []
+        for dim in self.feature_dims:
+            if isinstance(dim, PerformanceDimension):
+                self.performance_dims.append(dim)
+            elif isinstance(dim, PhenotypicDimension):
+                self.phenotypic_dims.append(dim)
+
+    def calc_performance_dims(self, *args):
+        for dim in self.performance_dims:
+            dim.call(*args)
+
+    def calc_phenotypic_dims(self, *args):
+        for dim in self.phenotypic_dims:
+            dim.call(*args)
 
 
 class EnvironmentReinforcement(Environment):
     """ Reinforcement environments """
 
-    def __init__(self, gym_env_string, parallel=True, trials=1, steps=900):
-        super().__init__()
+    def __init__(self, gym_env_string, parallel=True, trials=1, steps=900, feature_dims=None):
+        super().__init__(feature_dims)
         self.net = None  # Neural network to evaluate
         self.trials = trials  # Fitness = average of all trials
         self.steps = steps  # How many steps should
@@ -72,6 +91,8 @@ class EnvironmentReinforcement(Environment):
             except:
                 print("FAILED to close env during render. Class EnvironmentReinforcement Def evaluate")
         self.net.set_fitness(fitness.max())
+        self.calc_performance_dims(self.net)
+        self.calc_phenotypic_dims(self.net)
         return fitness.max()
 
 

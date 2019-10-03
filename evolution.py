@@ -24,6 +24,7 @@ import datetime
 import os
 import hpc_initialisation
 import feature_map
+import feature_dimensions
 
 if __debug__:
     import logging
@@ -55,7 +56,10 @@ class Evolution:
                  worker_list=None,
                  persist_every_n_gens=10,
                  log_to_driver=False,
-                 evaluator_callback=None):
+                 evaluator_callback=None,
+                 feature_dims=[feature_dimensions.PerformanceDimension(feature_dimensions.fitness_dimension),
+                               feature_dimensions.PhenotypicDimension(feature_dimensions.network_size_dimension)]
+                 ):
         """
         :param pop_size:  size of the population for each generation
         :param environment_type:  env type e.g. reinforcement or classification
@@ -66,10 +70,12 @@ class Evolution:
         :param worker_list:  if running on multiple nodes (hpc) then pass a list of the node ip addresses for communication
         :param persist_every_n_gens: how often to persist evolutionary state to disk, -1 = never persist
         :param evaluator_callback: evaluator callback method for retrieving end of generation info. None = no evaluator
+        :param feature_dims: dimensions of interest for MAP-elites algorithm (guides selection of genomes)
         """
         self.persist_every_n_gens = persist_every_n_gens  # how often should the evolutionary state be saved to disk
         self.persist_counter = 0
         self.evaluator_callback = evaluator_callback
+        self.feature_dims = feature_dims
         self._setup_evolution(pop_size,
                               environment_type,
                               env_args,
@@ -296,7 +302,8 @@ class Evolution:
                                                                   self.n_net_inputs,
                                                                   self.n_net_outputs,
                                                                   self.env,
-                                                                  self.env_args)])
+                                                                  self.env_args,
+                                                                  self.feature_dims)])
             while True:
                 object_ids_available, object_ids_not_ready = ray.wait(object_ids, timeout=1.0)
                 for worker_results in ray.get(object_ids_available):
