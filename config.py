@@ -67,7 +67,9 @@ compatibility_weight_coeff = 2  # Balance the distance calculation against exces
 organisms_to_species_ratio = 6  # Average number of organisms per species to target.
 species_survival_thresh = 0.3  # Fraction of species that is allowed to reproduce for next generation
 interspecies_mating_prob = 0.15  # Chance of genome mating outside of species
-genome_crossover_prob = 0.2  # chance of crossover with another genome instead of copy with mutation
+genome_crossover_prob = 0.9  # chance of crossover with another genome instead of copy with mutation
+# MAP-elites parameters
+crossover_neighbour_elites = 16  # num of nearest neighbour elite genomes to consider for crossover (randomly selected)
 
 diversity_coeff = 1  # increase/decrease the level of mutation based on species sizes and species ages
 

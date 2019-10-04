@@ -17,12 +17,14 @@
     __author__ = "Joe Sarsfield"
     __email__ = "joe.sarsfield@gmail.com"
 """
+import numpy as np
 
 
 class Dimension:
 
-    def __init__(self):
+    def __init__(self, binning=0):
         self.metric = -9999
+        self.binning = binning
 
 
 class PerformanceDimension(Dimension):
@@ -33,7 +35,7 @@ class PerformanceDimension(Dimension):
         self.calc_metric_func = calc_metric_func
 
     def call(self, network):
-        self.metric = self.calc_metric_func(network)
+        self.metric = np.around(self.calc_metric_func(network), self.binning).astype(np.int)
 
 
 class PhenotypicDimension(Dimension):
@@ -44,7 +46,7 @@ class PhenotypicDimension(Dimension):
         self.calc_metric_func = calc_metric_func
 
     def call(self, network):
-        self.metric = self.calc_metric_func(network)
+        self.metric = np.around(self.calc_metric_func(network), self.binning).astype(np.int)
 
 
 class ActionDimension(Dimension):
@@ -66,10 +68,15 @@ def fitness_dimension(network):
     return network.fitness
 
 
-def network_size_dimension(network):
-    """ neural network size. Number of links + number of nodes """
+def network_links_dimension(network):
+    """ Number of links """
     # todo consider calculating size as sum of length of links
     return len(network.links)
+
+
+def network_nodes_dimension(network):
+    """ Number of nodes """
+    return len(network.nodes)
 
 
 def biped_symmetry_dimension():

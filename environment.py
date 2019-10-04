@@ -21,7 +21,7 @@ def get_env_spaces(gym_env_string):
 class Environment:
     """ base class for all environments """
 
-    def __init__(self, feature_dims=None):
+    def __init__(self, feature_dims=[]):
         self.feature_dims = feature_dims
         self.setup_feature_dimensions()
 
@@ -46,7 +46,7 @@ class Environment:
 class EnvironmentReinforcement(Environment):
     """ Reinforcement environments """
 
-    def __init__(self, gym_env_string, parallel=True, trials=1, steps=900, feature_dims=None):
+    def __init__(self, gym_env_string, parallel=True, trials=1, steps=900, feature_dims=[]):
         super().__init__(feature_dims)
         self.net = None  # Neural network to evaluate
         self.trials = trials  # Fitness = average of all trials

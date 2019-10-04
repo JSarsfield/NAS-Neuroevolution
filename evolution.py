@@ -23,7 +23,7 @@ import pickle
 import datetime
 import os
 import hpc_initialisation
-import feature_map
+from feature_map import FeatureMap
 import feature_dimensions
 
 if __debug__:
@@ -58,7 +58,8 @@ class Evolution:
                  log_to_driver=False,
                  evaluator_callback=None,
                  feature_dims=[feature_dimensions.PerformanceDimension(feature_dimensions.fitness_dimension),
-                               feature_dimensions.PhenotypicDimension(feature_dimensions.network_size_dimension)]
+                               feature_dimensions.PhenotypicDimension(feature_dimensions.network_links_dimension),
+                               feature_dimensions.PhenotypicDimension(feature_dimensions.network_nodes_dimension)]
                  ):
         """
         :param pop_size:  size of the population for each generation
@@ -76,6 +77,7 @@ class Evolution:
         self.persist_counter = 0
         self.evaluator_callback = evaluator_callback
         self.feature_dims = feature_dims
+        self.feature_map = FeatureMap(feature_dims)
         self._setup_evolution(pop_size,
                               environment_type,
                               env_args,
@@ -116,8 +118,8 @@ class Evolution:
             self.genomes = []  # Genomes in the current population
             self.compatibility_dist = compatibility_dist_init
             self.target_num_species = round(pop_size / organisms_to_species_ratio)
-            self.best = []  # print best fitnesses for all generations TODO this is debug
-            self.evolution_champs = []  # fittest genomes over all generations
+            #self.best = []  # print best fitnesses for all generations TODO this is debug
+            #self.evolution_champs = []  # fittest genomes over all generations
             self.act_set = ActivationFunctionSet()
             self.node_set = NodeFunctionSet()
             self.env_args = env_args
@@ -141,12 +143,12 @@ class Evolution:
             self.pop_size, self.target_num_species, self.act_set, self.node_set, self.env_args = pickle.load(f)
         # load generation variables
         with open(self.save_dir + "gen" + str(self.generation) + "--" + self.session_name + ".pkl", "rb") as f:
-            self.genomes, self.evolution_champs, self.best, self.gene_pool, self.compatibility_dist = pickle.load(f)
+            self.genomes, self.feature_map, self.feature_dims, self.gene_pool, self.compatibility_dist = pickle.load(f)
 
     def _save_evolutionary_state(self):
         """ save the current state of the evolutionary search to disk """
         with open(self.save_dir + "gen" + str(self.generation) + "--" + self.session_name + ".pkl", "wb") as f:
-            pickle.dump([self.genomes, self.evolution_champs, self.best, self.gene_pool, self.compatibility_dist], f)
+            pickle.dump([self.genomes, self.feature_map, self.feature_dims, self.gene_pool, self.compatibility_dist], f)
 
     def _get_initial_population(self):
         while len(self.genomes) != self.pop_size:
@@ -159,6 +161,9 @@ class Evolution:
             self.genomes.append(genome)
             if __debug__:
                 self.logger.info("Added genome " + str(len(self.genomes)) + " of " + str(self.pop_size))
+        self.parent_genomes = []
+        for i in range(self.pop_size):
+            self.parent_genomes.append((self.genomes[i], True))
 
     def begin_evolution(self):
         if __debug__:
@@ -166,11 +171,13 @@ class Evolution:
         while True:  # For infinite generations
             if __debug__:
                 self.logger.info("Start of generation " + str(self.generation))
-            self._speciate_genomes()
+            #self._speciate_genomes()
             if __debug__:
                 self.logger.info("Num of species " + str(len(self.species)))
-            parent_genomes = self._match_genomes()
-            self._reproduce_and_eval_generation(parent_genomes)
+            #parent_genomes = self._match_genomes()
+            self._reproduce_and_eval_generation(self.parent_genomes)
+            self.feature_map.update_feature_map(self.genomes)
+            self.parent_genomes = self.feature_map.sample_feature_map(self.pop_size)
             if __debug__:
                 self.logger.info("New generation reproduced")
             self._generation_stats()
@@ -331,35 +338,20 @@ class Evolution:
         self.genomes = new_genomes
 
     def _generation_stats(self):
-        self.genomes.sort(key=lambda genome: genome.fitness,
-                              reverse=True)  # Sort nets by fitness - element 0 = fittest
-        self.best.append(self.genomes[0].fitness)
-        self.best = self.best[-100:]
+        #self.genomes.sort(key=lambda genome: genome.fitness, reverse=True)  # Sort nets by fitness - element 0 = fittest
+        best = self.feature_map.get_fittest_genome()
         if __debug__:
-            self.logger.info("Best fitnesses " + str(self.best))
+            self.logger.info("Best fitnesses " + str(best["fitness"]))
         if keyboard.is_pressed('v'):
             # Visualise generation best
-            self.genomes[0].create_graph()
-            gen_best_net = Substrate().build_network_from_genome(self.genomes[0], self.n_net_inputs, self.n_net_outputs)
+            best["genome"].create_graph()
+            gen_best_net = Substrate().build_network_from_genome(best["genome"], self.n_net_inputs, self.n_net_outputs)
             gen_best_net.init_graph()
             gen_best_net.visualise_neural_net()
             gen_best_net.genome.visualise_cppn()
             self.env(*self.env_args, trials=1).evaluate(gen_best_net, render=True)
             gen_best_net.graph = None
-            self.genomes[0].net = None
-            # Visualise overall best (champ)
-            if self.evolution_champs[0].graph is None:
-                self.evolution_champs[0].create_graph()
-            self.evolution_champs[0].create_graph()
-            champ_net = Substrate().build_network_from_genome(self.evolution_champs[0], self.n_net_inputs, self.n_net_outputs)
-            if champ_net.is_void is False:
-                champ_net.init_graph()
-                champ_net.visualise_neural_net()
-                champ_net.genome.visualise_cppn()
-                self.env(*self.env_args, trials=1).evaluate(champ_net, render=True)
-            champ_net.graph = None
-            self.evolution_champs[0].net = None
-            self.evolution_champs[0].graph = None
+            best["genome"].net = None
 
     def _check_persist(self):
         """ check whether to persist evolutionary state to disk """
