@@ -32,6 +32,8 @@ class CPPNGenome:
                  fitness=-9999):  #, var_thresh=0.3, band_thresh=0):
         self.weights = None  # Weight of links in graph. Sampled from parent/s genome/s or uniform distribution when no parent
         self.fitness = fitness  # Copy of fitness obtained from network
+        self.performance_dims = None  # Set in environment. MAP elites
+        self.phenotypic_dims = None  # MAP elites
         self.gene_nodes = copy.deepcopy(gene_nodes)
         self.gene_nodes_in = copy.deepcopy(gene_nodes_in)
         self.gene_links = []

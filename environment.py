@@ -93,6 +93,8 @@ class EnvironmentReinforcement(Environment):
         self.net.set_fitness(fitness.max())
         self.calc_performance_dims(self.net)
         self.calc_phenotypic_dims(self.net)
+        net.genome.performance_dims = self.performance_dims
+        net.genome.phenotypic_dims = self.phenotypic_dims
         return fitness.max()
 
 

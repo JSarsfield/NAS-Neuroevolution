@@ -22,7 +22,7 @@ def initialise_hpc(worker_list, local_mode=False, log_to_driver=True):
     logical_processors = multiprocessing.cpu_count()-1
     redis_port = "15357"
     address = ip + ":" + redis_port
-    os.system("ray start --head --redis-port="+redis_port+" --include-webui --load-code-from-local")  # start server
+    os.system("ray start --head --redis-port="+redis_port+" --load-code-from-local")  # start server --include-webui
     ray.init(address=address, local_mode=local_mode, log_to_driver=log_to_driver)  # initialise cluster for calling remote on master node
     if worker_list is not None:
         host_address = address
