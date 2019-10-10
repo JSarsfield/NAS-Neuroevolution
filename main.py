@@ -24,12 +24,12 @@ def single_run():
 
 
 def evaluation():
-    args = {"pop_size": 512,
+    args = {"pop_size": 1024,
             "environment_type": EnvironmentReinforcement,
             "env_args": ['BipedalWalker-v2'],
             "session_name": None,
             "gen": None,
-            "execute": Exec.PARALLEL_LOCAL,
+            "execute": Exec.SERIAL,
             "worker_list": "hpc_worker_list_home",
             "persist_every_n_gens": -1,
             "log_to_driver": False}
@@ -60,5 +60,5 @@ if __name__ == "__main__":
         print("OPTIMISED")
     #single_run()
     evaluation()
-    #VisualiseEvaluation("./evaluations/evaluation_2019-09-22_22:48:46.407820/eval.pkl")
+    # VisualiseEvaluation("./evaluations/evaluation_2019-10-07_13:53:56.919307/eval.pkl")
     print("end")

@@ -39,11 +39,11 @@ guass_freq_adjust = 0.02  # adjust function frequency
 sin_freq_adjust = 0.02
 func_amp_adjust = 0.02  # adjust function amplitude
 func_vshift_adjust = 0.02  # adjust function vertical shift
-func_amp_range = 0.5  # init ranges
-gauss_freq_range = 0.5
+func_amp_range = 0.1  # init ranges
+gauss_freq_range = 0.1
 sin_freq_range = 6
-gauss_vshift_range = 0.25
-sin_vshift_range = 1
+gauss_vshift_range = 0.1
+sin_vshift_range = 0.1
 # es-hyperneat params
 init_var_thresh = 0.3
 init_band_thresh = 0

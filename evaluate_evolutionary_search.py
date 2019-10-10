@@ -42,7 +42,7 @@ class EvaluateES:
         self.num_of_runs = num_of_runs
         self.metrics = []  # performance metrics for each ES
         self.evaluation_name = "evaluation_" + str(datetime.datetime.now()).replace(" ", "_")
-        self.save_dir = "/home/joe-desktop-lab/Projects/NAS-Neuroevolution/evaluations/" + self.evaluation_name + "/"
+        self.save_dir = "/home/joe/Projects/NAS-Neuroevolution/evaluations/" + self.evaluation_name + "/"
         try:
             os.mkdir(self.save_dir)
         except:

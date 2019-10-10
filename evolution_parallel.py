@@ -7,6 +7,8 @@ import ray
 import os
 import cython
 from time import perf_counter  # Accurate timing
+# TODO DELETE network_modularity_dimension import, just for testing
+from feature_dimensions import network_modularity_dimension
 
 
 @ray.remote(num_cpus=1, num_return_vals=1)
@@ -50,6 +52,7 @@ def parallel_reproduce_eval(parents, n_net_inputs, n_net_outputs, env, env_args,
         if end > print_thresh:
             print("build_network_from_genome(): ", end)
         if not net.is_void:
+            network_modularity_dimension(net)  # TODO DELETE THIS!!
             start = perf_counter()
             print("start of init_graph")
             net.init_graph()  # init TF graph

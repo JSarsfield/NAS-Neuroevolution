@@ -338,12 +338,12 @@ class Evolution:
         self.genomes = new_genomes
 
     def _generation_stats(self):
-        #self.genomes.sort(key=lambda genome: genome.fitness, reverse=True)  # Sort nets by fitness - element 0 = fittest
-        best = self.feature_map.get_fittest_genome()
+        """ print gen stats when in debug or process visualisation if key pressed """
         if __debug__:
             self.logger.info("Best fitnesses " + str(best["fitness"]))
         if keyboard.is_pressed('v'):
             # Visualise generation best
+            best = self.feature_map.get_fittest_genome()
             best["genome"].create_graph()
             gen_best_net = Substrate().build_network_from_genome(best["genome"], self.n_net_inputs, self.n_net_outputs)
             gen_best_net.init_graph()
@@ -364,6 +364,7 @@ class Evolution:
     def _process_callbacks_and_stop(self):
         """ process any callbacks and check if evaluator stopping condition is met, True = stop evaluating """
         if self.evaluator_callback is not None:
+            self.genomes.sort(key=lambda genome: genome.fitness, reverse=True)  # Sort nets by fitness - element 0 = fittest
             return self.evaluator_callback(self.generation, self.genomes[0].fitness)  # pass generation info to evaluator callback
         return False
 

@@ -81,10 +81,14 @@ def network_nodes_dimension(network):
 
 def network_modularity_dimension(network):
     """ calculate the modularity of the neural network """
-    m = len(network.links)
-    m2 = m*2
-    norm = 1/m2
-
+    #m = len(network.links)
+    #m2 = m*2
+    #norm = 1/m2
+    nodes = network.input_nodes + network.nodes
+    while True:  # while no further divisions of communities (maximisation of Q)
+        modularity_matrix = []
+        for node in nodes:
+            pass
 
 def biped_symmetry_dimension():
     """ for biped walking environments, quantity measuring the symmetry of the legs """
