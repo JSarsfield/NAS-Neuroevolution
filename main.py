@@ -24,12 +24,12 @@ def single_run():
 
 
 def evaluation():
-    args = {"pop_size": 1024,
+    args = {"pop_size": 512,
             "environment_type": EnvironmentReinforcement,
             "env_args": ['BipedalWalker-v2'],
             "session_name": None,
             "gen": None,
-            "execute": Exec.SERIAL,
+            "execute": Exec.PARALLEL_LOCAL,
             "worker_list": "hpc_worker_list_home",
             "persist_every_n_gens": -1,
             "log_to_driver": False}

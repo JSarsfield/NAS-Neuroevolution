@@ -52,7 +52,7 @@ def parallel_reproduce_eval(parents, n_net_inputs, n_net_outputs, env, env_args,
         if end > print_thresh:
             print("build_network_from_genome(): ", end)
         if not net.is_void:
-            network_modularity_dimension(net)  # TODO DELETE THIS!!
+            #network_modularity_dimension(net)  # TODO DELETE THIS!!
             start = perf_counter()
             print("start of init_graph")
             net.init_graph()  # init TF graph

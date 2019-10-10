@@ -135,8 +135,8 @@ def tanh(x, w=None, b=0):
 
 
 def step(x, w=None, b=None):
-    x = np.dot(x, w)+b
-    return 1 if x > 0.5 else 0
+    x = np.dot(x, w)
+    return 1 if x > 0 else 0
 
 
 def gaussian(x, w=None, b=None, freq=0.314, amp=2, vshift=-1):

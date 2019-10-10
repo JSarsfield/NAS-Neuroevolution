@@ -110,9 +110,11 @@ class Network:
         G = nx.DiGraph()
         layer_ind = 0
         node_ind = 0
+        color_map = []
         for node in self.input_nodes:
             node.layer = layer_ind
             node.unit = node_ind
+            color_map.append(node.color)
             G.add_node((node.layer, node.unit), pos=(node.y, node.x))
             node_ind += 1
         layer_ind = 1
@@ -129,6 +131,7 @@ class Network:
                 node.layer = layer_ind
                 node.unit = node_ind
             node_ind += 1
+            color_map.append(node.color)
             G.add_node((node.layer, node.unit), pos=(node.y, node.x))
             for link in node.ingoing_links:
                 G.add_edge((link.out_node.layer, link.out_node.unit),
@@ -144,7 +147,7 @@ class Network:
         nx.draw_networkx(G,
                          pos=pos,
                          node_size=650,
-                         node_color='#ffaaaa',
+                         node_color=color_map,
                          linewidth=100,
                          with_labels=True,
                          edge_color=colors,
@@ -228,6 +231,7 @@ class Node:
         self.node_ind = None  # node index, including input nodes
         self.layer = None  # Layer number. Only used in visualisation
         self.unit = None  # Position in layer. Only used in visualisation
+        self.color = "#ffaaaa"
 
     def __eq__(self, other):
         return True if self.x == other.x and self.y == other.y else False

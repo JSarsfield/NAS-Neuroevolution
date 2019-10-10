@@ -64,7 +64,7 @@ class Substrate:
                         link_out = genome.graph([out_node.x, out_node.y, in_node.x, in_node.y])
                         weight = link_out[0]
                         leo = link_out[1]
-                        # if express node
+                        # if express link
                         if leo == 1:
                             link = Link(out_node.x, out_node.y, in_node.x, in_node.y, weight)
                             links.append(link)
