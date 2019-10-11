@@ -54,9 +54,9 @@ class FeatureMap:
             genome_keys = random.sample(self.coords_to_genome.keys(), k=min(len(self.coords_to_genome.keys()), n_samples))
             for key in genome_keys:
                 if event(genome_crossover_prob):  # crossover
-                    neighbours = tree.query([key], crossover_neighbour_elites)
+                    neighbours = tree.query([key], crossover_neighbour_elites)[1][0][1:]
                     parent_genomes.append((self.coords_to_genome[key]["genome"],
-                                           self.coords_to_genome[tuple(tree.data[random.choice(tree.query([key], crossover_neighbour_elites)[1][0][1:])])]["genome"]))
+                                           self.coords_to_genome[tuple(tree.data[random.choice(neighbours)])]["genome"]))
                 else:  # self mutate
                     parent_genomes.append((self.coords_to_genome[key]["genome"], True))
                 if len(parent_genomes) == n_samples:

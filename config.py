@@ -23,8 +23,8 @@ bias_max_value = 5
 bias_min_value = -5
 bias_mutate_rate = 0.1
 bias_replace_rate = 0.002
-bias_init_min = -2  # min value of bias initialisation range
-bias_init_max = 2  # max value of bias initialisation range
+bias_init_min = -0.5  # min value of bias initialisation range
+bias_init_max = 0.5  # max value of bias initialisation range
 # structural params
 link_toggle_prob = 0.05  # Chance of link being toggled between enabled/disabled
 link_add_prob = 0.1  # Chance of adding a new link
@@ -39,10 +39,10 @@ guass_freq_adjust = 0.02  # adjust function frequency
 sin_freq_adjust = 0.02
 func_amp_adjust = 0.02  # adjust function amplitude
 func_vshift_adjust = 0.02  # adjust function vertical shift
-func_amp_range = 0.1  # init ranges
-gauss_freq_range = 0.1
+func_amp_range = 4  # init ranges
+gauss_freq_range = 1
 sin_freq_range = 6
-gauss_vshift_range = 0.1
+gauss_vshift_range = 0.5
 sin_vshift_range = 0.1
 # es-hyperneat params
 init_var_thresh = 0.3

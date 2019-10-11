@@ -58,8 +58,9 @@ class Evolution:
                  log_to_driver=False,
                  evaluator_callback=None,
                  feature_dims=[feature_dimensions.PerformanceDimension(feature_dimensions.fitness_dimension),
-                               feature_dimensions.PhenotypicDimension(feature_dimensions.network_links_dimension),
-                               feature_dimensions.PhenotypicDimension(feature_dimensions.network_nodes_dimension)]
+                               feature_dimensions.PhenotypicDimension(feature_dimensions.network_link_cost_dimension, binning=1),
+                               feature_dimensions.PhenotypicDimension(feature_dimensions.network_links_dimension, binning=-50),
+                               feature_dimensions.PhenotypicDimension(feature_dimensions.network_modularity_dimension, binning=1)]
                  ):
         """
         :param pop_size:  size of the population for each generation

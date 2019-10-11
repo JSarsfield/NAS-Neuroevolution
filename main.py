@@ -24,7 +24,7 @@ def single_run():
 
 
 def evaluation():
-    args = {"pop_size": 512,
+    args = {"pop_size": 2048,
             "environment_type": EnvironmentReinforcement,
             "env_args": ['BipedalWalker-v2'],
             "session_name": None,
@@ -36,7 +36,7 @@ def evaluation():
     evaluator = EvaluateES(es_algorithms=[],
                            es_init_args=args,
                            num_of_runs=4,
-                           stop_criterion=100)
+                           stop_criterion=1000)
     evaluator.run_evaluation()
 
 

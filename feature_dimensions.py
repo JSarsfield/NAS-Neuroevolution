@@ -18,6 +18,8 @@
     __email__ = "joe.sarsfield@gmail.com"
 """
 import numpy as np
+import igraph
+from scipy.spatial import distance
 
 
 class Dimension:
@@ -30,23 +32,23 @@ class Dimension:
 class PerformanceDimension(Dimension):
     """  performance/fitness dimensions e.g. distance walked by biped, energy used by biped """
 
-    def __init__(self, calc_metric_func):
-        super().__init__()
+    def __init__(self, calc_metric_func, binning=3):
+        super().__init__(binning=binning)
         self.calc_metric_func = calc_metric_func
 
     def call(self, network):
-        self.metric = np.around(self.calc_metric_func(network), self.binning).astype(np.int)
+        self.metric = np.around(self.calc_metric_func(network), self.binning).astype(np.float)
 
 
 class PhenotypicDimension(Dimension):
     """ phenotypic feature dimensions i.e. neural network features e.g. num of links, nodes and network modularity """
 
-    def __init__(self, calc_metric_func):
-        super().__init__()
+    def __init__(self, calc_metric_func, binning=3):
+        super().__init__(binning=binning)
         self.calc_metric_func = calc_metric_func
 
     def call(self, network):
-        self.metric = np.around(self.calc_metric_func(network), self.binning).astype(np.int)
+        self.metric = np.around(self.calc_metric_func(network), self.binning).astype(np.float)
 
 
 class ActionDimension(Dimension):
@@ -70,8 +72,31 @@ def fitness_dimension(network):
 
 def network_links_dimension(network):
     """ Number of links """
-    # todo consider calculating size as sum of length of links
     return len(network.links)
+
+
+def network_link_cost_dimension(network):
+    """ Connection cost """
+    total_dist = 0
+    for l in network.links:
+        total_dist += distance.euclidean((l.in_node.x, l.in_node.y), (l.out_node.x, l.out_node.y))
+    return total_dist / len(network.links)
+
+
+def network_link_costx_dimension(network):
+    """ Connection cost """
+    total_dist = 0
+    for l in network.links:
+        total_dist += abs(l.in_node.x - l.out_node.x)
+    return total_dist / len(network.links)
+
+
+def network_link_costy_dimension(network):
+    """ Connection cost """
+    total_dist = 0
+    for l in network.links:
+        total_dist += abs(l.in_node.y - l.out_node.y)
+    return total_dist / len(network.links)
 
 
 def network_nodes_dimension(network):
@@ -81,26 +106,27 @@ def network_nodes_dimension(network):
 
 def network_modularity_dimension(network):
     """ calculate the modularity of the neural network """
-    m = len(network.links)
-    m2 = m*2
-    #norm = 1/m2
-    input_nodes = [node for node in network.input_nodes if len(node.outgoing_links)+len(node.ingoing_links) > 0]
-    nodes = input_nodes + network.nodes
-    modularity_matrix = np.zeros(shape=(len(nodes), len(nodes)))
-    #while True:  # while no further divisions of communities (maximisation of Q)
-    for j, out_node in enumerate(nodes):
-        in_nodes = [l.in_node for l in out_node.outgoing_links]
-        for i, in_node in enumerate(nodes):
-            aij = 1 if in_node in in_nodes else 0
-            modularity_matrix[i, j] = aij - ((len(in_node.ingoing_links) * len(out_node.outgoing_links)) / m)
-            #modularity_matrix[i, j] = aij - (((len(in_node.ingoing_links) + len(in_node.outgoing_links)) * (len(out_node.ingoing_links) + len(out_node.outgoing_links))) / m2)
-    sym_matrix = modularity_matrix + modularity_matrix.transpose()
-    eig_val, eig_vec = np.linalg.eig(sym_matrix)
-    grouping = eig_vec[np.argmax(eig_val)].real
-    for i, g in enumerate(grouping):
-        nodes[i].color = "red" if g < 0 else "blue"
-    network.visualise_neural_net()
-    print("")
+    import random
+    #if random.randint(1, 256) == 1:
+    g = igraph.Graph(directed=True)
+    nodes = network.input_nodes + network.nodes
+    links = [(link.out_node.node_ind, link.in_node.node_ind) for link in network.links]
+    #nodes = list(set(sum(links, ())))
+    #layout = g.layout("layout_drl")
+    g.add_vertices(len(nodes))
+    """
+    for i, v in enumerate(g.vs):
+        v["x"] = nodes[i].x
+        v["y"] = nodes[i].y
+    """
+    g.add_edges(links)
+    comms = g.community_infomap()
+    return comms.q
+    #if comms.modularity == 0:
+    #igraph.plot(comms, mark_groups=True)
+    #igraph.plot(g, vertex_color=[color_list[x] for x in community.membership])
+    #print("")
+
 
 def biped_symmetry_dimension():
     """ for biped walking environments, quantity measuring the symmetry of the legs """
