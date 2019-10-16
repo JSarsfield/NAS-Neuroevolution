@@ -59,7 +59,7 @@ class Evolution:
                  evaluator_callback=None,
                  feature_dims=[feature_dimensions.PerformanceDimension(feature_dimensions.fitness_dimension),
                                feature_dimensions.PhenotypicDimension(feature_dimensions.network_link_cost_dimension, binning=1),
-                               feature_dimensions.PhenotypicDimension(feature_dimensions.network_links_dimension, binning=-50),
+                               feature_dimensions.PhenotypicDimension(feature_dimensions.network_links_dimension, binning=-2),
                                feature_dimensions.PhenotypicDimension(feature_dimensions.network_modularity_dimension, binning=1)]
                  ):
         """
