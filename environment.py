@@ -139,7 +139,29 @@ class EnvironmentClassification(Environment):
     # TODO !!! be careful of overfitting during evolution consider creating a probability distribution of the dataset and sampling from that
     # TODO also reset weights before training and evaluating on new test data
 
-    def __init__(self, dataset):
+    def __init__(self, dataset_file):
         super().__init__()
-        self.dataset = dataset
+        global pd
+        import pandas as pd
+        self.data = self.load_data(dataset_file)
+        self.features, self.labels = self.get_features(self.data)
+
+    def load_data(self, dataset_file):
+        return pd.read_csv(dataset_file)
+
+    def get_features(self, data):
+        """
+        Load features from file
+        """
+        features = data[np.array(data.columns.values)[[3, 4, 5, 6, 7, 8,
+                                                       9]]].values  # Features: BodySpeed, EEGAB, EYEDwell, EYEScan, EyesOffScreen, PressesCount, SingleFastPresses
+        labels = data["Targets"].values
+        labels[labels == "correct"] = 1
+        labels[labels == "mistake"] = 0
+        features_temp = np.empty((0, 2, 7))
+        labels_temp = np.array([])
+        for i in range(len(features) - 1):
+            features_temp = np.concatenate((features_temp, [np.array([features[i], features[i + 1]])]), axis=0)
+            labels_temp = np.append(labels_temp, labels[i + 1])
+        return features_temp, labels_temp
 
