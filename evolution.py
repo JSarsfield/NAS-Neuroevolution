@@ -123,14 +123,15 @@ class Evolution:
             #self.evolution_champs = []  # fittest genomes over all generations
             self.act_set = ActivationFunctionSet()
             self.node_set = NodeFunctionSet()
-            self.env_args = env_args
             self.env = environment_type
             if environment_type is EnvironmentReinforcement:
+                self.env_args = env_args
                 self.n_net_inputs, self.n_net_outputs = get_env_spaces(self.env_args[0])
             elif environment_type is EnvironmentClassification:
                 self.features, self.labels = EnvironmentClassification.load_dataset(env_args[0])
                 self.n_net_inputs = self.features.shape[-1]
                 self.n_net_outputs = env_args[1]
+                self.env_args = [self.features, self.labels]
             else:
                 self.n_net_inputs, self.n_net_outputs = 1, 1  # TODO this is debug
             if self.persist_every_n_gens != -1:
