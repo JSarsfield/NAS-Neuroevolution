@@ -10,7 +10,7 @@ from genome import CPPNGenome
 import math
 #from time import perf_counter  # Accurate timing
 from substrate import Substrate
-from environment import EnvironmentReinforcement, get_env_spaces
+from environment import EnvironmentReinforcement, EnvironmentClassification, get_env_spaces
 from species import Species
 from config import *
 from activations import ActivationFunctionSet, NodeFunctionSet
@@ -127,6 +127,10 @@ class Evolution:
             self.env = environment_type
             if environment_type is EnvironmentReinforcement:
                 self.n_net_inputs, self.n_net_outputs = get_env_spaces(self.env_args[0])
+            elif environment_type is EnvironmentClassification:
+                self.features, self.labels = EnvironmentClassification.load_dataset(env_args[0])
+                self.n_net_inputs = self.features.shape[-1]
+                self.n_net_outputs = env_args[1]
             else:
                 self.n_net_inputs, self.n_net_outputs = 1, 1  # TODO this is debug
             if self.persist_every_n_gens != -1:

@@ -15,10 +15,10 @@ def single_run():
     from evolution import Evolution
     evolution = Evolution(pop_size=256,
                           environment_type=EnvironmentClassification,
-                          env_args=['Oakfield_data.csv'], # CartPole-v0 BipedalWalker-v2 MountainCarContinuous-v0 HandManipulateBlock-v0
+                          env_args=['Oakfield_data.csv', 2], # CartPole-v0 BipedalWalker-v2 MountainCarContinuous-v0 HandManipulateBlock-v0
                           session_name=None, # if None new evolutionary search will be started
                           gen=None,
-                          execute=Exec.PARALLEL_LOCAL,
+                          execute=Exec.SERIAL,
                           worker_list="hpc_worker_list_home",
                           persist_every_n_gens=-1,
                           log_to_driver=False)

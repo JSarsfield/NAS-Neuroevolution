@@ -139,17 +139,20 @@ class EnvironmentClassification(Environment):
     # TODO !!! be careful of overfitting during evolution consider creating a probability distribution of the dataset and sampling from that
     # TODO also reset weights before training and evaluating on new test data
 
-    def __init__(self, dataset_file):
+    def __init__(self, dataset_file, gradient_based_learning=False):
         super().__init__()
+        self.gradient_based_learning = gradient_based_learning
+
+    @staticmethod
+    def load_dataset(dataset_file):
         global pd
         import pandas as pd
-        self.data = self.load_data(dataset_file)
-        self.features, self.labels = self.get_features(self.data)
+        data = pd.read_csv("./datasets/"+dataset_file)
+        features, labels = EnvironmentClassification.get_features(data)
+        return features, labels
 
-    def load_data(self, dataset_file):
-        return pd.read_csv(dataset_file)
-
-    def get_features(self, data):
+    @staticmethod
+    def get_features(data):
         """
         Load features from file
         """
@@ -164,4 +167,14 @@ class EnvironmentClassification(Environment):
             features_temp = np.concatenate((features_temp, [np.array([features[i], features[i + 1]])]), axis=0)
             labels_temp = np.append(labels_temp, labels[i + 1])
         return features_temp, labels_temp
+
+    def evaluate(self):
+        """ evaluate the neural net, perform any lifetime learning """
+        tp = 0
+        fn = 0
+        tn = 0
+        fp = 0
+        if self.gradient_based_learning is False:
+            output = self.net.graph(sample)
+
 
