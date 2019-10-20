@@ -185,7 +185,10 @@ class Graph:
             for link in node.ingoing_links:
                 self.layer_in_node_inds[-1].append(link.out_node.node_ind)
                 layer_weights.append(link.weight)
-            self.layer_funcs.append(partial(tanh, **{"w": np.array(layer_weights, dtype=np.float32)}))
+            if node.y == 1:  # TODO delete this, THIS NEEDS RETHINKING AS IT IS DEPENDENT ON ENVIRONMENT!!!!!!!!!!!!
+                self.layer_funcs.append(partial(tanh, **{"w": np.array(layer_weights, dtype=np.float32)}))
+            else:
+                self.layer_funcs.append(partial(tanh, **{"w": np.array(layer_weights, dtype=np.float32)}))
             self.activ_update_inds.append(np.arange(self.activ_update_inds[-1][-1] + 1, self.activ_update_inds[-1][-1] + 2))
 
     def __call__(self, x):

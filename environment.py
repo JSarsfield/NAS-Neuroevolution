@@ -139,8 +139,11 @@ class EnvironmentClassification(Environment):
     # TODO !!! be careful of overfitting during evolution consider creating a probability distribution of the dataset and sampling from that
     # TODO also reset weights before training and evaluating on new test data
 
-    def __init__(self, dataset_file, gradient_based_learning=False):
-        super().__init__()
+    def __init__(self, features, labels, gradient_based_learning=False, feature_dims=[]):
+        super().__init__(feature_dims)
+        self.net = None  # Neural network to evaluate
+        self.features = features
+        self.labels = labels
         self.gradient_based_learning = gradient_based_learning
 
     @staticmethod
@@ -166,15 +169,56 @@ class EnvironmentClassification(Environment):
         for i in range(len(features) - 1):
             features_temp = np.concatenate((features_temp, [np.array([features[i], features[i + 1]])]), axis=0)
             labels_temp = np.append(labels_temp, labels[i + 1])
-        return features_temp, labels_temp
+        return features_temp, np.eye(2)[labels_temp.astype(int)]  # one hot encoding
 
-    def evaluate(self):
+    def evaluate(self, net):
         """ evaluate the neural net, perform any lifetime learning """
+        if net.is_void:
+            return -9999  # return low fitness for void networks
+        self.net = net
         tp = 0
         fn = 0
         tn = 0
         fp = 0
+        y_pred = []
         if self.gradient_based_learning is False:
-            output = self.net.graph(sample)
+            for i, sample in enumerate(self.features):
+                y = net.graph(sample[-1])
+                y = np.exp(y) / np.sum(np.exp(y), axis=0)  # softmax
+                y_pred.append(y)
+                y_arg = np.argmax(y)
+                y_arg_true = np.argmax(self.labels[i])
+                if y_arg == y_arg_true:  # TP or TN
+                    if y_arg == 1:
+                        tp += 1
+                    else:
+                        tn += 1
+                else:  # FP or FN
+                    if y_arg == 0:  # FN
+                        fn += 1
+                    else:  # FP
+                        fp += 1
+        fitness = self.weighted_categorical_crossentropy(self.labels, y_pred)
+        self.net.set_fitness(fitness)
+        self.calc_performance_dims(self.net)
+        self.calc_phenotypic_dims(self.net)
+        net.genome.performance_dims = self.performance_dims
+        net.genome.phenotypic_dims = self.phenotypic_dims
+        net.genome.tp = tp
+        net.genome.tn = tn
+        net.genome.fn = fn
+        net.genome.fp = fp
+        return fitness
+
+    def weighted_categorical_crossentropy(self, y_true, y_pred):
+        """
+        Weighted categorical crossentropy
+        """
+        y_pred = np.clip(y_pred, np.finfo(float).eps, 1 - np.finfo(float).eps) # clip to prevent NaN's and Inf's
+        weights = np.flip(np.sum(y_true, axis=0)/len(y_true))
+        #weights /= np.sum(weights, axis=-1, keepdims=True)  # scale weights to sum to 1
+        #weights = np.expand_dims(weights, axis=1)
+        log_diff = (y_true * np.log(y_pred)) * weights
+        return np.sum(1+np.sum(log_diff, -1))/len(log_diff)
 
 

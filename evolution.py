@@ -15,7 +15,7 @@ from species import Species
 from config import *
 from activations import ActivationFunctionSet, NodeFunctionSet
 import keyboard
-from evolution_parallel import parallel_reproduce_eval
+from evolution_worker import worker_main
 import random
 import ray
 from collections import deque
@@ -131,7 +131,6 @@ class Evolution:
                 self.features, self.labels = EnvironmentClassification.load_dataset(env_args[0])
                 self.n_net_inputs = self.features.shape[-1]
                 self.n_net_outputs = env_args[1]
-                self.env_args = [self.features, self.labels]
             else:
                 self.n_net_inputs, self.n_net_outputs = 1, 1  # TODO this is debug
             if self.persist_every_n_gens != -1:
@@ -183,6 +182,10 @@ class Evolution:
             #parent_genomes = self._match_genomes()
             self._reproduce_and_eval_generation(self.parent_genomes)
             self.feature_map.update_feature_map(self.genomes)
+            best = self.feature_map.get_fittest_genome()
+            print("Fittest genome in feature map: ", best["fitness"])
+            if self.env is EnvironmentClassification:
+                print("TP: ", best["genome"].tp, " FN: ", best["genome"].fn, " TN: ", best["genome"].tn, " FP: ", best["genome"].fp)
             self.parent_genomes = self.feature_map.sample_feature_map(self.pop_size)
             if __debug__:
                 self.logger.info("New generation reproduced")
@@ -303,6 +306,9 @@ class Evolution:
         all_genomes_sent = False
         object_ids = []
         res = []
+        if self.env is EnvironmentClassification:  # bagging randomly sample 66% of dataset w/o replacement
+            inds = np.random.choice(list(range(0, len(self.labels))), int(len(self.labels)*0.66), replace=False)
+            self.env_args = [self.features[inds], self.labels[inds]]
         while True:
             for core in range(cores*2):
                 parents_batch = parent_genomes[gen_counter_start:gen_counter_end]
@@ -311,12 +317,12 @@ class Evolution:
                 if len(parents_batch) == 0:
                     all_genomes_sent = True
                     break
-                object_ids.extend([parallel_reproduce_eval.remote(parents_batch,
-                                                                  self.n_net_inputs,
-                                                                  self.n_net_outputs,
-                                                                  self.env,
-                                                                  self.env_args,
-                                                                  self.feature_dims)])
+                object_ids.extend([worker_main.remote(parents_batch,
+                                                      self.n_net_inputs,
+                                                      self.n_net_outputs,
+                                                      self.env,
+                                                      self.env_args,
+                                                      self.feature_dims)])
             while True:
                 object_ids_available, object_ids_not_ready = ray.wait(object_ids, timeout=1.0)
                 for worker_results in ray.get(object_ids_available):
@@ -355,7 +361,8 @@ class Evolution:
             gen_best_net.init_graph()
             gen_best_net.visualise_neural_net()
             gen_best_net.genome.visualise_cppn()
-            self.env(*self.env_args, trials=1).evaluate(gen_best_net, render=True)
+            if self.env is EnvironmentReinforcement:
+                self.env(*self.env_args, trials=1).evaluate(gen_best_net, render=True)
             gen_best_net.graph = None
             best["genome"].net = None
 

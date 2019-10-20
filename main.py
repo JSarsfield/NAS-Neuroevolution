@@ -13,12 +13,12 @@ import feature_dimensions
 
 def single_run():
     from evolution import Evolution
-    evolution = Evolution(pop_size=256,
+    evolution = Evolution(pop_size=128,
                           environment_type=EnvironmentClassification,
                           env_args=['Oakfield_data.csv', 2], # CartPole-v0 BipedalWalker-v2 MountainCarContinuous-v0 HandManipulateBlock-v0
-                          session_name=None, # if None new evolutionary search will be started
+                          session_name=None,  # if None new evolutionary search will be started
                           gen=None,
-                          execute=Exec.SERIAL,
+                          execute=Exec.PARALLEL_LOCAL,
                           worker_list="hpc_worker_list_home",
                           persist_every_n_gens=-1,
                           log_to_driver=False)
@@ -26,7 +26,7 @@ def single_run():
 
 
 def evaluation():
-    args = {"pop_size": 2048,
+    args = {"pop_size": 128,
             "environment_type": EnvironmentReinforcement,
             "env_args": ['BipedalWalker-v2'],
             "session_name": None,
@@ -61,6 +61,8 @@ if __name__ == "__main__":
     else:
         print("OPTIMISED")
     single_run()
+    # TODO save/load feature map
+    # TODO Load top x performing nets from feature map for classification/regression bagging model
     #evaluation()
     # VisualiseEvaluation("./evaluations/evaluation_2019-10-07_13:53:56.919307/eval.pkl")
     print("end")
