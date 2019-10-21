@@ -1,11 +1,11 @@
 """ Create Artifcial Neural Network
 
-Artificial Neural Network / Phenotype. Expressed given a genome.
+    Artificial Neural Network / Phenotype. Expressed given a genome.
 
- NOTE self.fitness calc is slightly different from original NEAT - see adjusted fitness section 3.3 pg 12 "Evolving Neural Networks through Augmenting Topologies" 2002
+     NOTE self.fitness calc is slightly different from original NEAT - see adjusted fitness section 3.3 pg 12 "Evolving Neural Networks through Augmenting Topologies" 2002
 
-__author__ = "Joe Sarsfield"
-__email__ = "joe.sarsfield@gmail.com"
+    __author__ = "Joe Sarsfield"
+    __email__ = "joe.sarsfield@gmail.com"
 """
 
 

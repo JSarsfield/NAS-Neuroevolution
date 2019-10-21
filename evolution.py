@@ -1,8 +1,8 @@
 """
-Control evolutionary process
+    Control evolutionary process
 
-__author__ = "Joe Sarsfield"
-__email__ = "joe.sarsfield@gmail.com"
+    __author__ = "Joe Sarsfield"
+    __email__ = "joe.sarsfield@gmail.com"
 """
 import numpy as np
 from genes import GenePool

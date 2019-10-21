@@ -1,3 +1,12 @@
+""" Worker process logic
+
+    Code in this module is called on a worker process, note it also calls other modules
+
+    __author__ = "Joe Sarsfield"
+    __email__ = "joe.sarsfield@gmail.com"
+"""
+
+
 from genes import GeneNode
 from genome import CPPNGenome
 from substrate import Substrate
