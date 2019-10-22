@@ -9,6 +9,8 @@ import numpy as np
 from random import randrange
 from time import sleep
 from feature_dimensions import PerformanceDimension, PhenotypicDimension
+import math
+import sys
 
 
 def get_env_spaces(gym_env_string):
@@ -198,7 +200,9 @@ class EnvironmentClassification(Environment):
                         fn += 1
                     else:  # FP
                         fp += 1
-        fitness = self.weighted_categorical_crossentropy(self.labels, y_pred)
+        #fitness = weighted_categorical_crossentropy(self.labels, y_pred)
+        #fitness = mcc(tp, tn, fp, fn)
+        fitness = auc(tp, tn, fp, fn)
         self.net.set_fitness(fitness)
         self.calc_performance_dims(self.net)
         self.calc_phenotypic_dims(self.net)
@@ -210,15 +214,44 @@ class EnvironmentClassification(Environment):
         net.genome.fp = fp
         return fitness
 
-    def weighted_categorical_crossentropy(self, y_true, y_pred):
-        """
-        Weighted categorical crossentropy
-        """
-        y_pred = np.clip(y_pred, np.finfo(float).eps, 1 - np.finfo(float).eps) # clip to prevent NaN's and Inf's
-        weights = np.flip(np.sum(y_true, axis=0)/len(y_true))
-        #weights /= np.sum(weights, axis=-1, keepdims=True)  # scale weights to sum to 1
-        #weights = np.expand_dims(weights, axis=1)
-        log_diff = (y_true * np.log(y_pred)) * weights
-        return np.sum(1+np.sum(log_diff, -1))/len(log_diff)
+
+def weighted_categorical_crossentropy(y_true, y_pred):
+    """
+    Weighted categorical crossentropy
+    """
+    y_pred = np.clip(y_pred, np.finfo(float).eps, 1 - np.finfo(float).eps) # clip to prevent NaN's and Inf's
+    weights = np.flip(np.sum(y_true, axis=0)/len(y_true))
+    #weights /= np.sum(weights, axis=-1, keepdims=True)  # scale weights to sum to 1
+    #weights = np.expand_dims(weights, axis=1)
+    log_diff = (y_true * np.log(y_pred)) * weights
+    return np.sum(1+np.sum(log_diff, -1))/len(log_diff)
+
+
+def mcc(tp, tn, fp, fn):
+    """ Mathews Correlation Coefficient classification performance metric for imbalanced datasets.
+     Note my experiments show that it doesn't fairly balance the measurements as it gives lower score for same
+     percentage of accuracy for classes with less samples. Use ROC-AUC instead as this does balance """
+    div = math.sqrt((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn))
+    div = div if div != 0 else sys.float_info.epsilon
+    return ((tp*tn)-(fp*fn))/div
+
+
+def tp_rate(tp, fn):
+    return tp/(tp+fn)
+
+
+def tn_rate(tn, fp):
+    return tn/(tn+fp)
+
+
+def auc(tp, tn, fp, fn):
+    """ ROC-AUC - fairly balances performance for imbalanced datasets """
+    tpr = tp_rate(tp, fn)
+    tnr = tn_rate(tn, fp)
+    return (tpr+tnr)/2
+
+
+
+
 
 
