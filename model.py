@@ -11,18 +11,11 @@ import numpy as np
 class NN_bag_model:
     """ neural network bagging model """
 
-    def __init__(self, inputs, outputs):
+    def __init__(self):
         self.performance_gen = []  # list of performance per generation
-        self.inputs = inputs
-        self.outputs = outputs
 
-    def predict(self, genomes, samples, labels):
+    def predict(self, networks, samples, labels):
         """ make a prediction of a set of samples and return performance metric """
-        networks = []
-        for genome in genomes:
-            genome.create_graph()
-            networks.append(Substrate().build_network_from_genome(genome, self.inputs, self.outputs))
-            networks[-1].init_graph()
         self.tp = 0
         self.fn = 0
         self.tn = 0
@@ -48,9 +41,6 @@ class NN_bag_model:
                     self.fp += 1
         self.visualise_performance()
         self.performance_gen.append(networks[0].auc(self.tp, self.tn, self.fp, self.fn))
-        for genome in genomes:
-            genome.net = None
-            genome.graph = None
         return self.performance_gen[-1]
 
     def visualise_performance(self):

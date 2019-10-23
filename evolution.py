@@ -135,7 +135,7 @@ class Evolution:
                 self.train_features, self.train_labels = EnvironmentClassification.load_dataset(env_args[0])
                 self.n_net_inputs = self.train_features.shape[-1]
                 self.n_net_outputs = env_args[1]
-                self.bag = model.NN_bag_model(self.n_net_inputs, self.n_net_outputs)
+                self.bag = model.NN_bag_model()
             else:
                 self.n_net_inputs, self.n_net_outputs = 1, 1  # TODO this is debug
             if self.persist_every_n_gens != -1:
@@ -189,11 +189,25 @@ class Evolution:
             #parent_genomes = self._match_genomes()
             self._reproduce_and_eval_generation(self.parent_genomes)
             self.feature_map.update_feature_map(self.genomes)
-            best_genomes = self.feature_map.get_fittest_genomes(n=10)
-            fitness = self.bag.predict(best_genomes, self.val_features, self.val_labels)
-            print("Bagging fitness of n genomes in feature map: ", fitness)
             if self.env is EnvironmentClassification:
+                best_genomes = self.feature_map.get_fittest_genomes(n=10)
+                networks = []
+                for genome in best_genomes:
+                    genome.create_graph()
+                    networks.append(Substrate().build_network_from_genome(genome, self.n_net_inputs, self.n_net_outputs))
+                    networks[-1].init_graph()
+                fitness = self.bag.predict(networks, self.test_features, self.test_labels)
+                print("(test) Bagging fitness of n genomes in feature map: ", fitness)
                 print("TP: ", self.bag.tp, " FN: ", self.bag.fn, " TN: ", self.bag.tn, " FP: ", self.bag.fp)
+                fitness = self.bag.predict(networks, self.val_features, self.val_labels)
+                print("(val) Bagging fitness of n genomes in feature map: ", fitness)
+                print("TP: ", self.bag.tp, " FN: ", self.bag.fn, " TN: ", self.bag.tn, " FP: ", self.bag.fp)
+                fitness = self.bag.predict(networks, self.train_features, self.train_labels)
+                print("(train) Bagging fitness of n genomes in feature map: ", fitness)
+                print("TP: ", self.bag.tp, " FN: ", self.bag.fn, " TN: ", self.bag.tn, " FP: ", self.bag.fp)
+                for genome in best_genomes:
+                    genome.net = None
+                    genome.graph = None
             self.parent_genomes = self.feature_map.sample_feature_map(self.pop_size)
             if __debug__:
                 self.logger.info("New generation reproduced")
