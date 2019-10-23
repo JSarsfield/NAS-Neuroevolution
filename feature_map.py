@@ -63,13 +63,9 @@ class FeatureMap:
                     break
         return parent_genomes
 
-    def get_fittest_genome(self):
-        """ return fittest genome """
-        best = {"fitness": -9999}
-        for _, genome in self.coords_to_genome.items():
-            if genome["fitness"] >= best["fitness"]:
-                best = genome
-        return best
+    def get_fittest_genomes(self, n=1):
+        """ return n fittest genome. Fetch multiple networks when bagging. """
+        return sorted([item[1]['genome'] for item in self.coords_to_genome.items()], key=lambda x: x.fitness)[-n:]
 
 
 

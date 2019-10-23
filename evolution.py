@@ -128,9 +128,14 @@ class Evolution:
                 self.env_args = env_args
                 self.n_net_inputs, self.n_net_outputs = get_env_spaces(self.env_args[0])
             elif environment_type is EnvironmentClassification:
-                self.features, self.labels = EnvironmentClassification.load_dataset(env_args[0])
-                self.n_net_inputs = self.features.shape[-1]
+                global model
+                import model
+                self.test_features, self.test_labels, \
+                self.val_features, self.val_labels, \
+                self.train_features, self.train_labels = EnvironmentClassification.load_dataset(env_args[0])
+                self.n_net_inputs = self.train_features.shape[-1]
                 self.n_net_outputs = env_args[1]
+                self.bag = model.NN_bag_model(self.n_net_inputs, self.n_net_outputs)
             else:
                 self.n_net_inputs, self.n_net_outputs = 1, 1  # TODO this is debug
             if self.persist_every_n_gens != -1:
@@ -156,6 +161,7 @@ class Evolution:
             pickle.dump([self.genomes, self.feature_map, self.feature_dims, self.gene_pool, self.compatibility_dist], f)
 
     def _get_initial_population(self):
+        """ generate n random genomes """
         while len(self.genomes) != self.pop_size:
             genome = CPPNGenome(self.gene_pool.gene_nodes_in,
                                 self.gene_pool.gene_nodes,
@@ -171,6 +177,7 @@ class Evolution:
             self.parent_genomes.append((self.genomes[i], True))
 
     def begin_evolution(self):
+        """ main evolution loop """
         if __debug__:
             self.logger.info("Starting evolution...")
         while True:  # For infinite generations
@@ -182,10 +189,11 @@ class Evolution:
             #parent_genomes = self._match_genomes()
             self._reproduce_and_eval_generation(self.parent_genomes)
             self.feature_map.update_feature_map(self.genomes)
-            best = self.feature_map.get_fittest_genome()
-            print("Fittest genome in feature map: ", best["fitness"])
+            best_genomes = self.feature_map.get_fittest_genomes(n=10)
+            fitness = self.bag.predict(best_genomes, self.val_features, self.val_labels)
+            print("Bagging fitness of n genomes in feature map: ", fitness)
             if self.env is EnvironmentClassification:
-                print("TP: ", best["genome"].tp, " FN: ", best["genome"].fn, " TN: ", best["genome"].tn, " FP: ", best["genome"].fp)
+                print("TP: ", self.bag.tp, " FN: ", self.bag.fn, " TN: ", self.bag.tn, " FP: ", self.bag.fp)
             self.parent_genomes = self.feature_map.sample_feature_map(self.pop_size)
             if __debug__:
                 self.logger.info("New generation reproduced")
@@ -307,8 +315,8 @@ class Evolution:
         object_ids = []
         res = []
         if self.env is EnvironmentClassification:  # bagging randomly sample 66% of dataset w/o replacement
-            inds = np.random.choice(list(range(0, len(self.labels))), int(len(self.labels)*0.66), replace=False)
-            self.env_args = [self.features[inds], self.labels[inds]]
+            inds = np.random.choice(list(range(0, len(self.train_labels))), int(len(self.train_labels) * 0.66), replace=False)
+            self.env_args = [self.train_features[inds], self.train_labels[inds]]
         while True:
             for core in range(cores*2):
                 parents_batch = parent_genomes[gen_counter_start:gen_counter_end]
@@ -355,7 +363,7 @@ class Evolution:
             self.logger.info("Best fitnesses " + str(best["fitness"]))
         if keyboard.is_pressed('v'):
             # Visualise generation best
-            best = self.feature_map.get_fittest_genome()
+            best = self.feature_map.get_fittest_genomes()
             best["genome"].create_graph()
             gen_best_net = Substrate().build_network_from_genome(best["genome"], self.n_net_inputs, self.n_net_outputs)
             gen_best_net.init_graph()

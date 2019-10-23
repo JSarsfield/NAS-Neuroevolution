@@ -163,6 +163,30 @@ class Network:
         pass
         #tf.keras.backend.clear_session()
 
+    def predict(self, sample, label):
+        """ predict """
+        y = self.graph(sample)
+        y = np.exp(y) / np.sum(np.exp(y), axis=0)  # softmax
+        y_norm = np.array([0, 1]) if y[0] == y[1] else (y-min(y))/(max(y)-min(y))
+        y_arg = np.argmax(y)
+        y_arg_true = np.argmax(label)
+        return y, y_norm, y_arg, y_arg_true
+
+    @staticmethod
+    def tp_rate(tp, fn):
+        return tp / (tp + fn)
+
+    @staticmethod
+    def tn_rate(tn, fp):
+        return tn / (tn + fp)
+
+    @staticmethod
+    def auc(tp, tn, fp, fn):
+        """ ROC-AUC - fairly balances performance for imbalanced datasets """
+        tpr = Network.tp_rate(tp, fn)
+        tnr = Network.tn_rate(tn, fp)
+        return (tpr + tnr) / 2
+
     """
     def set_fitness(self, fitness):
         # Adjust fitness for number of species. NOTE no longer used as species no longer compete (local competition)

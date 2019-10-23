@@ -13,7 +13,7 @@ import feature_dimensions
 
 def single_run():
     from evolution import Evolution
-    evolution = Evolution(pop_size=2048,
+    evolution = Evolution(pop_size=128,
                           environment_type=EnvironmentClassification,
                           env_args=['Oakfield_data.csv', 2], # CartPole-v0 BipedalWalker-v2 MountainCarContinuous-v0 HandManipulateBlock-v0
                           session_name=None,  # if None new evolutionary search will be started

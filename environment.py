@@ -11,6 +11,7 @@ from time import sleep
 from feature_dimensions import PerformanceDimension, PhenotypicDimension
 import math
 import sys
+import random
 
 
 def get_env_spaces(gym_env_string):
@@ -149,12 +150,22 @@ class EnvironmentClassification(Environment):
         self.gradient_based_learning = gradient_based_learning
 
     @staticmethod
-    def load_dataset(dataset_file):
+    def load_dataset(dataset_file, batch_size=128):
+        """ load labelled dataset, this occurs on master process """
         global pd
         import pandas as pd
         data = pd.read_csv("./datasets/"+dataset_file)
         features, labels = EnvironmentClassification.get_features(data)
-        return features, labels
+        inds = random.sample(list(np.arange(len(labels))), batch_size * 2)
+        test_inds = inds[:batch_size]
+        val_inds = inds[batch_size:]
+        test_features = features[test_inds]
+        test_labels = labels[test_inds]
+        val_features = features[val_inds]
+        val_labels = labels[val_inds]
+        train_features = np.delete(features, inds, 0)
+        train_labels = np.delete(labels, inds, 0)
+        return test_features, test_labels, val_features, val_labels, train_features, train_labels
 
     @staticmethod
     def get_features(data):
@@ -182,14 +193,9 @@ class EnvironmentClassification(Environment):
         fn = 0
         tn = 0
         fp = 0
-        y_pred = []
         if self.gradient_based_learning is False:
             for i, sample in enumerate(self.features):
-                y = net.graph(sample[-1])
-                y = np.exp(y) / np.sum(np.exp(y), axis=0)  # softmax
-                y_pred.append(y)
-                y_arg = np.argmax(y)
-                y_arg_true = np.argmax(self.labels[i])
+                y, y_norm, y_arg, y_arg_true = net.predict(sample[-1], self.labels[i])
                 if y_arg == y_arg_true:  # TP or TN
                     if y_arg == 1:
                         tp += 1
@@ -202,16 +208,12 @@ class EnvironmentClassification(Environment):
                         fp += 1
         #fitness = weighted_categorical_crossentropy(self.labels, y_pred)
         #fitness = mcc(tp, tn, fp, fn)
-        fitness = auc(tp, tn, fp, fn)
+        fitness = net.auc(tp, tn, fp, fn)
         self.net.set_fitness(fitness)
         self.calc_performance_dims(self.net)
         self.calc_phenotypic_dims(self.net)
         net.genome.performance_dims = self.performance_dims
         net.genome.phenotypic_dims = self.phenotypic_dims
-        net.genome.tp = tp
-        net.genome.tn = tn
-        net.genome.fn = fn
-        net.genome.fp = fp
         return fitness
 
 
@@ -234,21 +236,6 @@ def mcc(tp, tn, fp, fn):
     div = math.sqrt((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn))
     div = div if div != 0 else sys.float_info.epsilon
     return ((tp*tn)-(fp*fn))/div
-
-
-def tp_rate(tp, fn):
-    return tp/(tp+fn)
-
-
-def tn_rate(tn, fp):
-    return tn/(tn+fp)
-
-
-def auc(tp, tn, fp, fn):
-    """ ROC-AUC - fairly balances performance for imbalanced datasets """
-    tpr = tp_rate(tp, fn)
-    tnr = tn_rate(tn, fp)
-    return (tpr+tnr)/2
 
 
 
