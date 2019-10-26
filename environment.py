@@ -8,7 +8,7 @@ __email__ = "joe.sarsfield@gmail.com"
 import numpy as np
 from random import randrange
 from time import sleep
-from feature_dimensions import PerformanceDimension, PhenotypicDimension
+from feature_dimensions import PerformanceDimension, PhenotypicDimension, GenomicDimension
 import math
 import sys
 import random
@@ -31,11 +31,14 @@ class Environment:
     def setup_feature_dimensions(self):
         self.performance_dims = []
         self.phenotypic_dims = []
+        self.genomic_dims = []
         for dim in self.feature_dims:
             if isinstance(dim, PerformanceDimension):
                 self.performance_dims.append(dim)
             elif isinstance(dim, PhenotypicDimension):
                 self.phenotypic_dims.append(dim)
+            elif isinstance(dim, GenomicDimension):
+                self.genomic_dims.append(dim)
 
     def calc_performance_dims(self, *args):
         for dim in self.performance_dims:
@@ -43,6 +46,10 @@ class Environment:
 
     def calc_phenotypic_dims(self, *args):
         for dim in self.phenotypic_dims:
+            dim.call(*args)
+
+    def calc_genomic_dims(self, *args):
+        for dim in self.genomic_dims:
             dim.call(*args)
 
 
@@ -212,8 +219,10 @@ class EnvironmentClassification(Environment):
         self.net.set_fitness(fitness)
         self.calc_performance_dims(self.net)
         self.calc_phenotypic_dims(self.net)
+        self.calc_genomic_dims(self.net.genome)
         net.genome.performance_dims = self.performance_dims
         net.genome.phenotypic_dims = self.phenotypic_dims
+        net.genome.genomic_dims = self.genomic_dims
         return fitness
 
 

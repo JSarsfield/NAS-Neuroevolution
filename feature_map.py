@@ -38,6 +38,8 @@ class FeatureMap:
             coord = []
             for dim in genome.phenotypic_dims:
                 coord.append(dim.metric)
+            for dim in genome.genomic_dims:
+                coord.append(dim.metric)
             coord = tuple(coord)
             if coord in self.coords_to_genome:  # genome already exists in cell so check if performance is greater
                 if genome.fitness >= self.coords_to_genome[coord]["fitness"]:
@@ -54,7 +56,8 @@ class FeatureMap:
             genome_keys = random.sample(self.coords_to_genome.keys(), k=min(len(self.coords_to_genome.keys()), n_samples))
             for key in genome_keys:
                 if event(genome_crossover_prob):  # crossover
-                    neighbours = tree.query([key], crossover_neighbour_elites)[1][0][1:]
+                    res = tree.query([key], crossover_neighbour_elites)
+                    neighbours = [res[1][0][i] for i in range(1, len(res[1][0])) if res[0][0][i] != np.inf]
                     parent_genomes.append((self.coords_to_genome[key]["genome"],
                                            self.coords_to_genome[tuple(tree.data[random.choice(neighbours)])]["genome"]))
                 else:  # self mutate
@@ -67,8 +70,24 @@ class FeatureMap:
         """ return n fittest genome. Fetch multiple networks when bagging. """
         return sorted([item[1]['genome'] for item in self.coords_to_genome.items()], key=lambda x: x.fitness)[-n:]
 
-
-
-def visualise_feature_map(feature_map, dimensions):
-    """ visualise n dimensions of the feature map """
-    pass
+    def visualise(self):
+        """ visualise n dimensions of the feature map """
+        import matplotlib
+        matplotlib.use('Qt5Agg')
+        from matplotlib import pyplot as plt
+        import mpl_toolkits.mplot3d.axes3d as p3
+        fig = plt.figure()
+        ax = p3.Axes3D(fig)
+        x = []
+        y = []
+        z = []
+        for key in self.coords_to_genome.keys():
+            x.append(key[0])
+            y.append(key[1])
+            z.append(self.coords_to_genome[key]["fitness"])
+        ax.scatter(x, y, z)
+        ax.set_xlabel('Num nodes genome')
+        ax.set_ylabel('Sum link weights')
+        ax.set_zlabel('Fitness')
+        plt.show()
+        print("")

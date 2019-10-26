@@ -34,6 +34,7 @@ class CPPNGenome:
         self.fitness = fitness  # Copy of fitness obtained from network
         self.performance_dims = None  # Set in environment. MAP elites
         self.phenotypic_dims = None  # MAP elites
+        self.genomic_dims = None  # MAP elites
         self.gene_nodes = copy.deepcopy(gene_nodes)
         self.gene_nodes_in = copy.deepcopy(gene_nodes_in)
         self.gene_links = []

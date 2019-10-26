@@ -58,9 +58,8 @@ class Evolution:
                  log_to_driver=False,
                  evaluator_callback=None,
                  feature_dims=[feature_dimensions.PerformanceDimension(feature_dimensions.fitness_dimension),
-                               feature_dimensions.PhenotypicDimension(feature_dimensions.network_link_cost_dimension, binning=1),
-                               feature_dimensions.PhenotypicDimension(feature_dimensions.network_links_dimension, binning=-2),
-                               feature_dimensions.PhenotypicDimension(feature_dimensions.network_modularity_dimension, binning=1)]
+                               feature_dimensions.GenomicDimension(feature_dimensions.genome_nodes_dimension, binning=1), # feature_dimensions.PhenotypicDimension(feature_dimensions.network_links_dimension, binning=-2),
+                               feature_dimensions.GenomicDimension(feature_dimensions.genome_link_cost_dimension, binning=1)]
                  ):
         """
         :param pop_size:  size of the population for each generation
@@ -189,32 +188,11 @@ class Evolution:
             #parent_genomes = self._match_genomes()
             self._reproduce_and_eval_generation(self.parent_genomes)
             self.feature_map.update_feature_map(self.genomes)
-            if self.env is EnvironmentClassification:
-                best_genomes = self.feature_map.get_fittest_genomes(n=10)
-                networks = []
-                for genome in best_genomes:
-                    genome.create_graph()
-                    networks.append(Substrate().build_network_from_genome(genome, self.n_net_inputs, self.n_net_outputs))
-                    networks[-1].init_graph()
-                fitness = self.bag.predict(networks, self.test_features, self.test_labels)
-                print("(test) Bagging fitness of n genomes in feature map: ", fitness)
-                print("TP: ", self.bag.tp, " FN: ", self.bag.fn, " TN: ", self.bag.tn, " FP: ", self.bag.fp)
-                fitness = self.bag.predict(networks, self.val_features, self.val_labels)
-                print("(val) Bagging fitness of n genomes in feature map: ", fitness)
-                print("TP: ", self.bag.tp, " FN: ", self.bag.fn, " TN: ", self.bag.tn, " FP: ", self.bag.fp)
-                fitness = self.bag.predict(networks, self.train_features, self.train_labels)
-                print("(train) Bagging fitness of n genomes in feature map: ", fitness)
-                print("TP: ", self.bag.tp, " FN: ", self.bag.fn, " TN: ", self.bag.tn, " FP: ", self.bag.fp)
-                for genome in best_genomes:
-                    genome.net = None
-                    genome.graph = None
-            self.parent_genomes = self.feature_map.sample_feature_map(self.pop_size)
             if __debug__:
                 self.logger.info("New generation reproduced")
             self._generation_stats()
-            if __debug__:
-                self.logger.info("End of generation " + str(self.generation))
             self.generation += 1
+            self.parent_genomes = self.feature_map.sample_feature_map(self.pop_size)
             self._check_persist()
             if self._process_callbacks_and_stop():
                 return
@@ -374,9 +352,32 @@ class Evolution:
     def _generation_stats(self):
         """ print gen stats when in debug or process visualisation if key pressed """
         if __debug__:
+            self.logger.info("End of generation " + str(self.generation))
+        if self.env is EnvironmentClassification:
+            best_genomes = self.feature_map.get_fittest_genomes(n=10)
+            networks = []
+            for genome in best_genomes:
+                genome.create_graph()
+                networks.append(Substrate().build_network_from_genome(genome, self.n_net_inputs, self.n_net_outputs))
+                networks[-1].init_graph()
+            fitness = self.bag.predict(networks, self.test_features, self.test_labels)
+            print("(test) Bagging fitness of n genomes in feature map: ", fitness)
+            print("TP: ", self.bag.tp, " FN: ", self.bag.fn, " TN: ", self.bag.tn, " FP: ", self.bag.fp)
+            fitness = self.bag.predict(networks, self.val_features, self.val_labels)
+            print("(val) Bagging fitness of n genomes in feature map: ", fitness)
+            print("TP: ", self.bag.tp, " FN: ", self.bag.fn, " TN: ", self.bag.tn, " FP: ", self.bag.fp)
+            fitness = self.bag.predict(networks, self.train_features, self.train_labels)
+            print("(train) Bagging fitness of n genomes in feature map: ", fitness)
+            print("TP: ", self.bag.tp, " FN: ", self.bag.fn, " TN: ", self.bag.tn, " FP: ", self.bag.fp)
+            for genome in best_genomes:
+                genome.net = None
+                genome.graph = None
+        if __debug__:
             self.logger.info("Best fitnesses " + str(best["fitness"]))
         if keyboard.is_pressed('v'):
             # Visualise generation best
+            self.feature_map.visualise()
+            """
             best = self.feature_map.get_fittest_genomes()
             best["genome"].create_graph()
             gen_best_net = Substrate().build_network_from_genome(best["genome"], self.n_net_inputs, self.n_net_outputs)
@@ -387,6 +388,7 @@ class Evolution:
                 self.env(*self.env_args, trials=1).evaluate(gen_best_net, render=True)
             gen_best_net.graph = None
             best["genome"].net = None
+            """
 
     def _check_persist(self):
         """ check whether to persist evolutionary state to disk """

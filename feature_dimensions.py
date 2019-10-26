@@ -51,6 +51,17 @@ class PhenotypicDimension(Dimension):
         self.metric = np.around(self.calc_metric_func(network), self.binning).astype(np.float)
 
 
+class GenomicDimension(Dimension):
+    """ genomic feature dimensions """
+
+    def __init__(self, calc_metric_func, binning=3):
+        super().__init__(binning=binning)
+        self.calc_metric_func = calc_metric_func
+
+    def call(self, genome):
+        self.metric = np.around(self.calc_metric_func(genome), self.binning).astype(np.float)
+
+
 class ActionDimension(Dimension):
     """ action dimensions e.g. frequency of a type of action, quantity of the action """
 
@@ -75,12 +86,41 @@ def network_links_dimension(network):
     return len(network.links)
 
 
+def network_avg_link_cost_dimension(network):
+    """ Connection cost average """
+    total_dist = 0
+    for l in network.links:
+        total_dist += distance.euclidean((l.in_node.x, l.in_node.y), (l.out_node.x, l.out_node.y))
+    return total_dist / len(network.links)
+
+
+def network_link_cost_dimension(network):
+    """ Connection cost total """
+    total_dist = 0
+    for l in network.links:
+        total_dist += distance.euclidean((l.in_node.x, l.in_node.y), (l.out_node.x, l.out_node.y))
+    return total_dist
+
+
+def genome_link_cost_dimension(genome):
+    """ Genome connection cost total """
+    total_dist = 0
+    for l in genome.gene_links:
+        total_dist += l.weight
+    return total_dist
+
+
+def genome_nodes_dimension(genome):
+    """ Genome number of nodes """
+    return len(genome.gene_nodes)
+
+
 def network_link_cost_dimension(network):
     """ Connection cost """
     total_dist = 0
     for l in network.links:
         total_dist += distance.euclidean((l.in_node.x, l.in_node.y), (l.out_node.x, l.out_node.y))
-    return total_dist / len(network.links)
+    return total_dist
 
 
 def network_link_costx_dimension(network):
